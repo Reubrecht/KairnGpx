@@ -29,168 +29,179 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
+                    <!-- Status/Terrain Badges displayed for desktop, hidden on tiny logic if needed -->
+                    <div class="hidden md:block">
+                        <div class="flex justify-between gap-4">
+                            <div class="flex flex-col">
+                                <dt class="text-xs text-gray-500">Terrain</dt>
+                                <dd class="font-medium text-gray-900">{{ track.terrain }}</dd>
+                            </div>
+                            <div class="flex flex-col">
+                                <dt class="text-xs text-gray-500">Statut</dt>
+                                <dd class="font-medium text-gray-900">{{ track.status }}</dd>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- Stats -->
-                <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-slate-50 p-4 rounded-lg">
-                            <span class="text-xs text-gray-400 uppercase tracking-wider">Distance</span>
-                            <div class="text-2xl font-bold text-slate-800">{{ track.distance_km }} km</div>
-                        </div>
-                        <div class="bg-slate-50 p-4 rounded-lg">
-                            <span class="text-xs text-gray-400 uppercase tracking-wider">Dénivelé +</span>
-                            <div class="text-2xl font-bold text-slate-800">{{ track.elevation_gain }} m</div>
-                        </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="col-span-1">
+                    <h3 class="font-semibold text-gray-900 mb-2">Environnement</h3>
+                    <div class="flex flex-wrap gap-2">
+                        {% if track.is_high_mountain %}<span
+                            class="px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs">Haute Montagne</span>{%
+                        endif %}
+                        {% if track.is_coastal %}<span
+                            class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">Côtier</span>{% endif %}
+                        {% if track.is_forest %}<span
+                            class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">Forêt</span>{% endif %}
+                        {% if track.is_urban %}<span
+                            class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">Urbain</span>{% endif %}
+                        {% if track.is_desert %}<span
+                            class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs">Aride</span>{% endif %}
                     </div>
 
-                    <div class="border-t pt-4">
-                        <h3 class="font-semibold text-gray-900 mb-2">Caractéristiques</h3>
-                        <dl class="space-y-2 text-sm">
-                            <div class="flex justify-between">
-                                <dt class="text-gray-500">Technicité</dt>
-                                <dd class="font-medium text-gray-900">{{ track.technicity.value }}</dd>
-                            </div>
-                            <div class="flex justify-between">
-                                <dt class="text-gray-500">Terrain</dt>
-                                <dd class="font-medium text-gray-900">{{ track.terrain.value }}</dd>
-                            </div>
-                            <div class="flex justify-between">
-                                <dt class="text-gray-500">Statut</dt>
-                                <dd class="font-medium text-gray-900">{{ track.status.value }}</dd>
-                            </div>
-                        </dl>
+                    {% if track.description %}
+                    <div class="mt-4 pt-4 border-t">
+                        <h3 class="font-bold text-gray-900 mb-2">Description</h3>
+                        <p class="text-gray-600 text-sm">{{ track.description }}</p>
                     </div>
-
-                    <div>
-                        <h3 class="font-semibold text-gray-900 mb-2">Environnement</h3>
-                        <div class="flex flex-wrap gap-2">
-                            {% if track.is_high_mountain %}<span
-                                class="px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs">Haute Montagne</span>{%
-                            endif %}
-                            {% if track.is_coastal %}<span
-                                class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">Côtier</span>{% endif %}
-                            {% if track.is_forest %}<span
-                                class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">Forêt</span>{% endif %}
-                            {% if track.is_urban %}<span
-                                class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">Urbain</span>{% endif %}
-                            {% if track.is_desert %}<span
-                                class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs">Aride</span>{% endif %}
-                        </div>
-                    </div>
+                    {% endif %}
                 </div>
 
                 <!-- Chart -->
-                <div class="lg:col-span-2">
-                    <canvas id="elevationChart" class="w-full h-64 bg-slate-50 rounded-lg p-2"></canvas>
+                <div class="md:col-span-2">
+                    <canvas id="elevationChart" class="w-full h-48 bg-slate-50 rounded-lg p-2"></canvas>
                 </div>
             </div>
-
-            {% if track.description %}
-            <div class="mt-8 pt-8 border-t">
-                <h3 class="font-bold text-gray-900 mb-2">Description</h3>
-                <p class="text-gray-600">{{ track.description }}</p>
-            </div>
-            {% endif %}
         </div>
     </div>
 </div>
 {% endblock %}
 
+{% block head %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+{% endblock %}
+
 {% block scripts %}
-<!-- GPX Parser needs to be included, defaulting to fetch and manual parse for flexibility or simple library -->
+<!-- GPX Parser + Chart.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js"></script>
 
+<div id="debug-log"
+    style="position:fixed; bottom:10px; right:10px; background:rgba(0,0,0,0.8); color:white; padding:10px; z-index:9999; font-size:12px; max-width:300px; display:none;">
+    <strong>Debug Log:</strong><br>
+</div>
+
 <script>
-    console.log("Kairn: Initializing map...");
-    
+    function logDebug(msg) {
+        console.log(msg);
+        const el = document.getElementById('debug-log');
+        if (el) {
+            el.style.display = 'block';
+            el.innerHTML += msg + "<br>";
+        }
+    }
+
+    logDebug("Kairn: Starting script...");
+
     try {
         if (typeof L === 'undefined') {
-            console.error("Kairn: Leaflet (L) is undefined. Check CDN connections.");
-            alert("Erreur: Impossible de charger la carte (Leaflet non chargé).");
+            logDebug("ERROR: Leaflet (L) is undefined!");
+            alert("Erreur: Leaflet non chargé.");
         } else {
+            logDebug("Leaflet loaded.");
+
             // Initialize Map
-            console.log("Kairn: Setting view for {{ track.start_lat }}, {{ track.start_lon }}");
-            const map = L.map('map').setView([{{ track.start_lat }}, {{ track.start_lon }}], 13);
-            
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(map);
+            const lat = {{ track.start_lat }
+        };
+        const lon = {{ track.start_lon }
+    };
+    logDebug("Coords: " + lat + ", " + lon);
 
-            // Add Geocoder (Safe Check)
-            if (L.Control && L.Control.geocoder) {
-                L.Control.geocoder().addTo(map);
-            } else {
-                console.warn("Kairn: Leaflet Geocoder plugin not loaded.");
+    const map = L.map('map').setView([lat, lon], 13);
+    logDebug("Map initialized.");
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+    logDebug("Tiles added.");
+
+    if (!L.GPX) {
+        logDebug("ERROR: L.GPX plugin missing!");
+        alert("Erreur: Plugin GPX non chargé.");
+    } else {
+        // Load GPX
+        const gpxUrl = '/raw_gpx/{{ track.id }}';
+        logDebug("Fetching GPX: " + gpxUrl);
+
+        new L.GPX(gpxUrl, {
+            async: true,
+            marker_options: {
+                startIconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/pin-icon-start.png',
+                endIconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/pin-icon-end.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/pin-shadow.png'
+            }
+        }).on('loaded', function (e) {
+            logDebug("GPX LOADED!");
+            map.fitBounds(e.target.getBounds());
+
+            // Chart logic
+            try {
+                const gpx = e.target;
+                const elevationData = gpx.get_elevation_data();
+                const labels = elevationData.map(p => Math.round(p[0]) + 'km');
+                const data = elevationData.map(p => p[1]);
+
+                const ctx = document.getElementById('elevationChart').getContext('2d');
+                if (ctx) {
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Altitude (m)',
+                                data: data,
+                                borderColor: '#16a34a',
+                                backgroundColor: 'rgba(22, 163, 74, 0.1)',
+                                fill: true,
+                                tension: 0.1,
+                                pointRadius: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: { x: { display: false }, y: { beginAtZero: false } },
+                            interaction: { intersect: false, mode: 'index' },
+                        }
+                    });
+                }
+            } catch (chartErr) {
+                console.error("Kairn: Error building chart", chartErr);
             }
 
-            // Load GPX
-            const gpxUrl = '/raw_gpx/{{ track.id }}';
-            console.log("Kairn: Loading GPX from", gpxUrl);
-
-            if (L.GPX) {
-                new L.GPX(gpxUrl, {
-                    async: true,
-                    marker_options: {
-                        startIconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/pin-icon-start.png',
-                        endIconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/pin-icon-end.png',
-                        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/pin-shadow.png'
-                    }
-                }).on('loaded', function(e) {
-                    console.log("Kairn: GPX loaded successfully");
-                    map.fitBounds(e.target.getBounds());
-                    
-                    // Extract Elevation Data for Chart
-                    try {
-                        const gpx = e.target;
-                        const elevationData = gpx.get_elevation_data(); 
-                        const labels = elevationData.map(p => Math.round(p[0]) + 'km');
-                        const data = elevationData.map(p => p[1]);
-                        
-                        // Create Chart
-                        const ctx = document.getElementById('elevationChart').getContext('2d');
-                        new Chart(ctx, {
-                            type: 'line',
-                            data: {
-                                labels: labels,
-                                datasets: [{
-                                    label: 'Altitude (m)',
-                                    data: data,
-                                    borderColor: '#16a34a',
-                                    backgroundColor: 'rgba(22, 163, 74, 0.1)',
-                                    fill: true,
-                                    tension: 0.1,
-                                    pointRadius: 0
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: { legend: { display: false } },
-                                scales: {
-                                    x: { display: false },
-                                    y: { beginAtZero: false }
-                                },
-                                interaction: { intersect: false, mode: 'index' },
-                            }
-                        });
-                    } catch (chartErr) {
-                        console.error("Kairn: Error building chart", chartErr);
-                    }
-
-                }).on('error', function(e) {
-                    console.error("Kairn: Error loading GPX file", e);
-                }).addTo(map);
-            } else {
-                console.error("Kairn: Leaflet GPX plugin not loaded.");
-                alert("Erreur: Plugin GPX non chargé.");
-            }
+        }).on('error', function (e) {
+            logDebug("GPX ERROR: " + JSON.stringify(e));
+            console.error("GPX ERROR Full:", e);
+        }).addTo(map);
+    }
         }
     } catch (err) {
-        console.error("Kairn: Critical map error", err);
+        logDebug("CRASH: " + err.message);
+        console.error(err);
+        alert("Crash script: " + err.message);
+    }
+
+    function togglePanel() {
+        const panel = document.getElementById('info-panel');
+        panel.classList.toggle('hidden');
     }
 </script>
 {% endblock %}
