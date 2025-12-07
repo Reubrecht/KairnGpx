@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="flex flex-col h-[calc(100vh-64px)] overflow-hidden">
+    <!-- Map Container -->
+    <div id="map" class="flex-1 w-full bg-slate-200 z-0"></div>
+
+    <!-- Floating Info Panel / Bottom Sheet -->
+    <div class="bg-white shadow-top z-10 overflow-y-auto max-h-[50vh] transition-all" id="info-panel">
+        <div class="max-w-7xl mx-auto px-4 py-6">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">{{ track.title }}</h1>
+                    <p class="text-gray-500 flex items-center mt-1">
+                        <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        </svg>
+                        {{ track.location_city }}, {{ track.location_region }}
+                    </p>
+                </div>
+                <div class="flex space-x-3">
+                    <a href="/raw_gpx/{{ track.id }}"
+                        class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Télécharger GPX
+                    </a>
+                    <button onclick="togglePanel()" class="md:hidden p-2 text-gray-400 hover:text-gray-600">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Stats -->
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-slate-50 p-4 rounded-lg">
+                            <span class="text-xs text-gray-400 uppercase tracking-wider">Distance</span>
+                            <div class="text-2xl font-bold text-slate-800">{{ track.distance_km }} km</div>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-lg">
+                            <span class="text-xs text-gray-400 uppercase tracking-wider">Dénivelé +</span>
+                            <div class="text-2xl font-bold text-slate-800">{{ track.elevation_gain }} m</div>
+                        </div>
+                    </div>
+
+                    <div class="border-t pt-4">
+                        <h3 class="font-semibold text-gray-900 mb-2">Caractéristiques</h3>
+                        <dl class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <dt class="text-gray-500">Technicité</dt>
+                                <dd class="font-medium text-gray-900">{{ track.technicity.value }}</dd>
+                            </div>
+                            <div class="flex justify-between">
+                                <dt class="text-gray-500">Terrain</dt>
+                                <dd class="font-medium text-gray-900">{{ track.terrain.value }}</dd>
+                            </div>
+                            <div class="flex justify-between">
+                                <dt class="text-gray-500">Statut</dt>
+                                <dd class="font-medium text-gray-900">{{ track.status.value }}</dd>
+                            </div>
+                        </dl>
+                    </div>
+
+                    <div>
+                        <h3 class="font-semibold text-gray-900 mb-2">Environnement</h3>
+                        <div class="flex flex-wrap gap-2">
+                            {% if track.is_high_mountain %}<span
+                                class="px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs">Haute Montagne</span>{%
+                            endif %}
+                            {% if track.is_coastal %}<span
+                                class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">Côtier</span>{% endif %}
+                            {% if track.is_forest %}<span
+                                class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">Forêt</span>{% endif %}
+                            {% if track.is_urban %}<span
+                                class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">Urbain</span>{% endif %}
+                            {% if track.is_desert %}<span
+                                class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs">Aride</span>{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart -->
+                <div class="lg:col-span-2">
+                    <canvas id="elevationChart" class="w-full h-64 bg-slate-50 rounded-lg p-2"></canvas>
+                </div>
+            </div>
+
+            {% if track.description %}
+            <div class="mt-8 pt-8 border-t">
+                <h3 class="font-bold text-gray-900 mb-2">Description</h3>
+                <p class="text-gray-600">{{ track.description }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- GPX Parser needs to be included, defaulting to fetch and manual parse for flexibility or simple library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js"></script>
+
+<script>
+    // Initialize Map
+    const map = L.map('map').setView([{{ track.start_lat }}, { { track.start_lon } }], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Add Geocoder
+    L.Control.geocoder().addTo(map);
+
+    // Load GPX
+    const gpxUrl = '/raw_gpx/{{ track.id }}';
+
+    new L.GPX(gpxUrl, {
+        async: true,
+        marker_options: {
+            startIconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/pin-icon-start.png',
+            endIconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/pin-icon-end.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/pin-shadow.png'
+        }
+    }).on('loaded', function (e) {
+        map.fitBounds(e.target.getBounds());
+
+        // Extract Elevation Data for Chart
+        const gpx = e.target;
+        const elevationData = gpx.get_elevation_data(); // array of [distance, elevation, ...] depending on lib, wait, leaflet-gpx doesn't directly expose nice array easy for chartjs maybe?
+        // Actually leaflet-gpx 'get_elevation_data()' returns array of [dist, ele, tooltip]
+
+        const labels = elevationData.map(p => Math.round(p[0]) + 'km');
+        const data = elevationData.map(p => p[1]);
+
+        // Create Chart
+        const ctx = document.getElementById('elevationChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Altitude (m)',
+                    data: data,
+                    borderColor: '#16a34a',
+                    backgroundColor: 'rgba(22, 163, 74, 0.1)',
+                    fill: true,
+                    tension: 0.1,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: { display: false }, // Hide x axis labels for cleanliness if too many points
+                    y: { beginAtZero: false }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index',
+                },
+            }
+        });
+
+    }).addTo(map);
+</script>
+{% endblock %}

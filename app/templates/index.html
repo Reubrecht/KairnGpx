@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex flex-col md:flex-row gap-8">
+
+        <!-- Filters Sidebar -->
+        <div class="w-full md:w-64 flex-shrink-0">
+            <div class="bg-white rounded-lg shadow p-6 sticky top-24">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">Filtres</h3>
+                <form action="/" method="get" class="space-y-6">
+
+                    <!-- City Search -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Ville</label>
+                        <input type="text" name="city_search" value="{{ request.query_params.get('city_search', '') }}"
+                            placeholder="Rechercher..."
+                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2 border">
+                    </div>
+
+                    <!-- Environment -->
+                    <div>
+                        <span class="block text-sm font-medium text-gray-700 mb-2">Environnement</span>
+                        <div class="space-y-2">
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" name="is_high_mountain" value="true" {% if
+                                    request.query_params.get('is_high_mountain') %}checked{% endif %}
+                                    class="rounded text-green-600 focus:ring-green-500">
+                                <span class="text-sm text-gray-600">Haute Montagne</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Technicity -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Technicité</label>
+                        <select name="technicity"
+                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2 border">
+                            <option value="ALL">Tout</option>
+                            {% for tech in technicity_options %}
+                            <option value="{{ tech }}" {% if request.query_params.get('technicity')==tech %}selected{%
+                                endif %}>{{ tech }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <button type="submit"
+                        class="w-full bg-slate-800 text-white py-2 rounded-md hover:bg-slate-700 transition-colors">
+                        Filtrer
+                    </button>
+                    <a href="/" class="block text-center text-sm text-gray-500 hover:text-gray-700">Réinitialiser</a>
+                </form>
+            </div>
+        </div>
+
+        <!-- Results Grid -->
+        <div class="flex-1">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">{{ tracks|length }} Traces trouvées</h2>
+
+            {% if tracks %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for track in tracks %}
+                <a href="/track/{{ track.id }}"
+                    class="group block bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden border border-gray-100 hover:border-green-200">
+                    <!-- Placeholder Map Image or Pattern -->
+                    <div class="h-32 bg-slate-100 flex items-center justify-center relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-200"></div>
+                        <span class="text-4xl relative z-10">⛰️</span>
+                        {% if track.status.value == "OFFICIAL_RACE" %}
+                        <span
+                            class="absolute top-2 right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full shadow-sm">Officiel</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="text-lg font-bold text-gray-900 group-hover:text-green-600 truncate">{{
+                                track.title }}</h3>
+                        </div>
+
+                        <div class="flex items-center text-sm text-gray-500 mb-4">
+                            <svg class="h-4 w-4 mr-1 text-gray-400" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            </svg>
+                            {{ track.location_city or 'Lieu inconnu' }}
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2 py-3 border-t border-b border-gray-50 text-center">
+                            <div>
+                                <span class="block text-xs text-gray-400 uppercase">Dist</span>
+                                <span class="font-bold text-slate-700">{{ track.distance_km }}km</span>
+                            </div>
+                            <div>
+                                <span class="block text-xs text-gray-400 uppercase">D+</span>
+                                <span class="font-bold text-slate-700">{{ track.elevation_gain }}m</span>
+                            </div>
+                            <div>
+                                <span class="block text-xs text-gray-400 uppercase">Tech</span>
+                                <span class="text-xs font-semibold px-2 py-0.5 rounded
+                                        {% if track.technicity.value in ['TECHNIQUE', 'TRES_TECHNIQUE', 'AERIEN'] %} bg-red-100 text-red-700
+                                        {% else %} bg-green-100 text-green-700 {% endif %}">
+                                    {{ track.technicity.value[:4] }}.
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 flex flex-wrap gap-1">
+                            {% if track.is_coastal %}<span
+                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">Côtier</span>{%
+                            endif %}
+                            {% if track.is_high_mountain %}<span
+                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-800">Montagne</span>{%
+                            endif %}
+                            {% if track.is_forest %}<span
+                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-50- text-green-800">Forêt</span>{%
+                            endif %}
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-12 bg-white rounded-lg border border-dashed border-gray-300">
+                <p class="text-gray-500">Aucune trace trouvée pour ces critères.</p>
+                <a href="/" class="text-green-600 hover:text-green-500 font-medium mt-2 inline-block">Tout voir</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

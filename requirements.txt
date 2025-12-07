@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+sqlalchemy
+gpxpy
+geopy
+python-multipart
+jinja2
+passlib[bcrypt]
+python-jose
+aiofiles
+requests
