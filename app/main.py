@@ -21,6 +21,7 @@ models.Base.metadata.create_all(bind=database.engine)
 app = FastAPI(title="Kairn Trail Platform")
 
 # Mount static files
+os.makedirs("app/static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Templates

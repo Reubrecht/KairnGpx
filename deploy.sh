@@ -4,7 +4,7 @@ echo "🚀 Starting Kairn Deployment..."
 
 # 1. Ensure directories exist
 echo "📂 Creating data directories..."
-mkdir -p app/data app/uploads
+mkdir -p app/data app/uploads app/static
 
 # 2. Set permissions (Simple fix for Docker volumes on generic VMs)
 echo "🔒 Setting permissions..."
