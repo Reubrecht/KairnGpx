@@ -105,70 +105,92 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js"></script>
 
 <script>
-    // Initialize Map
-    const map = L.map('map').setView([{{ track.start_lat }}, { { track.start_lon } }], 13);
+    console.log("Kairn: Initializing map...");
+    
+    try {
+        if (typeof L === 'undefined') {
+            console.error("Kairn: Leaflet (L) is undefined. Check CDN connections.");
+            alert("Erreur: Impossible de charger la carte (Leaflet non chargé).");
+        } else {
+            // Initialize Map
+            console.log("Kairn: Setting view for {{ track.start_lat }}, {{ track.start_lon }}");
+            const map = L.map('map').setView([{{ track.start_lat }}, {{ track.start_lon }}], 13);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
-
-    // Add Geocoder
-    L.Control.geocoder().addTo(map);
-
-    // Load GPX
-    const gpxUrl = '/raw_gpx/{{ track.id }}';
-
-    new L.GPX(gpxUrl, {
-        async: true,
-        marker_options: {
-            startIconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/pin-icon-start.png',
-            endIconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/pin-icon-end.png',
-            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/pin-shadow.png'
-        }
-    }).on('loaded', function (e) {
-        map.fitBounds(e.target.getBounds());
-
-        // Extract Elevation Data for Chart
-        const gpx = e.target;
-        const elevationData = gpx.get_elevation_data(); // array of [distance, elevation, ...] depending on lib, wait, leaflet-gpx doesn't directly expose nice array easy for chartjs maybe?
-        // Actually leaflet-gpx 'get_elevation_data()' returns array of [dist, ele, tooltip]
-
-        const labels = elevationData.map(p => Math.round(p[0]) + 'km');
-        const data = elevationData.map(p => p[1]);
-
-        // Create Chart
-        const ctx = document.getElementById('elevationChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Altitude (m)',
-                    data: data,
-                    borderColor: '#16a34a',
-                    backgroundColor: 'rgba(22, 163, 74, 0.1)',
-                    fill: true,
-                    tension: 0.1,
-                    pointRadius: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    x: { display: false }, // Hide x axis labels for cleanliness if too many points
-                    y: { beginAtZero: false }
-                },
-                interaction: {
-                    intersect: false,
-                    mode: 'index',
-                },
+            // Add Geocoder (Safe Check)
+            if (L.Control && L.Control.geocoder) {
+                L.Control.geocoder().addTo(map);
+            } else {
+                console.warn("Kairn: Leaflet Geocoder plugin not loaded.");
             }
-        });
 
-    }).addTo(map);
+            // Load GPX
+            const gpxUrl = '/raw_gpx/{{ track.id }}';
+            console.log("Kairn: Loading GPX from", gpxUrl);
+
+            if (L.GPX) {
+                new L.GPX(gpxUrl, {
+                    async: true,
+                    marker_options: {
+                        startIconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/pin-icon-start.png',
+                        endIconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/pin-icon-end.png',
+                        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/pin-shadow.png'
+                    }
+                }).on('loaded', function(e) {
+                    console.log("Kairn: GPX loaded successfully");
+                    map.fitBounds(e.target.getBounds());
+                    
+                    // Extract Elevation Data for Chart
+                    try {
+                        const gpx = e.target;
+                        const elevationData = gpx.get_elevation_data(); 
+                        const labels = elevationData.map(p => Math.round(p[0]) + 'km');
+                        const data = elevationData.map(p => p[1]);
+                        
+                        // Create Chart
+                        const ctx = document.getElementById('elevationChart').getContext('2d');
+                        new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    label: 'Altitude (m)',
+                                    data: data,
+                                    borderColor: '#16a34a',
+                                    backgroundColor: 'rgba(22, 163, 74, 0.1)',
+                                    fill: true,
+                                    tension: 0.1,
+                                    pointRadius: 0
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: { display: false } },
+                                scales: {
+                                    x: { display: false },
+                                    y: { beginAtZero: false }
+                                },
+                                interaction: { intersect: false, mode: 'index' },
+                            }
+                        });
+                    } catch (chartErr) {
+                        console.error("Kairn: Error building chart", chartErr);
+                    }
+
+                }).on('error', function(e) {
+                    console.error("Kairn: Error loading GPX file", e);
+                }).addTo(map);
+            } else {
+                console.error("Kairn: Leaflet GPX plugin not loaded.");
+                alert("Erreur: Plugin GPX non chargé.");
+            }
+        }
+    } catch (err) {
+        console.error("Kairn: Critical map error", err);
+    }
 </script>
 {% endblock %}
