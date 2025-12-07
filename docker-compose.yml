@@ -4,7 +4,7 @@ services:
   web:
     build: .
     ports:
-      - "8000:8000"
+      - "8090:8000"
     volumes:
       - ./app/data:/app/data
       - ./app/uploads:/app/uploads
