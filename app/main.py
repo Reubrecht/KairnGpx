@@ -227,5 +227,6 @@ def get_raw_gpx(track_id: int, db: Session = Depends(get_db)):
     
     with open(track.file_path, "r", encoding="utf-8") as f:
         content = f.read()
-    return content
+    from fastapi.responses import Response
+    return Response(content=content, media_type="application/gpx+xml")
 

@@ -12,7 +12,7 @@ chmod -R 777 app/data app/uploads
 
 # 3. Start Docker Compose
 echo "🐳 Building and starting containers..."
-sudo docker-compose up -d --build
+sudo docker compose up -d --build
 
 echo "✅ Kairn is deployed!"
 echo "   Access it at http://$(hostname -I | awk '{print $1}'):8000"
