@@ -30,15 +30,16 @@
                         </svg>
                     </button>
                     <!-- Status/Terrain Badges displayed for desktop, hidden on tiny logic if needed -->
+
                     <div class="hidden md:block">
                         <div class="flex justify-between gap-4">
                             <div class="flex flex-col">
                                 <dt class="text-xs text-gray-500">Terrain</dt>
-                                <dd class="font-medium text-gray-900">{{ track.terrain }}</dd>
+                                <dd class="font-medium text-gray-900">{{ track.terrain.value }}</dd>
                             </div>
                             <div class="flex flex-col">
                                 <dt class="text-xs text-gray-500">Statut</dt>
-                                <dd class="font-medium text-gray-900">{{ track.status }}</dd>
+                                <dd class="font-medium text-gray-900">{{ track.status.value }}</dd>
                             </div>
                         </div>
                     </div>
@@ -82,16 +83,16 @@
 
 {% block head %}
 <!-- Leaflet CSS -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+<link rel="stylesheet" href="{{ url_for('static', path='/css/leaflet.css') }}" />
+<link rel="stylesheet" href="{{ url_for('static', path='/css/Control.Geocoder.css') }}" />
 {% endblock %}
 
 {% block scripts %}
 <!-- GPX Parser + Chart.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js"></script>
+<script src="{{ url_for('static', path='/js/chart.min.js') }}"></script>
+<script src="{{ url_for('static', path='/js/leaflet.js') }}"></script>
+<script src="{{ url_for('static', path='/js/Control.Geocoder.js') }}"></script>
+<script src="{{ url_for('static', path='/js/gpx.min.js') }}"></script>
 
 <div id="debug-log"
     style="position:fixed; bottom:10px; right:10px; background:rgba(0,0,0,0.8); color:white; padding:10px; z-index:9999; font-size:12px; max-width:300px; display:none;">
@@ -118,78 +119,80 @@
             logDebug("Leaflet loaded.");
 
             // Initialize Map
-            const lat = {{ track.start_lat }};
-            const lon = {{ track.start_lon }};
-            logDebug("Coords: " + lat + ", " + lon);
+            const lat = {{ track.start_lat }
+        };
+        const lon = {{ track.start_lon }
+    };
+    logDebug("Coords: " + lat + ", " + lon);
 
-            const map = L.map('map').setView([lat, lon], 13);
-            logDebug("Map initialized.");
+    const map = L.map('map').setView([lat, lon], 13);
+    logDebug("Map initialized.");
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(map);
-            logDebug("Tiles added.");
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+    logDebug("Tiles added.");
 
-            if (!L.GPX) {
-                logDebug("ERROR: L.GPX plugin missing!");
-                alert("Erreur: Plugin GPX non chargé.");
-            } else {
-                // Load GPX
-                const gpxUrl = '/raw_gpx/{{ track.id }}';
-                logDebug("Fetching GPX: " + gpxUrl);
+    if (!L.GPX) {
+        logDebug("ERROR: L.GPX plugin missing!");
+        alert("Erreur: Plugin GPX non chargé.");
+    } else {
+        // Load GPX
+        const gpxUrl = '/raw_gpx/{{ track.id }}';
+        logDebug("Fetching GPX: " + gpxUrl);
 
-                new L.GPX(gpxUrl, {
-                    async: true,
-                    marker_options: {
-                        startIconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/pin-icon-start.png',
-                        endIconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/pin-icon-end.png',
-                        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/pin-shadow.png'
-                    }
-                }).on('loaded', function (e) {
-                    logDebug("GPX LOADED!");
-                    map.fitBounds(e.target.getBounds());
+        new L.GPX(gpxUrl, {
+            async: true,
+            marker_options: {
+                startIconUrl: "{{ url_for('static', path='/img/pin-icon-start.png') }}",
+                endIconUrl: "{{ url_for('static', path='/img/pin-icon-end.png') }}",
+                shadowUrl: "{{ url_for('static', path='/img/pin-shadow.png') }}"
+            }
+        }).on('loaded', function (e) {
+            logDebug("GPX LOADED!");
+            map.fitBounds(e.target.getBounds());
 
-                    // Chart logic
-                    try {
-                        const gpx = e.target;
-                        const elevationData = gpx.get_elevation_data();
-                        const labels = elevationData.map(p => Math.round(p[0]) + 'km');
-                        const data = elevationData.map(p => p[1]);
+            // Chart logic
+            try {
+                const gpx = e.target;
+                const elevationData = gpx.get_elevation_data();
+                const labels = elevationData.map(p => Math.round(p[0]) + 'km');
+                const data = elevationData.map(p => p[1]);
 
-                        const ctx = document.getElementById('elevationChart').getContext('2d');
-                        if (ctx) {
-                            new Chart(ctx, {
-                                type: 'line',
-                                data: {
-                                    labels: labels,
-                                    datasets: [{
-                                        label: 'Altitude (m)',
-                                        data: data,
-                                        borderColor: '#16a34a',
-                                        backgroundColor: 'rgba(22, 163, 74, 0.1)',
-                                        fill: true,
-                                        tension: 0.1,
-                                        pointRadius: 0
-                                    }]
-                                }
-                            },
-                                options: {
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    plugins: { legend: { display: false } },
-                                    scales: { x: { display: false }, y: { beginAtZero: false } },
-                                    interaction: { intersect: false, mode: 'index' },
-                                }
-                            });
+                const ctx = document.getElementById('elevationChart').getContext('2d');
+                if (ctx) {
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Altitude (m)',
+                                data: data,
+                                borderColor: '#16a34a',
+                                backgroundColor: 'rgba(22, 163, 74, 0.1)',
+                                fill: true,
+                                tension: 0.1,
+                                pointRadius: 0
+                            }]
                         }
-                    } catch (chartErr) {
-                        console.error("Kairn: Error building chart", chartErr);
+                    },
+                        options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { x: { display: false }, y: { beginAtZero: false } },
+                        interaction: { intersect: false, mode: 'index' },
                     }
+                            });
+    }
+                    } catch (chartErr) {
+        console.error("Kairn: Error building chart", chartErr);
+    }
 
                 }).on('error', function (e) {
-                    logDebug("GPX ERROR: " + JSON.stringify(e));
-                    console.error("GPX ERROR Full:", e);
-                }).addTo(map);
+        logDebug("GPX ERROR: " + JSON.stringify(e));
+        console.error("GPX ERROR Full:", e);
+    }).addTo(map);
             }
         }
     } catch (err) {
