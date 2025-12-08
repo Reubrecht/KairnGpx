@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block head %}
+<!-- Leaflet & Heatmap -->
+<link rel="stylesheet" href="{{ url_for('static', path='/css/leaflet.css') }}" />
+<script src="{{ url_for('static', path='/js/leaflet.js') }}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+<style>
+    #map {
+        height: calc(100vh - 64px);
+        width: 100%;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="relative">
+    <div id="map" class="z-0"></div>
+
+    <!-- Floating Info Panel -->
+    <div
+        class="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur-md p-4 rounded-xl shadow-lg border border-slate-200 max-w-xs">
+        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+            🔥 Heatmap Kairn
+        </h2>
+        <p class="text-sm text-slate-600 mt-1">
+            Visualisez la densité des activités de la communauté.
+            <br>
+            <span class="font-bold text-brand-600">{{ total_tracks }} traces</span> répertoriées.
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 1. Initialize Map
+    const map = L.map('map').setView([46.603354, 1.888334], 6); // Centered on France
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20
+    }).addTo(map);
+
+    // 2. Data from Backend
+    // Start coordinates of all tracks for heatmap
+    const heatData = [];
+    {% for t in tracks %}
+    heatData.push([{{ t.start_lat }}, {{ t.start_lon }}, 0.8]);
+    {% endfor %}
+
+    // 3. Render Heatmap
+    if (heatData.length > 0) {
+        L.heatLayer(heatData, {
+            radius: 25,
+            blur: 15,
+            maxZoom: 10,
+            gradient: { 0.4: 'blue', 0.65: 'lime', 1: 'red' }
+        }).addTo(map);
+
+        // Fit bounds to show data
+        const group = new L.featureGroup(heatData.map(p => L.marker([p[0], p[1]])));
+        map.fitBounds(group.getBounds().pad(0.1));
+    }
+
+    // 4. Add Clickable Markers (Optional: Only show at high zoom or cluster?)
+    // For now, let's add Circle Markers for interaction
+    // 4. Add Clickable Markers
+    // Use individual statements to be cleaner
+    {% for t in tracks %}
+    L.circleMarker([{{ t.start_lat }}, {{ t.start_lon }}], {
+        radius: 6,
+        fillColor: "#10b981",
+        color: "#fff",
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.8
+    }).addTo(map).bindPopup(`
+        <div class="text-center">
+            <h3 class="font-bold text-slate-900">{{ t.title }}</h3>
+            <p class="text-xs text-slate-500 mb-2">{{ t.distance_km }}km • {{ t.elevation_gain }}m+</p>
+            <a href="/track/{{ t.id }}" class="block w-full bg-brand-600 !text-white text-xs font-bold py-1 px-2 rounded hover:bg-brand-700 transition">Voir la trace</a>
+        </div>
+    `);
+    {% endfor %}
+
+</script>
+{% endblock %}

@@ -42,8 +42,9 @@
     <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 backdrop-blur-md bg-white/90">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
-                <div class="flex items-center gap-8">
-                    <a href="/" class="flex items-center gap-2 group">
+                <!-- Logo & Desktop Nav -->
+                <div class="flex items-center gap-4 md:gap-8">
+                    <a href="/" class="flex items-center gap-2 group flex-shrink-0">
                         <!-- Icon -->
                         <div
                             class="bg-brand-600 text-white p-2 rounded-lg transform group-hover:rotate-6 transition-transform">
@@ -53,33 +54,86 @@
                                     d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                             </svg>
                         </div>
-                        <span class="text-2xl font-bold tracking-tight text-slate-900">KAIRN</span>
+                        <span class="text-2xl font-bold tracking-tight text-slate-900 hidden sm:block">KAIRN</span>
+                        <span class="text-2xl font-bold tracking-tight text-slate-900 sm:hidden">K</span>
                     </a>
 
                     <div class="hidden md:flex items-center gap-1">
                         <a href="/"
                             class="px-4 py-2 text-sm font-medium rounded-full text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-all">Explorer</a>
+                        <a href="/map"
+                            class="px-4 py-2 text-sm font-medium rounded-full text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-all">Carte
+                            Globale</a>
                         <a href="/upload"
-                            class="px-4 py-2 text-sm font-medium rounded-full text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-all">Importer
-                            une Trace</a>
+                            class="px-4 py-2 text-sm font-medium rounded-full text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-all">Importer</a>
                     </div>
                 </div>
 
+                <!-- Right Side (User or Login) -->
                 <div class="flex items-center gap-4">
+                    <!-- Mobile Menu Button -->
+                    <button id="mobile-menu-btn"
+                        class="md:hidden p-2 rounded-md text-slate-600 hover:text-brand-600 hover:bg-slate-100 focus:outline-none">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+
+                    <div class="hidden md:flex items-center gap-4">
+                        {% if user %}
+                        <a href="/profile" class="text-sm font-bold text-slate-700 mr-2 hover:text-brand-600">{{
+                            user.username }}</a>
+                        <a href="/logout"
+                            class="text-sm font-medium text-red-500 hover:text-red-600 transition-colors">Déconnexion</a>
+                        {% else %}
+                        <a href="/login"
+                            class="text-sm font-bold text-slate-600 hover:text-brand-600 transition-colors">Connexion</a>
+                        <a href="/register"
+                            class="bg-brand-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition-all">Inscription</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu (Hidden by default) -->
+        <div id="mobile-menu"
+            class="hidden md:hidden bg-white border-t border-slate-100 absolute w-full left-0 top-16 shadow-lg z-40">
+            <div class="px-4 pt-2 pb-6 space-y-1">
+                <a href="/"
+                    class="block px-3 py-3 rounded-md text-base font-medium text-slate-700 hover:text-brand-600 hover:bg-brand-50">Explorer</a>
+                <a href="/map"
+                    class="block px-3 py-3 rounded-md text-base font-medium text-slate-700 hover:text-brand-600 hover:bg-brand-50">Carte
+                    Globale</a>
+                <a href="/upload"
+                    class="block px-3 py-3 rounded-md text-base font-medium text-slate-700 hover:text-brand-600 hover:bg-brand-50">Importer
+                    une Trace</a>
+                <div class="border-t border-slate-100 my-2 pt-2">
                     {% if user %}
-                    <a href="/profile" class="text-sm font-bold text-slate-700 mr-2 hover:text-brand-600">{{
-                        user.username }}</a>
-                    <a href="/logout"
-                        class="text-sm font-medium text-red-500 hover:text-red-600 transition-colors">Déconnexion</a>
+                    <div class="flex items-center justify-between px-3 py-2">
+                        <a href="/profile" class="text-base font-bold text-slate-900">{{ user.username }}</a>
+                        <a href="/logout" class="text-sm font-medium text-red-500">Déconnexion</a>
+                    </div>
                     {% else %}
                     <a href="/login"
-                        class="text-sm font-bold text-slate-600 hover:text-brand-600 transition-colors">Connexion</a>
+                        class="block px-3 py-3 rounded-md text-base font-medium text-slate-700 hover:text-brand-600">Connexion</a>
                     <a href="/register"
-                        class="bg-brand-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition-all">Inscription</a>
+                        class="block px-3 py-3 rounded-md text-base font-bold text-brand-600 hover:bg-brand-50">Inscription</a>
                     {% endif %}
                 </div>
             </div>
         </div>
+
+        <script>
+            const btn = document.getElementById('mobile-menu-btn');
+            const menu = document.getElementById('mobile-menu');
+            if (btn && menu) {
+                btn.addEventListener('click', () => {
+                    menu.classList.toggle('hidden');
+                });
+            }
+        </script>
     </nav>
 
     <!-- Main Content -->

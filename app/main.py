@@ -80,8 +80,10 @@ async def get_current_user_optional(request: Request, db: Session = Depends(get_
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
+            print("DEBUG AUTH: Username is None in payload")
             return None
-    except JWTError:
+    except JWTError as e:
+        print(f"DEBUG AUTH: JWT Error: {e}")
         return None
     
     user = db.query(models.User).filter(models.User.username == username).first()
@@ -279,7 +281,15 @@ async def upload_track(
     # 2. Check Duplicates
     existing_track = db.query(models.Track).filter(models.Track.file_hash == file_hash).first()
     if existing_track:
-        raise HTTPException(status_code=409, detail="This GPX file has already been uploaded.")
+        # User-friendly error
+        return templates.TemplateResponse("upload.html", {
+            "request": request,
+            "error": f"Cette trace existe déjà : '{existing_track.title}' (importée le {existing_track.created_at.strftime('%d/%m/%Y')})",
+            "user": current_user,
+            "status_options": [e.value for e in models.StatusEnum],
+            "technicity_options": [e.value for e in models.TechnicityEnum],
+            "terrain_options": [e.value for e in models.TerrainEnum]
+        })
 
     # 3. Analyze GPX
     analytics = GpxAnalytics(content)
@@ -471,6 +481,25 @@ async def edit_track_action(
     
     return RedirectResponse(url=f"/track/{track_id}", status_code=303)
 
+
+
+# --- MAP & VISUALIZATIONS ---
+
+@app.get("/map", response_class=HTMLResponse)
+async def global_map_page(request: Request, db: Session = Depends(get_db)):
+    # Optional: require login
+    user = await get_current_user_optional(request, db)
+    
+    # Fetch content (optimally select only needed fields: lat/lon/id)
+    tracks = db.query(models.Track).filter(models.Track.visibility == models.Visibility.PUBLIC).all()
+    
+    # We pass 'total_tracks' for the counter in UI
+    return templates.TemplateResponse("heatmap.html", {
+        "request": request,
+        "tracks": tracks,
+        "total_tracks": len(tracks),
+        "user": user
+    })
 
 # --- PROFILES & ADMIN ---
 

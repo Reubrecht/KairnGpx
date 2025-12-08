@@ -17,9 +17,20 @@ class GpxAnalytics:
                 
             self.gpx = gpxpy.parse(gpx_string)
             self.points = []
+            
+            # 1. Try Tracks (Standard)
             for track in self.gpx.tracks:
                 for segment in track.segments:
                     self.points.extend(segment.points)
+            
+            # 2. Fallback to Routes (Planners)
+            if not self.points and self.gpx.routes:
+                for route in self.gpx.routes:
+                    self.points.extend(route.points)
+                    
+            # 3. Fallback to Waypoints (Rare but possible for POI collections)
+            # if not self.points and self.gpx.waypoints:
+            #    self.points.extend(self.gpx.waypoints)
                     
         except Exception as e:
             print(f"Error parsing GPX: {e}")
@@ -47,11 +58,37 @@ class GpxAnalytics:
         if not self.gpx or not self.points:
             return {}
 
-        # 1. Basic Stats (from gpxpy)
-        moving_data = self.gpx.get_moving_data()
-        uphill, downhill = self.gpx.get_uphill_downhill()
+        # 1. Basic Stats
+        # gpxpy methods often only work on TRACKS, not ROUTES.
+        # If we parsed a Route, we must calculate manually from self.points.
         
         distance_2d = self.gpx.length_2d()
+        uphill, downhill = self.gpx.get_uphill_downhill()
+        
+        # Fallback manual calculation if generic methods fail (e.g. Route)
+        if distance_2d == 0 and len(self.points) > 1:
+            d = 0
+            u = 0
+            do = 0
+            for i in range(len(self.points) - 1):
+                p1 = self.points[i]
+                p2 = self.points[i+1]
+                
+                # Distance
+                d += p1.distance_2d(p2)
+                
+                # Elevation
+                if p1.elevation is not None and p2.elevation is not None:
+                    diff = p2.elevation - p1.elevation
+                    if diff > 0:
+                        u += diff
+                    else:
+                        do += abs(diff)
+            
+            distance_2d = d
+            if uphill == 0: uphill = u
+            if downhill == 0: downhill = do
+
         distance_km = round(distance_2d / 1000, 2)
         
         # 2. Altitude Stats
@@ -81,7 +118,9 @@ class GpxAnalytics:
             accumulated_dist += dist
             
             if accumulated_dist >= 50: # Analyze every 50m chunk
-                ele_diff = (p.elevation - last_p.elevation) if (p.elevation and last_p.elevation) else 0
+                ele_diff = 0
+                if p.elevation is not None and last_p.elevation is not None:
+                     ele_diff = p.elevation - last_p.elevation
                 if dist > 0:
                     slope_pct = (ele_diff / accumulated_dist) * 100
                     slopes.append(slope_pct)
