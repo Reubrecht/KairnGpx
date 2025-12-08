@@ -392,10 +392,22 @@ async def track_detail(track_id: int, request: Request, db: Session = Depends(ge
 @app.get("/raw_gpx/{track_id}")
 def get_raw_gpx(track_id: int, db: Session = Depends(get_db)):
     track = db.query(models.Track).filter(models.Track.id == track_id).first()
-    if not track or not os.path.exists(track.file_path):
-        raise HTTPException(status_code=404, detail="File not found")
+    if not track:
+        raise HTTPException(status_code=404, detail="Track not found")
+
+    # Reconstruct path safely for Docker environment
+    # We use the file_hash to find the file in the uploads directory
+    safe_path = os.path.join("app/uploads", f"{track.file_hash}.gpx")
     
-    with open(track.file_path, "r", encoding="utf-8") as f:
+    if not os.path.exists(safe_path):
+        # Fallback: check if the stored path exists (legacy)
+        if os.path.exists(track.file_path):
+             safe_path = track.file_path
+        else:
+             print(f"File missing: {safe_path} (Hash: {track.file_hash})")
+             raise HTTPException(status_code=404, detail="GPX File not found on server")
+    
+    with open(safe_path, "r", encoding="utf-8") as f:
         content = f.read()
     from fastapi.responses import Response
     return Response(content=content, media_type="application/gpx+xml")

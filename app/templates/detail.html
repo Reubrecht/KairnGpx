@@ -251,7 +251,7 @@
                 alert("Erreur: Plugin GPX non chargé.");
             } else {
                 // Load GPX
-                const gpxUrl = '/raw_gpx/{{ track.id }}';
+                const gpxUrl = "{{ url_for('get_raw_gpx', track_id=track.id) }}";
                 logDebug("Fetching GPX: " + gpxUrl);
 
                 new L.GPX(gpxUrl, {
