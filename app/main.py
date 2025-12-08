@@ -183,29 +183,60 @@ async def dashboard(
     db: Session = Depends(get_db),
     technicity: Optional[str] = None,
     city_search: Optional[str] = None,
-    is_high_mountain: Optional[bool] = None
+    # Environments
+    is_high_mountain: Optional[bool] = None,
+    is_coastal: Optional[bool] = None,
+    is_forest: Optional[bool] = None,
+    is_urban: Optional[bool] = None,
+    is_desert: Optional[bool] = None,
+    # New Standard Filters
+    status_val: Optional[str] = None,
+    terrain: Optional[str] = None
 ):
     user = await get_current_user_optional(request, db)
     query = db.query(models.Track)
     
+    # 1. Technicity
     if technicity and technicity != "ALL":
         query = query.filter(models.Track.technicity == technicity)
     
+    # 2. Status (Activity Type)
+    if status_val and status_val != "ALL":
+        query = query.filter(models.Track.status == status_val)
+
+    # 3. Terrain
+    if terrain and terrain != "ALL":
+        query = query.filter(models.Track.terrain == terrain)
+
+    # 4. City
     if city_search:
         query = query.filter(models.Track.location_city.ilike(f"%{city_search}%"))
 
+    # 5. Environments
     if is_high_mountain:
         query = query.filter(models.Track.is_high_mountain == True)
+    if is_coastal:
+        query = query.filter(models.Track.is_coastal == True)
+    if is_forest:
+        query = query.filter(models.Track.is_forest == True)
+    if is_urban:
+        query = query.filter(models.Track.is_urban == True)
+    if is_desert:
+        query = query.filter(models.Track.is_desert == True)
 
     tracks = query.order_by(models.Track.created_at.desc()).all()
     
     # Enum values for filters
     technicity_options = [e.value for e in models.TechnicityEnum]
+    status_options = [e.value for e in models.StatusEnum]
+    terrain_options = [e.value for e in models.TerrainEnum]
 
     return templates.TemplateResponse("index.html", {
         "request": request, 
         "tracks": tracks,
         "technicity_options": technicity_options,
+        "status_options": status_options,
+        "terrain_options": terrain_options,
         "user": user
     })
 
@@ -253,6 +284,7 @@ async def upload_track(
     # 3. Analyze GPX
     analytics = GpxAnalytics(content)
     metrics = analytics.calculate_metrics()
+    inferred = analytics.infer_attributes(metrics)
     
     if not metrics:
          raise HTTPException(status_code=400, detail="Could not parse or analyze GPX file.")
@@ -316,16 +348,17 @@ async def upload_track(
         
         # Tags & Extras
         # Map core booleans from environment list
-        is_high_mountain="high_mountain" in environment,
+        is_high_mountain=("high_mountain" in environment) or inferred["is_high_mountain"],
         is_coastal="coastal" in environment,
         is_forest="forest" in environment,
         is_urban="urban" in environment,
         is_desert="desert" in environment,
         
-        # Merge extra environments into tags
+        # Merge User Tags + Extra Environments + Inferred Tags
         tags=list(set(
             ([t.strip() for t in tags.split(',')] if tags else []) +
-            [e for e in environment if e not in ["high_mountain", "coastal", "forest", "urban", "desert"]]
+            [e for e in environment if e not in ["high_mountain", "coastal", "forest", "urban", "desert"]] +
+            inferred["tags"]
         )),
         
         file_path=file_path,

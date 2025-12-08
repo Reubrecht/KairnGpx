@@ -157,3 +157,31 @@ class GpxAnalytics:
             "start_coords": (start_p.latitude, start_p.longitude),
             "end_coords": (end_p.latitude, end_p.longitude)
         }
+
+    def infer_attributes(self, metrics: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Infer tags and boolean flags based on metrics.
+        """
+        attributes = {
+            "is_high_mountain": False,
+            "tags": []
+        }
+        
+        # 1. High Mountain Detection (>2000m)
+        if metrics.get("max_altitude", 0) > 2000:
+            attributes["is_high_mountain"] = True
+            attributes["tags"].append("Haute Montagne")
+
+        # 2. steepness / Vertical
+        dist = metrics.get("distance_km", 1)
+        gain = metrics.get("elevation_gain", 0)
+        ratio = gain / dist if dist > 0 else 0
+        
+        if ratio > 150: # > 150m D+ per km
+            attributes["tags"].append("Vertical")
+            
+        # 3. Skyrunning (Purely heuristic)
+        if metrics.get("max_altitude", 0) > 2000 and metrics.get("max_slope", 0) > 30:
+            attributes["tags"].append("Skyrunning")
+
+        return attributes

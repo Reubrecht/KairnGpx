@@ -1,54 +1,221 @@
 {% extends "base.html" %}
 
+{% block head %}
+<!-- Leaflet & Leaflet GPX -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js"></script>
+<style>
+    .leaflet-control-attribution {
+        display: none !important;
+    }
+
+    /* Clean look */
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="flex flex-col md:flex-row gap-8">
 
         <!-- Filters Sidebar -->
-        <div class="w-full md:w-64 flex-shrink-0">
-            <div class="bg-white rounded-lg shadow p-6 sticky top-24">
-                <h3 class="text-lg font-bold text-gray-900 mb-4">Filtres</h3>
-                <form action="/" method="get" class="space-y-6">
+        <div class="w-full md:w-72 flex-shrink-0">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sticky top-24">
+                <h3 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z">
+                        </path>
+                    </svg>
+                    Filtres
+                </h3>
+                <form action="/" method="get" class="space-y-8">
 
                     <!-- City Search -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Ville</label>
-                        <input type="text" name="city_search" value="{{ request.query_params.get('city_search', '') }}"
-                            placeholder="Rechercher..."
-                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2 border">
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Ville</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                            <input type="text" name="city_search"
+                                value="{{ request.query_params.get('city_search', '') }}" placeholder="Rechercher..."
+                                class="w-full pl-9 pr-4 py-2.5 rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:border-brand-500 focus:ring-brand-500 shadow-sm transition-all text-sm">
+                        </div>
                     </div>
 
                     <!-- Environment -->
                     <div>
-                        <span class="block text-sm font-medium text-gray-700 mb-2">Environnement</span>
+                        <span class="block text-sm font-bold text-slate-700 mb-3">Environnement</span>
                         <div class="space-y-2">
-                            <label class="flex items-center space-x-2">
+                            <!-- High Mountain -->
+                            <label class="cursor-pointer group block">
                                 <input type="checkbox" name="is_high_mountain" value="true" {% if
                                     request.query_params.get('is_high_mountain') %}checked{% endif %}
-                                    class="rounded text-green-600 focus:ring-green-500">
-                                <span class="text-sm text-gray-600">Haute Montagne</span>
+                                    class="peer sr-only">
+                                <div
+                                    class="px-3 py-2.5 rounded-xl border border-slate-200 flex items-center justify-between group-hover:bg-slate-50 peer-checked:bg-purple-50 peer-checked:border-purple-200 transition-all">
+                                    <span
+                                        class="text-sm font-medium text-slate-600 peer-checked:text-purple-700 flex items-center gap-2">
+                                        <span>🏔️</span> Haute Montagne
+                                    </span>
+                                    <div
+                                        class="w-4 h-4 rounded-full border border-slate-300 peer-checked:bg-purple-600 peer-checked:border-purple-600 flex items-center justify-center">
+                                        <svg class="w-2.5 h-2.5 text-white opacity-0 peer-checked:opacity-100"
+                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                                d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    </div>
+                                </div>
                             </label>
+
+                            <!-- Forest -->
+                            <label class="cursor-pointer group block">
+                                <input type="checkbox" name="is_forest" value="true" {% if
+                                    request.query_params.get('is_forest') %}checked{% endif %} class="peer sr-only">
+                                <div
+                                    class="px-3 py-2.5 rounded-xl border border-slate-200 flex items-center justify-between group-hover:bg-slate-50 peer-checked:bg-green-50 peer-checked:border-green-200 transition-all">
+                                    <span
+                                        class="text-sm font-medium text-slate-600 peer-checked:text-green-700 flex items-center gap-2">
+                                        <span>🌲</span> Forêt
+                                    </span>
+                                    <div
+                                        class="w-4 h-4 rounded-full border border-slate-300 peer-checked:bg-green-600 peer-checked:border-green-600 flex items-center justify-center">
+                                        <svg class="w-2.5 h-2.5 text-white opacity-0 peer-checked:opacity-100"
+                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                                d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </label>
+
+                            <!-- Coastal -->
+                            <label class="cursor-pointer group block">
+                                <input type="checkbox" name="is_coastal" value="true" {% if
+                                    request.query_params.get('is_coastal') %}checked{% endif %} class="peer sr-only">
+                                <div
+                                    class="px-3 py-2.5 rounded-xl border border-slate-200 flex items-center justify-between group-hover:bg-slate-50 peer-checked:bg-cyan-50 peer-checked:border-cyan-200 transition-all">
+                                    <span
+                                        class="text-sm font-medium text-slate-600 peer-checked:text-cyan-700 flex items-center gap-2">
+                                        <span>🌊</span> Côtier
+                                    </span>
+                                    <div
+                                        class="w-4 h-4 rounded-full border border-slate-300 peer-checked:bg-cyan-600 peer-checked:border-cyan-600 flex items-center justify-center">
+                                        <svg class="w-2.5 h-2.5 text-white opacity-0 peer-checked:opacity-100"
+                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                                d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Activity Type (Status) -->
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-3">Type d'activité</label>
+                        <div class="space-y-2">
+                            <label class="cursor-pointer group block">
+                                <input type="radio" name="status_val" value="ALL" {% if not
+                                    request.query_params.get('status_val') or
+                                    request.query_params.get('status_val')=='ALL' %}checked{% endif %}
+                                    class="peer sr-only">
+                                <div
+                                    class="px-3 py-2 rounded-xl border border-slate-100 bg-slate-50 flex items-center group-hover:bg-slate-100 peer-checked:bg-slate-800 peer-checked:border-slate-800 peer-checked:text-white transition-all">
+                                    <span class="text-sm font-medium">Tout</span>
+                                </div>
+                            </label>
+                            {% for status in status_options %}
+                            {% set status_label = status %}
+                            {% if status == 'OFFICIAL_RACE' %}{% set status_label = 'Course Officielle' %}
+                            {% elif status == 'TRAINING' %}{% set status_label = 'Entraînement' %}{% endif %}
+                            <label class="cursor-pointer group block">
+                                <input type="radio" name="status_val" value="{{ status }}" {% if
+                                    request.query_params.get('status_val')==status %}checked{% endif %}
+                                    class="peer sr-only">
+                                <div
+                                    class="px-3 py-2 rounded-xl border border-slate-100 flex items-center group-hover:bg-slate-50 peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-700 transition-all">
+                                    <span class="text-xs font-semibold uppercase tracking-wide">{{ status_label
+                                        }}</span>
+                                </div>
+                            </label>
+                            {% endfor %}
                         </div>
                     </div>
 
                     <!-- Technicity -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Technicité</label>
-                        <select name="technicity"
-                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2 border">
-                            <option value="ALL">Tout</option>
+                        <label class="block text-sm font-bold text-slate-700 mb-3">Technicité</label>
+                        <div class="space-y-2">
+                            <!-- All Option -->
+                            <label class="cursor-pointer group block">
+                                <input type="radio" name="technicity" value="ALL" {% if not
+                                    request.query_params.get('technicity') or
+                                    request.query_params.get('technicity')=='ALL' %}checked{% endif %}
+                                    class="peer sr-only">
+                                <div
+                                    class="px-3 py-2 rounded-xl border border-slate-100 bg-slate-50 flex items-center group-hover:bg-slate-100 peer-checked:bg-slate-800 peer-checked:border-slate-800 peer-checked:text-white transition-all">
+                                    <span class="text-sm font-medium">Tout</span>
+                                </div>
+                            </label>
+
                             {% for tech in technicity_options %}
-                            <option value="{{ tech }}" {% if request.query_params.get('technicity')==tech %}selected{%
-                                endif %}>{{ tech }}</option>
+                            <label class="cursor-pointer group block">
+                                <input type="radio" name="technicity" value="{{ tech }}" {% if
+                                    request.query_params.get('technicity')==tech %}checked{% endif %}
+                                    class="peer sr-only">
+                                <div
+                                    class="px-3 py-2 rounded-xl border border-slate-100 flex items-center group-hover:bg-slate-50 peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-700 transition-all">
+                                    <span class="text-xs font-semibold uppercase tracking-wide">{{ tech | replace('_', '
+                                        ') }}</span>
+                                </div>
+                            </label>
                             {% endfor %}
-                        </select>
+                        </div>
                     </div>
 
-                    <button type="submit"
-                        class="w-full bg-slate-800 text-white py-2 rounded-md hover:bg-slate-700 transition-colors">
-                        Filtrer
-                    </button>
-                    <a href="/" class="block text-center text-sm text-gray-500 hover:text-gray-700">Réinitialiser</a>
+                    <!-- Terrain -->
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-3">Terrain</label>
+                        <div class="space-y-2">
+                            <label class="cursor-pointer group block">
+                                <input type="radio" name="terrain" value="ALL" {% if not
+                                    request.query_params.get('terrain') or request.query_params.get('terrain')=='ALL'
+                                    %}checked{% endif %} class="peer sr-only">
+                                <div
+                                    class="px-3 py-2 rounded-xl border border-slate-100 bg-slate-50 flex items-center group-hover:bg-slate-100 peer-checked:bg-slate-800 peer-checked:border-slate-800 peer-checked:text-white transition-all">
+                                    <span class="text-sm font-medium">Tout</span>
+                                </div>
+                            </label>
+                            {% for terr in terrain_options %}
+                            <label class="cursor-pointer group block">
+                                <input type="radio" name="terrain" value="{{ terr }}" {% if
+                                    request.query_params.get('terrain')==terr %}checked{% endif %} class="peer sr-only">
+                                <div
+                                    class="px-3 py-2 rounded-xl border border-slate-100 flex items-center group-hover:bg-slate-50 peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-700 transition-all">
+                                    <span class="text-xs font-semibold uppercase tracking-wide">{{ terr | replace('_', '
+                                        ') }}</span>
+                                </div>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="pt-4 space-y-3">
+                        <button type="submit"
+                            class="w-full bg-brand-600 text-white font-bold py-3 rounded-xl hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/30">
+                            Filtrer
+                        </button>
+                        <a href="/"
+                            class="block text-center text-sm font-medium text-slate-500 hover:text-slate-700">Réinitialiser</a>
+                    </div>
                 </form>
             </div>
         </div>
@@ -61,11 +228,15 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {% for track in tracks %}
                 <a href="/track/{{ track.id }}"
-                    class="group block bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden border border-gray-100 hover:border-green-200">
-                    <!-- Placeholder Map Image or Pattern -->
-                    <div class="h-32 bg-slate-100 flex items-center justify-center relative overflow-hidden">
-                        <div class="absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-200"></div>
-                        <span class="text-4xl relative z-10">⛰️</span>
+                    class="group block bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 hover:border-brand-200 hover:-translate-y-1">
+                    <!-- Map Thumbnail -->
+                    <div class="h-48 bg-slate-100 relative overflow-hidden">
+                        <div id="map-{{ track.id }}" class="absolute inset-0 z-0"></div>
+                        <!-- Gradient Overlay -->
+                        <div
+                            class="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/20 to-transparent z-10">
+                        </div>
+
                         {% if track.status.value == "OFFICIAL_RACE" %}
                         <span
                             class="absolute top-2 right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full shadow-sm">Officiel</span>
@@ -130,4 +301,56 @@
         </div>
     </div>
 </div>
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const tracks = [
+            {% for track in tracks %}
+            { id: "{{ track.id }}", color: '#059669' },
+        {% endfor %}
+        ];
+
+    tracks.forEach(t => {
+        const mapId = `map-${t.id}`;
+        const container = document.getElementById(mapId);
+        if (!container) return;
+
+        const map = L.map(mapId, {
+            zoomControl: false,
+            attributionControl: false,
+            dragging: false,
+            scrollWheelZoom: false,
+            doubleClickZoom: false,
+            boxZoom: false,
+            keyboard: false,
+            tap: false,
+            interaction: false
+        });
+
+        // Minimalist CartoDB Light No Labels
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+            opacity: 0.8
+        }).addTo(map);
+
+        new L.GPX(`/raw_gpx/${t.id}`, {
+            async: true,
+            marker_options: {
+                startIconUrl: null,
+                endIconUrl: null,
+                shadowUrl: null
+            },
+            polyline_options: {
+                color: t.color,
+                weight: 3,
+                opacity: 0.9,
+                lineCap: 'round'
+            }
+        }).on('loaded', function (e) {
+            map.fitBounds(e.target.getBounds(), { padding: [20, 20] });
+        }).addTo(map);
+    });
+    });
+</script>
+{% endblock %}
 {% endblock %}

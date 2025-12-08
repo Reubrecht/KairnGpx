@@ -44,27 +44,87 @@
                         </div>
                     </div>
 
-                    <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex flex-col items-end gap-3">
                         <a href="/raw_gpx/{{ track.id }}"
-                            class="inline-flex items-center px-5 py-2.5 border border-gray-200 shadow-sm text-sm font-semibold rounded-full text-gray-700 bg-white hover:bg-gray-50 hover:border-brand-200 transition-all">
-                            <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor"
+                            class="inline-flex items-center px-4 py-2 border border-gray-200 shadow-sm text-sm font-bold rounded-xl text-slate-700 bg-white hover:bg-slate-50 hover:border-brand-200 transition-all">
+                            <svg class="w-4 h-4 mr-2 text-slate-400" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                             </svg>
-                            Télécharger GPX
+                            GPX
                         </a>
 
-                        <!-- Badges -->
-                        <div class="flex gap-2">
-                            <div class="flex flex-col bg-gray-50 px-4 py-1.5 rounded-lg border border-gray-100">
-                                <span class="text-[10px] uppercase font-bold text-gray-400">Terrain</span>
-                                <span class="text-sm font-bold text-gray-900">{{ track.terrain.value }}</span>
-                            </div>
-                            <div class="flex flex-col bg-gray-50 px-4 py-1.5 rounded-lg border border-gray-100">
-                                <span class="text-[10px] uppercase font-bold text-gray-400">Statut</span>
-                                <span class="text-sm font-bold text-gray-900">{{ track.status.value }}</span>
-                            </div>
+                        <!-- Categorization Chips -->
+                        <div class="flex flex-wrap justify-end gap-2">
+                            <!-- Status -->
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold border 
+                                {% if track.status.value == 'OFFICIAL_RACE' %} bg-yellow-50 text-yellow-800 border-yellow-200
+                                {% else %} bg-slate-50 text-slate-600 border-slate-200 {% endif %}">
+                                {% if track.status.value == 'OFFICIAL_RACE' %}Course Officielle{% else %}Entraînement{%
+                                endif %}
+                            </span>
+
+                            <!-- Terrain -->
+                            <span
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-slate-50 text-slate-600 border border-slate-200">
+                                {{ track.terrain.value | replace('_', ' ') | capitalize }}
+                            </span>
+
+                            <!-- Technicity (Color Coded) -->
+                            {% set tech_colors = {
+                            'ROULANT': 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                            'PEU_TECHNIQUE': 'bg-green-50 text-green-800 border-green-200',
+                            'TECHNIQUE': 'bg-yellow-50 text-yellow-800 border-yellow-200',
+                            'TRES_TECHNIQUE': 'bg-orange-50 text-orange-800 border-orange-200',
+                            'AERIEN': 'bg-red-50 text-red-800 border-red-200'
+                            } %}
+                            <span
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold border {{ tech_colors.get(track.technicity.value, 'bg-slate-50 text-slate-600 border-slate-200') }}">
+                                {{ track.technicity.value | replace('_', ' ') | capitalize }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KEY METRICS GRID -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <!-- Distance -->
+                    <div
+                        class="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex flex-col items-center justify-center text-center">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Distance</span>
+                        <span class="text-3xl font-black text-slate-900">{{ track.distance_km }}<span
+                                class="text-lg text-slate-500 font-bold ml-0.5">km</span></span>
+                    </div>
+
+                    <!-- Elevation Gain -->
+                    <div
+                        class="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex flex-col items-center justify-center text-center">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Dénivelé +</span>
+                        <span class="text-3xl font-black text-slate-900">+{{ track.elevation_gain }}<span
+                                class="text-lg text-slate-500 font-bold ml-0.5">m</span></span>
+                    </div>
+
+                    <!-- Max Altitude -->
+                    <div
+                        class="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex flex-col items-center justify-center text-center">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Alt. Max</span>
+                        <span class="text-3xl font-black text-slate-900">{{ track.max_altitude }}<span
+                                class="text-lg text-slate-500 font-bold ml-0.5">m</span></span>
+                    </div>
+
+                    <!-- Effort / ITRA -->
+                    <div
+                        class="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex flex-col items-center justify-center text-center">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Effort</span>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-3xl font-black text-slate-900">{{ track.km_effort | int }}</span>
+                            {% if track.itra_points_estim > 0 %}
+                            <span
+                                class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-brand-100 text-brand-700">
+                                {{ track.itra_points_estim }} pts ITRA
+                            </span>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
