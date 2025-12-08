@@ -5,7 +5,7 @@ gpxpy
 geopy
 python-multipart
 jinja2
-passlib[bcrypt]
+passlib
 python-jose
 aiofiles
 requests

@@ -6,7 +6,7 @@ import os
 # Ensure the data directory exists
 os.makedirs("app/data", exist_ok=True)
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./app/data/kairn.db"
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./app/data/kairn.db")
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
