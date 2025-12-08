@@ -276,34 +276,63 @@
                 </div>
 
                 <!-- 4. Logistics & Extras -->
-                <div class="p-8 space-y-6">
+                <div class="p-8 space-y-8">
                     <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
                         <span
                             class="flex items-center justify-center w-8 h-8 rounded-full bg-brand-100 text-brand-700 text-sm font-bold">3</span>
                         Logistique & Autres
                     </h2>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                        <!-- Scenery / Note Paysage -->
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Note Paysage (1-5)</label>
+                            <label class="block text-sm font-medium text-slate-700 mb-4">Note Paysage</label>
                             <div class="flex items-center gap-2">
-                                <input type="range" name="scenery_rating" min="1" max="5" value="3"
-                                    class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-600">
-                                <span class="text-sm font-bold text-slate-700 w-6 text-center">3</span>
+                                <div class="flex flex-row-reverse justify-end gap-1 group">
+                                    {% for i in range(5, 0, -1) %}
+                                    <input type="radio" name="scenery_rating" id="star{{i}}" value="{{i}}"
+                                        class="peer sr-only" {% if i==3 %}checked{% endif %}>
+                                    <label for="star{{i}}"
+                                        class="cursor-pointer text-slate-300 peer-checked:text-amber-400 hover:text-amber-400 peer-hover:text-amber-400 transition-colors">
+                                        <svg class="w-10 h-10 transform hover:scale-110 transition-transform"
+                                            fill="currentColor" viewBox="0 0 20 20">
+                                            <path
+                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                        </svg>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                                <span class="text-sm text-slate-400 ml-2 font-medium" id="rating-label">Moyen
+                                    (3/5)</span>
                             </div>
                         </div>
+
+                        <!-- Water Points Stepper -->
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Nombre de Points d'Eau</label>
-                            <input type="number" name="water_points_count" min="0" value="0"
-                                class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500">
+                            <label class="block text-sm font-medium text-slate-700 mb-4">Points d'Eau</label>
+                            <div class="flex items-center w-full max-w-[200px]">
+                                <button type="button" onclick="adjustWater(-1)"
+                                    class="w-12 h-12 rounded-l-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xl border-r border-slate-200 transition-colors">-</button>
+                                <input type="number" name="water_points_count" id="water-input" value="0" min="0"
+                                    class="w-full h-12 text-center border-0 bg-slate-50 font-bold text-lg text-slate-700 focus:ring-0"
+                                    readonly>
+                                <button type="button" onclick="adjustWater(1)"
+                                    class="w-12 h-12 rounded-r-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xl border-l border-slate-200 transition-colors">+</button>
+                            </div>
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Tags (séparés par des
-                            virgules)</label>
-                        <input type="text" name="tags" placeholder="Sommet, Lac, Technique, ..."
-                            class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500">
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Tags</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-slate-400">#</span>
+                            </div>
+                            <input type="text" name="tags" placeholder="Sommet, Lac, Technique, ..."
+                                class="w-full pl-8 pr-4 py-3 rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:border-brand-500 focus:ring-brand-500 shadow-sm transition-all text-sm">
+                        </div>
+                        <p class="mt-2 text-xs text-slate-500">Ajoutez des mots-clés séparés par des virgules pour
+                            faciliter la recherche.</p>
                     </div>
                 </div>
 
@@ -404,10 +433,38 @@
         return dt.files;
     }
 
-    // Update range slider value
+    // Water Stepper
+    function adjustWater(amount) {
+        const input = document.getElementById('water-input');
+        let val = parseInt(input.value) || 0;
+        val += amount;
+        if (val < 0) val = 0;
+        input.value = val;
+    }
+
+    // Star Rating Interactivity (Optional visual feedback)
+    const ratingLabel = document.getElementById('rating-label');
+    const starInputs = document.querySelectorAll('input[name="scenery_rating"]');
+    const ratingTexts = {
+        1: "Pas terrible (1/5)",
+        2: "Moyen (2/5)",
+        3: "Sympa (3/5)",
+        4: "Beau (4/5)",
+        5: "Magnifique (5/5)"
+    };
+
+    starInputs.forEach(input => {
+        input.addEventListener('change', (e) => {
+            ratingLabel.textContent = ratingTexts[e.target.value] || "";
+        });
+    });
+
+    // Update range slider value (Legacy or other sliders)
     const rangeInput = document.querySelector('input[type="range"]');
-    const rangeValue = rangeInput.nextElementSibling;
-    rangeInput.addEventListener('input', (e) => rangeValue.textContent = e.target.value);
+    if (rangeInput) {
+        const rangeValue = rangeInput.nextElementSibling;
+        rangeInput.addEventListener('input', (e) => rangeValue.textContent = e.target.value);
+    }
 
 </script>
 {% endblock %}
