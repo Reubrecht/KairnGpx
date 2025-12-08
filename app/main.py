@@ -230,11 +230,13 @@ async def upload_track(
     status_val: str = Form(...),
     technicity: str = Form(...),
     terrain: str = Form(...),
-    is_high_mountain: bool = Form(False),
-    is_coastal: bool = Form(False),
-    is_forest: bool = Form(False),
-    is_urban: bool = Form(False),
-    is_desert: bool = Form(False),
+    # Environment List (Multi-select)
+    environment: List[str] = Form([]),
+    # New Fields
+    visibility: str = Form("public"),
+    tags: str = Form(None), # Comma separated
+    water_points_count: int = Form(0),
+    scenery_rating: int = Form(None),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
@@ -312,15 +314,27 @@ async def upload_track(
         technicity=models.TechnicityEnum(technicity),
         terrain=models.TerrainEnum(terrain),
         
-        # Tags
-        is_high_mountain=is_high_mountain,
-        is_coastal=is_coastal,
-        is_forest=is_forest,
-        is_urban=is_urban,
-        is_desert=is_desert,
+        # Tags & Extras
+        # Map core booleans from environment list
+        is_high_mountain="high_mountain" in environment,
+        is_coastal="coastal" in environment,
+        is_forest="forest" in environment,
+        is_urban="urban" in environment,
+        is_desert="desert" in environment,
+        
+        # Merge extra environments into tags
+        tags=list(set(
+            ([t.strip() for t in tags.split(',')] if tags else []) +
+            [e for e in environment if e not in ["high_mountain", "coastal", "forest", "urban", "desert"]]
+        )),
         
         file_path=file_path,
-        file_hash=file_hash
+        file_hash=file_hash,
+
+        # New Fields
+        visibility=models.Visibility(visibility),
+        water_points_count=water_points_count,
+        scenery_rating=scenery_rating
     )
     
     db.add(new_track)
