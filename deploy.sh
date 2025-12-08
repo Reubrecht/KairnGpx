@@ -15,4 +15,4 @@ echo "🐳 Building and starting containers..."
 sudo docker compose up -d --build
 
 echo "✅ Kairn is deployed!"
-echo "   Access it at http://$(hostname -I | awk '{print $1}'):8000"
+echo "   Access it at http://192.168.1.195:8090"
