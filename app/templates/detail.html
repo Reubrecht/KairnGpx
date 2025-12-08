@@ -174,26 +174,25 @@
                                 tension: 0.1,
                                 pointRadius: 0
                             }]
-                        }
-                    },
+                        },
                         options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: { x: { display: false }, y: { beginAtZero: false } },
-                        interaction: { intersect: false, mode: 'index' },
-                    }
-                            });
-    }
-                    } catch (chartErr) {
-        console.error("Kairn: Error building chart", chartErr);
-    }
-
-                }).on('error', function (e) {
-        logDebug("GPX ERROR: " + JSON.stringify(e));
-        console.error("GPX ERROR Full:", e);
-    }).addTo(map);
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: { x: { display: false }, y: { beginAtZero: false } },
+                            interaction: { intersect: false, mode: 'index' },
+                        }
+                    });
+                }
+            } catch (chartErr) {
+                console.error("Kairn: Error building chart", chartErr);
             }
+
+        }).on('error', function (e) {
+            logDebug("GPX ERROR: " + JSON.stringify(e));
+            console.error("GPX ERROR Full:", e);
+        }).addTo(map);
+    }
         }
     } catch (err) {
         logDebug("CRASH: " + err.message);
