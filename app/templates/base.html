@@ -67,7 +67,8 @@
 
                 <div class="flex items-center gap-4">
                     {% if user %}
-                    <span class="text-sm font-bold text-slate-700 mr-2">{{ user.username }}</span>
+                    <a href="/profile" class="text-sm font-bold text-slate-700 mr-2 hover:text-brand-600">{{
+                        user.username }}</a>
                     <a href="/logout"
                         class="text-sm font-medium text-red-500 hover:text-red-600 transition-colors">Déconnexion</a>
                     {% else %}

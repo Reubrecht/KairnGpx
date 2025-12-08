@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Administration</h1>
+        <a href="/profile" class="text-brand-600 hover:text-brand-700">Retour au profil</a>
+    </div>
+
+    <!-- Users Management -->
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-12">
+        <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Utilisateurs ({{ users|length }})</h3>
+        </div>
+        <ul role="list" class="divide-y divide-gray-200">
+            {% for u in users %}
+            <li class="px-4 py-4 sm:px-6 flex justify-between items-center">
+                <div class="flex items-center">
+                    <div class="text-sm font-medium text-brand-600 truncate">{{ u.username }}</div>
+                    <div class="ml-2 flex-shrink-0 flex">
+                        <p
+                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                            {{ u.email }}
+                        </p>
+                        {% if u.is_admin %}
+                        <p
+                            class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                            Admin
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="flex space-x-2">
+                    {% if not u.is_admin %}
+                    <form action="/admin/delete_user/{{ u.id }}" method="POST"
+                        onsubmit="return confirm('Attention : cela supprimera l\'utilisateur ET toutes ses traces. Confirmer ?');">
+                        <button type="submit"
+                            class="text-red-600 hover:text-red-900 text-sm font-semibold">Supprimer</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Tracks Management -->
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Toutes les Traces ({{ tracks|length }})</h3>
+        </div>
+        <ul role="list" class="divide-y divide-gray-200">
+            {% for t in tracks %}
+            <li class="px-4 py-4 sm:px-6 flex justify-between items-center">
+                <div class="flex items-center flex-1 min-w-0">
+                    <div class="min-w-0 flex-1 px-4 md:grid md:grid-cols-2 md:gap-4">
+                        <div>
+                            <p class="text-sm font-medium text-brand-600 truncate">{{ t.title }}</p>
+                            <p class="mt-2 flex items-center text-sm text-gray-500">
+                                <span class="truncate">{{ t.location_city }}</span>
+                            </p>
+                        </div>
+                        <div class="hidden md:block">
+                            <div>
+                                <p class="text-sm text-gray-900">
+                                    Par <span class="font-semibold">{{ t.user_id }}</span>
+                                </p>
+                                <p class="mt-2 text-sm text-gray-500">
+                                    {{ t.distance_km }}km • {{ t.elevation_gain }}m+
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <form action="/track/{{ t.id }}/delete" method="POST"
+                        onsubmit="return confirm('Supprimer cette trace ?');">
+                        <button type="submit"
+                            class="text-red-600 hover:text-red-900 text-sm font-semibold">Supprimer</button>
+                    </form>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

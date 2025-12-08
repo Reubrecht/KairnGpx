@@ -411,3 +411,84 @@ def get_raw_gpx(track_id: int, db: Session = Depends(get_db)):
         content = f.read()
     from fastapi.responses import Response
     return Response(content=content, media_type="application/gpx+xml")
+
+# --- PROFILES & ADMIN ---
+
+@app.get("/profile", response_class=HTMLResponse)
+async def profile_page(request: Request, db: Session = Depends(get_db)):
+    user = await get_current_user(request, db)
+    # Fetch user's tracks
+    tracks = db.query(models.Track).filter(models.Track.user_id == user.username).order_by(models.Track.created_at.desc()).all()
+    
+    return templates.TemplateResponse("profile.html", {
+        "request": request,
+        "user": user,
+        "tracks": tracks
+    })
+
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_page(request: Request, db: Session = Depends(get_db)):
+    user = await get_current_user(request, db)
+    if not user.is_admin:
+        return RedirectResponse(url="/", status_code=303)
+        
+    all_users = db.query(models.User).all()
+    all_tracks = db.query(models.Track).order_by(models.Track.created_at.desc()).all()
+    
+    return templates.TemplateResponse("admin.html", {
+        "request": request,
+        "user": user,
+        "users": all_users,
+        "tracks": all_tracks
+    })
+
+@app.post("/track/{track_id}/delete")
+async def delete_track_action(track_id: int, request: Request, db: Session = Depends(get_db)):
+    user = await get_current_user(request, db)
+    track = db.query(models.Track).filter(models.Track.id == track_id).first()
+    
+    if not track:
+        raise HTTPException(status_code=404, detail="Track not found")
+        
+    # Permission check: Owner or Admin
+    if track.user_id != user.username and not user.is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    try:
+        # Delete file if possible (optional, but good for cleanup)
+        # Reconstruct path logic similar to get_raw_gpx
+        safe_path = os.path.join("app/uploads", f"{track.file_hash}.gpx")
+        if os.path.exists(safe_path):
+            os.remove(safe_path)
+    except Exception as e:
+        print(f"Error deleting file: {e}")
+
+    db.delete(track)
+    db.commit()
+    
+    # Redirect based on where they came from (Referer) or default to profile
+    referer = request.headers.get("referer", "/profile")
+    return RedirectResponse(url=referer, status_code=303)
+
+@app.post("/admin/delete_user/{user_id}")
+async def delete_user_action(user_id: int, request: Request, db: Session = Depends(get_db)):
+    current_admin = await get_current_user(request, db)
+    if not current_admin.is_admin:
+         raise HTTPException(status_code=403, detail="Admin only")
+         
+    user_to_delete = db.query(models.User).filter(models.User.id == user_id).first()
+    if user_to_delete:
+        # Delete user's tracks first (or rely on DB cascading if set, but explicit is safer here)
+        db.query(models.Track).filter(models.Track.user_id == user_to_delete.username).delete()
+        db.delete(user_to_delete)
+        db.commit()
+        
+    return RedirectResponse(url="/admin", status_code=303)
+
+@app.get("/make_me_admin")
+async def make_me_admin(request: Request, db: Session = Depends(get_db)):
+    """Secret endpoint to become admin for testing purposes"""
+    user = await get_current_user(request, db)
+    user.is_admin = True
+    db.commit()
+    return RedirectResponse(url="/profile", status_code=303)
