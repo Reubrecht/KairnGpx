@@ -55,6 +55,18 @@
                             GPX
                         </a>
 
+                        <!-- Edit Button -->
+                        {% if user and (user.username == track.user_id or user.is_admin) %}
+                        <a href="/track/{{ track.id }}/edit"
+                            class="inline-flex items-center px-4 py-2 border border-gray-200 shadow-sm text-sm font-bold rounded-xl text-brand-700 bg-white hover:bg-slate-50 hover:border-brand-200 transition-all">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                            Modifier
+                        </a>
+                        {% endif %}
+
                         <!-- Categorization Chips -->
                         <div class="flex flex-wrap justify-end gap-2">
                             <!-- Status -->

@@ -412,6 +412,66 @@ def get_raw_gpx(track_id: int, db: Session = Depends(get_db)):
     from fastapi.responses import Response
     return Response(content=content, media_type="application/gpx+xml")
 
+# --- EDIT TRACKS ---
+@app.get("/track/{track_id}/edit", response_class=HTMLResponse)
+async def edit_track_form(track_id: int, request: Request, db: Session = Depends(get_db)):
+    user = await get_current_user(request, db)
+    track = db.query(models.Track).filter(models.Track.id == track_id).first()
+    
+    if not track:
+        raise HTTPException(status_code=404, detail="Track not found")
+        
+    # Permission check
+    if track.user_id != user.username and not user.is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    return templates.TemplateResponse("edit_track.html", {
+        "request": request,
+        "track": track,
+        "user": user,
+        "status_options": [e.value for e in models.StatusEnum],
+        "technicity_options": [e.value for e in models.TechnicityEnum],
+        "terrain_options": [e.value for e in models.TerrainEnum]
+    })
+
+@app.post("/track/{track_id}/edit")
+async def edit_track_action(
+    track_id: int, 
+    request: Request,
+    title: str = Form(...),
+    description: str = Form(None),
+    visibility: str = Form(...),
+    status_val: str = Form(...),
+    technicity: str = Form(...),
+    terrain: str = Form(...),
+    scenery_rating: int = Form(None),
+    water_points_count: int = Form(0),
+    db: Session = Depends(get_db)
+):
+    user = await get_current_user(request, db)
+    track = db.query(models.Track).filter(models.Track.id == track_id).first()
+    
+    if not track:
+        raise HTTPException(status_code=404, detail="Track not found")
+        
+    if track.user_id != user.username and not user.is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    # Update Fields
+    track.title = title
+    track.description = description
+    track.visibility = models.Visibility(visibility)
+    track.status = models.StatusEnum(status_val)
+    track.technicity = models.TechnicityEnum(technicity)
+    track.terrain = models.TerrainEnum(terrain)
+    track.scenery_rating = scenery_rating
+    track.water_points_count = water_points_count
+    
+    db.commit()
+    
+    return RedirectResponse(url=f"/track/{track_id}", status_code=303)
+
+
 # --- PROFILES & ADMIN ---
 
 @app.get("/profile", response_class=HTMLResponse)
