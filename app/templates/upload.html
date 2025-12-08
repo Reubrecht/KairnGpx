@@ -96,6 +96,29 @@
                                     </label>
                                 </div>
                             </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-3">Type d'activité</label>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                    {% for status in status_options %}
+                                    {% set status_label = status %}
+                                    {% if status == 'OFFICIAL_RACE' %}
+                                    {% set status_label = 'Course Officielle' %}
+                                    {% elif status == 'TRAINING' %}
+                                    {% set status_label = 'Entraînement' %}
+                                    {% endif %}
+
+                                    <label class="cursor-pointer group">
+                                        <input type="radio" name="status_val" value="{{ status }}" class="peer sr-only"
+                                            {% if loop.first %}checked{% endif %}>
+                                        <div
+                                            class="h-14 w-full bg-white border border-slate-200 rounded-xl flex items-center justify-center text-center hover:shadow-md peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-700 transition-all">
+                                            <span class="text-sm font-semibold">{{ status_label }}</span>
+                                        </div>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
