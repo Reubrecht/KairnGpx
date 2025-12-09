@@ -145,35 +145,149 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
 
                     <!-- Environment Tags -->
-                    <div class="col-span-1">
-                        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3">Environnement</h3>
-                        <div class="flex flex-wrap gap-2">
-                            {% if track.is_high_mountain %}
-                            <span
-                                class="px-3 py-1 bg-slate-100 text-slate-700 border border-slate-200 rounded-full text-xs font-semibold">Haute
-                                Montagne</span>
-                            {% endif %}
-                            {% if track.is_coastal %}
-                            <span
-                                class="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-100 rounded-full text-xs font-semibold">Côtier</span>
-                            {% endif %}
-                            {% if track.is_forest %}
-                            <span
-                                class="px-3 py-1 bg-green-50 text-green-700 border border-green-100 rounded-full text-xs font-semibold">Forêt</span>
-                            {% endif %}
-                            {% if track.is_urban %}
-                            <span
-                                class="px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded-full text-xs font-semibold">Urbain</span>
-                            {% endif %}
-                            {% if track.is_desert %}
-                            <span
-                                class="px-3 py-1 bg-yellow-50 text-yellow-700 border border-yellow-100 rounded-full text-xs font-semibold">Aride</span>
-                            {% endif %}
+                    <!-- Detailed Stats Column -->
+                    <div class="col-span-1 space-y-8">
+
+                        <!-- 1. Tags & Environment -->
+                        <div>
+                            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3">🏷️
+                                Caractéristiques</h3>
+                            <div class="flex flex-wrap gap-2">
+                                <!-- Environments -->
+                                {% if track.is_high_mountain %}
+                                <span
+                                    class="px-2.5 py-1 bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold">⛰️
+                                    Haute Montagne</span>
+                                {% endif %}
+                                {% if track.is_coastal %}
+                                <span
+                                    class="px-2.5 py-1 bg-cyan-50 text-cyan-700 border border-cyan-100 rounded-lg text-xs font-bold">🌊
+                                    Côtier</span>
+                                {% endif %}
+                                {% if track.is_forest %}
+                                <span
+                                    class="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-lg text-xs font-bold">🌲
+                                    Forêt</span>
+                                {% endif %}
+                                {% if track.is_urban %}
+                                <span
+                                    class="px-2.5 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded-lg text-xs font-bold">🏙️
+                                    Urbain</span>
+                                {% endif %}
+                                {% if track.is_desert %}
+                                <span
+                                    class="px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-100 rounded-lg text-xs font-bold">🏜️
+                                    Aride</span>
+                                {% endif %}
+
+                                <!-- Seasons -->
+                                {% if track.best_season %}
+                                {% for season in track.best_season %}
+                                <span
+                                    class="px-2.5 py-1 bg-pink-50 text-pink-700 border border-pink-100 rounded-lg text-xs font-bold">🗓️
+                                    {{ season }}</span>
+                                {% endfor %}
+                                {% endif %}
+
+                                <!-- Custom Tags -->
+                                {% if track.tags %}
+                                {% for tag in track.tags %}
+                                <span
+                                    class="px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-lg text-xs font-bold">#{{
+                                    tag }}</span>
+                                {% endfor %}
+                                {% endif %}
+
+                                <!-- Fallback if empty -->
+                                {% if not track.is_high_mountain and not track.is_coastal and not track.is_forest and
+                                not track.is_urban and not track.is_desert and not track.tags %}
+                                <span class="text-xs text-gray-400 italic">Aucune étiquette spécifique</span>
+                                {% endif %}
+                            </div>
                         </div>
 
+                        <!-- 2. Technical Data Grid -->
+                        <div>
+                            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3">📐 Données
+                                Techniques</h3>
+                            <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+                                <dl class="grid grid-cols-2 gap-x-4 gap-y-6">
+
+                                    <!-- Altitudes -->
+                                    <div class="flex flex-col">
+                                        <dt class="text-[10px] text-slate-400 font-bold uppercase">Altitude Min</dt>
+                                        <dd class="font-bold text-slate-800">{{ track.min_altitude or 'N/A' }} m</dd>
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <dt class="text-[10px] text-slate-400 font-bold uppercase">Altitude Moy.</dt>
+                                        <dd class="font-bold text-slate-800">{{ track.avg_altitude or 'N/A' }} m</dd>
+                                    </div>
+
+                                    <!-- Slopes -->
+                                    <div class="flex flex-col">
+                                        <dt class="text-[10px] text-slate-400 font-bold uppercase">Pente Max</dt>
+                                        <dd class="font-bold text-slate-800">{{ track.max_slope or 0 }}%</dd>
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <dt class="text-[10px] text-slate-400 font-bold uppercase">Pente Moy. (Montée)
+                                        </dt>
+                                        <dd class="font-bold text-slate-800">{{ track.avg_slope_uphill or 0 }}%</dd>
+                                    </div>
+
+                                    <!-- IBP / Water -->
+                                    <div class="flex flex-col">
+                                        <dt class="text-[10px] text-slate-400 font-bold uppercase">Index IBP</dt>
+                                        <dd class="font-bold text-slate-800">{{ track.ibp_index or '-' }}</dd>
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <dt class="text-[10px] text-slate-400 font-bold uppercase">Points d'eau (est.)
+                                        </dt>
+                                        <dd class="font-bold text-slate-800">{{ track.water_points_count or 0 }}</dd>
+                                    </div>
+                                </dl>
+                            </div>
+                        </div>
+
+                        <!-- 3. Terrain Composition (if available) -->
+                        {% if track.surface_composition or track.path_type %}
+                        <div>
+                            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3">⛰️ Terrain</h3>
+                            <div class="space-y-3">
+                                {% if track.surface_composition %}
+                                <div class="text-xs">
+                                    <p class="text-slate-400 font-bold mb-1">Composition</p>
+                                    <div class="flex flex-wrap gap-2">
+                                        {% for k, v in track.surface_composition.items() %}
+                                        <span
+                                            class="inline-flex items-center text-slate-600 bg-slate-50 border border-slate-200 px-2 py-1 rounded">
+                                            <span class="font-bold mr-1">{{ v }}%</span> {{ k }}
+                                        </span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                {% if track.path_type %}
+                                <div class="text-xs">
+                                    <p class="text-slate-400 font-bold mb-1">Type de Sentier</p>
+                                    <div class="flex flex-wrap gap-2">
+                                        {% for k, v in track.path_type.items() %}
+                                        <span
+                                            class="inline-flex items-center text-slate-600 bg-slate-50 border border-slate-200 px-2 py-1 rounded">
+                                            <span class="font-bold mr-1">{{ v }}%</span> {{ k }}
+                                        </span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+
                         {% if track.description %}
-                        <div class="mt-6 pt-6 border-t border-gray-100">
-                            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-2">Description</h3>
+                        <div class="pt-6 border-t border-gray-100">
+                            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-2">Note de l'auteur
+                            </h3>
                             <p class="text-gray-600 text-sm leading-relaxed">{{ track.description }}</p>
                         </div>
                         {% endif %}

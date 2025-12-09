@@ -73,10 +73,20 @@
 
                     <div class="grid grid-cols-1 gap-6">
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Titre de la sortie</label>
-                            <input type="text" name="title" id="title-input" required
-                                placeholder="Ex: Traversée des Aravis"
+                            <label class="block text-sm font-bold text-slate-700 mb-1">Titre de la sortie <span
+                                    class="text-red-500">*</span></label>
+                            <input type="text" name="title" id="title-input" required minlength="10"
+                                placeholder="Activité - Lieu - Spécificité"
                                 class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 transition-colors">
+                            <p class="mt-2 text-xs text-slate-500 flex items-start gap-1">
+                                <svg class="w-4 h-4 text-brand-500 flex-shrink-0" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span>Pour être utile à la communauté, évitez "Sortie du matin". Prétérez :
+                                    <strong>"Trail - Massif des Bauges - Boucle du Nivolet"</strong>.</span>
+                            </p>
                         </div>
 
                         <div>
@@ -153,20 +163,24 @@
                                 <label class="block text-sm font-medium text-slate-700 mb-3">Technicité</label>
                                 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                                     {% for tech in technicity_options %}
-                                    {% set tech_color_class = 'peer-checked:bg-brand-50 peer-checked:border-brand-500
+                                    {% set tech_color_class = 'peer-checked:bg-brand-50
+                                    peer-checked:border-brand-500
                                     peer-checked:text-brand-700' %}
                                     {% if tech == 'ROULANT' %}
                                     {% set tech_color_class = 'peer-checked:bg-emerald-50
                                     peer-checked:border-emerald-500
                                     peer-checked:text-emerald-700' %}
                                     {% elif tech == 'PEU_TECHNIQUE' %}
-                                    {% set tech_color_class = 'peer-checked:bg-green-50 peer-checked:border-green-500
+                                    {% set tech_color_class = 'peer-checked:bg-green-50
+                                    peer-checked:border-green-500
                                     peer-checked:text-green-700' %}
                                     {% elif tech == 'TECHNIQUE' %}
-                                    {% set tech_color_class = 'peer-checked:bg-yellow-50 peer-checked:border-yellow-500
+                                    {% set tech_color_class = 'peer-checked:bg-yellow-50
+                                    peer-checked:border-yellow-500
                                     peer-checked:text-yellow-700' %}
                                     {% elif tech == 'TRES_TECHNIQUE' %}
-                                    {% set tech_color_class = 'peer-checked:bg-orange-50 peer-checked:border-orange-500
+                                    {% set tech_color_class = 'peer-checked:bg-orange-50
+                                    peer-checked:border-orange-500
                                     peer-checked:text-orange-700' %}
                                     {% elif tech == 'AERIEN' %}
                                     {% set tech_color_class = 'peer-checked:bg-red-50 peer-checked:border-red-500
@@ -178,7 +192,8 @@
                                             if loop.first %}checked{% endif %}>
                                         <div
                                             class="h-14 w-full bg-white border border-slate-200 rounded-xl flex items-center justify-center text-center hover:shadow-md {{ tech_color_class }} transition-all">
-                                            <span class="text-sm font-semibold">{{ tech | replace('_', ' ') | capitalize
+                                            <span class="text-sm font-semibold">{{ tech | replace('_', ' ') |
+                                                capitalize
                                                 }}</span>
                                         </div>
                                     </label>
@@ -187,7 +202,8 @@
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-3">Terrain Dominant</label>
+                                <label class="block text-sm font-medium text-slate-700 mb-3">Terrain
+                                    Dominant</label>
                                 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                                     {% for terr in terrain_options %}
                                     <label class="cursor-pointer group">
@@ -195,7 +211,8 @@
                                             loop.first %}checked{% endif %}>
                                         <div
                                             class="h-14 w-full bg-white border border-slate-200 rounded-xl flex items-center justify-center text-center hover:shadow-md peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-700 transition-all">
-                                            <span class="text-sm font-semibold">{{ terr | replace('_', ' ') | capitalize
+                                            <span class="text-sm font-semibold">{{ terr | replace('_', ' ') |
+                                                capitalize
                                                 }}</span>
                                         </div>
                                     </label>
@@ -356,7 +373,8 @@
                                 <input type="text" name="tags" placeholder="Sommet, Lac, Technique, ..."
                                     class="w-full pl-8 pr-4 py-3 rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:border-brand-500 focus:ring-brand-500 shadow-sm transition-all text-sm">
                             </div>
-                            <p class="mt-2 text-xs text-slate-500">Ajoutez des mots-clés séparés par des virgules pour
+                            <p class="mt-2 text-xs text-slate-500">Ajoutez des mots-clés séparés par des virgules
+                                pour
                                 faciliter la recherche.</p>
                         </div>
                     </div>
@@ -429,14 +447,68 @@
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(text, "text/xml");
 
-            // 1. Title (metadata > name OR trk > name)
-            let name = xmlDoc.querySelector("metadata > name")?.textContent;
-            if (!name) name = xmlDoc.querySelector("trk > name")?.textContent;
+            // 1. Smart Auto-fill (Stats + Location)
+            const trkpts = xmlDoc.querySelectorAll('trkpt');
+            if (trkpts.length > 0) {
+                // Calculate Stats
+                let dist = 0;
+                let elev = 0;
+                let lastLat = null, lastLon = null, lastEle = null;
 
-            // Fallback to filename if no XML name
-            if (!name) name = file.name.replace('.gpx', '').replace(/_/g, ' ');
+                // Sample every 5 points for performance if track is huge, but doing all is fine for JS usually
+                for (let i = 0; i < trkpts.length; i++) {
+                    const pt = trkpts[i];
+                    const lat = parseFloat(pt.getAttribute('lat'));
+                    const lon = parseFloat(pt.getAttribute('lon'));
+                    const ele = parseFloat(pt.querySelector('ele')?.textContent || 0);
 
-            if (name && !titleInput.value) {
+                    if (lastLat !== null) {
+                        const R = 6371;
+                        const dLat = (lat - lastLat) * Math.PI / 180;
+                        const dLon = (lon - lastLon) * Math.PI / 180;
+                        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                            Math.cos(lastLat * Math.PI / 180) * Math.cos(lat * Math.PI / 180) *
+                            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                        dist += R * c;
+
+                        if (ele > lastEle) {
+                            elev += (ele - lastEle);
+                        }
+                    }
+                    lastLat = lat; lastLon = lon; lastEle = ele;
+                }
+
+                const distStr = dist.toFixed(1) + "km";
+                const elevStr = Math.round(elev) + "m+";
+
+                // Get Start Location
+                const startLat = trkpts[0].getAttribute('lat');
+                const startLon = trkpts[0].getAttribute('lon');
+
+                // Show "Loading..." or similar? No, just wait for fetch.
+                titleInput.placeholder = "Analyse en cours...";
+
+                fetch(`https://photon.komoot.io/reverse?lon=${startLon}&lat=${startLat}&lang=fr`)
+                    .then(res => res.json())
+                    .then(data => {
+                        let location = "Montagne";
+                        if (data.features && data.features.length > 0) {
+                            const props = data.features[0].properties;
+                            location = props.city || props.town || props.village || props.county || props.name || "Nature";
+                        }
+
+                        // Construct Format: Activity - Location - Stats
+                        // We default to "Trail" as activity base
+                        titleInput.value = `Trail - ${location} - ${distStr} ${elevStr}`;
+                    })
+                    .catch(err => {
+                        titleInput.value = `Trail - ${distStr} ${elevStr}`;
+                    });
+            } else {
+                // Fallback for simple GPX without trkpts (routes?)
+                let name = xmlDoc.querySelector("metadata > name")?.textContent;
+                if (!name) name = file.name.replace('.gpx', '').replace(/_/g, ' ');
                 titleInput.value = name;
             }
 
