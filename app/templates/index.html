@@ -5,6 +5,9 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js"></script>
+<!-- noUiSlider -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.6.3/nouislider.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.6.3/nouislider.min.js"></script>
 <style>
     .leaflet-control-attribution {
         display: none !important;
@@ -19,203 +22,104 @@
     <div class="flex flex-col md:flex-row gap-8">
 
         <!-- Filters Sidebar -->
-        <div class="w-full md:w-72 flex-shrink-0">
+        <div class="w-full md:w-80 flex-shrink-0">
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sticky top-24">
-                <h3 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-                    <svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z">
-                        </path>
-                    </svg>
-                    Filtres
-                </h3>
-                <form action="/" method="get" class="space-y-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4">
+                            </path>
+                        </svg>
+                        Filtres
+                    </h3>
+                    <a href="/" class="text-xs font-semibold text-slate-400 hover:text-brand-600">Reset</a>
+                </div>
 
-                    <!-- City Search -->
+                <form action="/" method="get" class="space-y-8" id="filter-form">
+
+                    <!-- Location -->
                     <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-2">Ville</label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                                </svg>
-                            </div>
-                            <input type="text" name="city_search"
-                                value="{{ request.query_params.get('city_search', '') }}" placeholder="Rechercher..."
-                                class="w-full pl-9 pr-4 py-2.5 rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:border-brand-500 focus:ring-brand-500 shadow-sm transition-all text-sm">
-                        </div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">📍
+                            Localisation</label>
+                        <input type="text" name="city_search" value="{{ request.query_params.get('city_search', '') }}"
+                            placeholder="Ville, Pays..."
+                            class="w-full px-4 py-2 rounded-xl border-slate-200 bg-slate-50 text-sm focus:bg-white focus:border-brand-500 transition-colors">
                     </div>
 
-                    <!-- Environment -->
+                    <!-- Distance Slider -->
                     <div>
-                        <span class="block text-sm font-bold text-slate-700 mb-3">Environnement</span>
-                        <div class="space-y-2">
-                            <!-- High Mountain -->
-                            <label class="cursor-pointer group block">
-                                <input type="checkbox" name="is_high_mountain" value="true" {% if
-                                    request.query_params.get('is_high_mountain') %}checked{% endif %}
-                                    class="peer sr-only">
-                                <div
-                                    class="px-3 py-2.5 rounded-xl border border-slate-200 flex items-center justify-between group-hover:bg-slate-50 peer-checked:bg-purple-50 peer-checked:border-purple-200 transition-all">
-                                    <span
-                                        class="text-sm font-medium text-slate-600 peer-checked:text-purple-700 flex items-center gap-2">
-                                        <span>🏔️</span> Haute Montagne
-                                    </span>
-                                    <div
-                                        class="w-4 h-4 rounded-full border border-slate-300 peer-checked:bg-purple-600 peer-checked:border-purple-600 flex items-center justify-center">
-                                        <svg class="w-2.5 h-2.5 text-white opacity-0 peer-checked:opacity-100"
-                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
-                                                d="M5 13l4 4L19 7"></path>
-                                        </svg>
-                                    </div>
-                                </div>
-                            </label>
-
-                            <!-- Forest -->
-                            <label class="cursor-pointer group block">
-                                <input type="checkbox" name="is_forest" value="true" {% if
-                                    request.query_params.get('is_forest') %}checked{% endif %} class="peer sr-only">
-                                <div
-                                    class="px-3 py-2.5 rounded-xl border border-slate-200 flex items-center justify-between group-hover:bg-slate-50 peer-checked:bg-green-50 peer-checked:border-green-200 transition-all">
-                                    <span
-                                        class="text-sm font-medium text-slate-600 peer-checked:text-green-700 flex items-center gap-2">
-                                        <span>🌲</span> Forêt
-                                    </span>
-                                    <div
-                                        class="w-4 h-4 rounded-full border border-slate-300 peer-checked:bg-green-600 peer-checked:border-green-600 flex items-center justify-center">
-                                        <svg class="w-2.5 h-2.5 text-white opacity-0 peer-checked:opacity-100"
-                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
-                                                d="M5 13l4 4L19 7"></path>
-                                        </svg>
-                                    </div>
-                                </div>
-                            </label>
-
-                            <!-- Coastal -->
-                            <label class="cursor-pointer group block">
-                                <input type="checkbox" name="is_coastal" value="true" {% if
-                                    request.query_params.get('is_coastal') %}checked{% endif %} class="peer sr-only">
-                                <div
-                                    class="px-3 py-2.5 rounded-xl border border-slate-200 flex items-center justify-between group-hover:bg-slate-50 peer-checked:bg-cyan-50 peer-checked:border-cyan-200 transition-all">
-                                    <span
-                                        class="text-sm font-medium text-slate-600 peer-checked:text-cyan-700 flex items-center gap-2">
-                                        <span>🌊</span> Côtier
-                                    </span>
-                                    <div
-                                        class="w-4 h-4 rounded-full border border-slate-300 peer-checked:bg-cyan-600 peer-checked:border-cyan-600 flex items-center justify-center">
-                                        <svg class="w-2.5 h-2.5 text-white opacity-0 peer-checked:opacity-100"
-                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
-                                                d="M5 13l4 4L19 7"></path>
-                                        </svg>
-                                    </div>
-                                </div>
-                            </label>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">📏 Distance
+                            (km)</label>
+                        <div id="slider-dist" class="mb-4 px-2"></div>
+                        <div class="flex justify-between text-xs font-medium text-slate-600">
+                            <span><span id="dist-min-val">0</span>km</span>
+                            <span><span id="dist-max-val">100</span>km</span>
                         </div>
+                        <input type="hidden" name="min_dist" id="input-min-dist"
+                            value="{{ request.query_params.get('min_dist', '0') }}">
+                        <input type="hidden" name="max_dist" id="input-max-dist"
+                            value="{{ request.query_params.get('max_dist', '100') }}">
                     </div>
 
-                    <!-- Activity Type (Status) -->
+                    <!-- Elevation Slider -->
                     <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-3">Type d'activité</label>
-                        <div class="space-y-2">
-                            <label class="cursor-pointer group block">
-                                <input type="radio" name="status_val" value="ALL" {% if not
-                                    request.query_params.get('status_val') or
-                                    request.query_params.get('status_val')=='ALL' %}checked{% endif %}
-                                    class="peer sr-only">
-                                <div
-                                    class="px-3 py-2 rounded-xl border border-slate-100 bg-slate-50 flex items-center group-hover:bg-slate-100 peer-checked:bg-slate-800 peer-checked:border-slate-800 peer-checked:text-white transition-all">
-                                    <span class="text-sm font-medium">Tout</span>
-                                </div>
-                            </label>
-                            {% for status in status_options %}
-                            {% set status_label = status %}
-                            {% if status == 'OFFICIAL_RACE' %}{% set status_label = 'Course Officielle' %}
-                            {% elif status == 'TRAINING' %}{% set status_label = 'Entraînement' %}{% endif %}
-                            <label class="cursor-pointer group block">
-                                <input type="radio" name="status_val" value="{{ status }}" {% if
-                                    request.query_params.get('status_val')==status %}checked{% endif %}
-                                    class="peer sr-only">
-                                <div
-                                    class="px-3 py-2 rounded-xl border border-slate-100 flex items-center group-hover:bg-slate-50 peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-700 transition-all">
-                                    <span class="text-xs font-semibold uppercase tracking-wide">{{ status_label
-                                        }}</span>
-                                </div>
-                            </label>
-                            {% endfor %}
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">🏔️ Dénivelé
+                            (m+)</label>
+                        <div id="slider-elev" class="mb-4 px-2"></div>
+                        <div class="flex justify-between text-xs font-medium text-slate-600">
+                            <span><span id="elev-min-val">0</span>m</span>
+                            <span><span id="elev-max-val">5000</span>m</span>
                         </div>
+                        <input type="hidden" name="min_elev" id="input-min-elev"
+                            value="{{ request.query_params.get('min_elev', '0') }}">
+                        <input type="hidden" name="max_elev" id="input-max-elev"
+                            value="{{ request.query_params.get('max_elev', '5000') }}">
                     </div>
 
-                    <!-- Technicity -->
+                    <!-- Technicity Tiles -->
                     <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-3">Technicité</label>
-                        <div class="space-y-2">
-                            <!-- All Option -->
-                            <label class="cursor-pointer group block">
-                                <input type="radio" name="technicity" value="ALL" {% if not
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">⚡
+                            Technicité</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="technicity" value="ALL" class="peer sr-only" {% if not
                                     request.query_params.get('technicity') or
-                                    request.query_params.get('technicity')=='ALL' %}checked{% endif %}
-                                    class="peer sr-only">
+                                    request.query_params.get('technicity')=='ALL' %}checked{% endif %}>
                                 <div
-                                    class="px-3 py-2 rounded-xl border border-slate-100 bg-slate-50 flex items-center group-hover:bg-slate-100 peer-checked:bg-slate-800 peer-checked:border-slate-800 peer-checked:text-white transition-all">
-                                    <span class="text-sm font-medium">Tout</span>
+                                    class="text-center py-2 rounded-lg border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-50 peer-checked:bg-slate-800 peer-checked:text-white peer-checked:border-slate-800 transition-all">
+                                    Tout
                                 </div>
                             </label>
-
                             {% for tech in technicity_options %}
-                            <label class="cursor-pointer group block">
-                                <input type="radio" name="technicity" value="{{ tech }}" {% if
-                                    request.query_params.get('technicity')==tech %}checked{% endif %}
-                                    class="peer sr-only">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="technicity" value="{{ tech }}" class="peer sr-only" {% if
+                                    request.query_params.get('technicity')==tech %}checked{% endif %}>
                                 <div
-                                    class="px-3 py-2 rounded-xl border border-slate-100 flex items-center group-hover:bg-slate-50 peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-700 transition-all">
-                                    <span class="text-xs font-semibold uppercase tracking-wide">{{ tech | replace('_', '
-                                        ') }}</span>
+                                    class="text-center py-2 rounded-lg border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-50 peer-checked:bg-brand-600 peer-checked:text-white peer-checked:border-brand-600 transition-all">
+                                    {{ tech | replace('_', ' ') }}
                                 </div>
                             </label>
                             {% endfor %}
                         </div>
                     </div>
 
-                    <!-- Terrain -->
+                    <!-- Created By -->
                     <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-3">Terrain</label>
-                        <div class="space-y-2">
-                            <label class="cursor-pointer group block">
-                                <input type="radio" name="terrain" value="ALL" {% if not
-                                    request.query_params.get('terrain') or request.query_params.get('terrain')=='ALL'
-                                    %}checked{% endif %} class="peer sr-only">
-                                <div
-                                    class="px-3 py-2 rounded-xl border border-slate-100 bg-slate-50 flex items-center group-hover:bg-slate-100 peer-checked:bg-slate-800 peer-checked:border-slate-800 peer-checked:text-white transition-all">
-                                    <span class="text-sm font-medium">Tout</span>
-                                </div>
-                            </label>
-                            {% for terr in terrain_options %}
-                            <label class="cursor-pointer group block">
-                                <input type="radio" name="terrain" value="{{ terr }}" {% if
-                                    request.query_params.get('terrain')==terr %}checked{% endif %} class="peer sr-only">
-                                <div
-                                    class="px-3 py-2 rounded-xl border border-slate-100 flex items-center group-hover:bg-slate-50 peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-700 transition-all">
-                                    <span class="text-xs font-semibold uppercase tracking-wide">{{ terr | replace('_', '
-                                        ') }}</span>
-                                </div>
-                            </label>
-                            {% endfor %}
-                        </div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">👤 Créé
+                            par</label>
+                        <input type="text" name="author" value="{{ request.query_params.get('author', '') }}"
+                            placeholder="Nom d'utilisateur"
+                            class="w-full px-4 py-2 rounded-xl border-slate-200 bg-slate-50 text-sm focus:bg-white focus:border-brand-500 transition-colors">
                     </div>
 
-                    <div class="pt-4 space-y-3">
+                    <noscript>
                         <button type="submit"
-                            class="w-full bg-brand-600 text-white font-bold py-3 rounded-xl hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/30">
-                            Filtrer
+                            class="w-full bg-brand-600 text-white font-bold py-3 rounded-xl hover:bg-brand-700 transition-all shadow-lg shadow-brand-500/30">
+                            Appliquer
                         </button>
-                        <a href="/"
-                            class="block text-center text-sm font-medium text-slate-500 hover:text-slate-700">Réinitialiser</a>
-                    </div>
+                    </noscript>
+
                 </form>
             </div>
         </div>
@@ -305,6 +209,74 @@
 {% block scripts %}
 <script>
     document.addEventListener("DOMContentLoaded", function () {
+
+        // --- SLIDERS Logic ---
+        const sliderDist = document.getElementById('slider-dist');
+        const sliderElev = document.getElementById('slider-elev');
+
+        if (sliderDist) {
+            const minD = parseInt(document.getElementById('input-min-dist').value) || 0;
+            const maxD = parseInt(document.getElementById('input-max-dist').value) || 100;
+
+            noUiSlider.create(sliderDist, {
+                start: [minD, maxD],
+                connect: true,
+                range: { 'min': 0, 'max': 200 },
+                step: 1,
+                tooltips: false,
+                format: {
+                    to: v => Math.round(v),
+                    from: v => Number(v)
+                }
+            });
+
+            sliderDist.noUiSlider.on('update', function (values, handle) {
+                document.getElementById('dist-min-val').innerText = values[0];
+                document.getElementById('dist-max-val').innerText = values[1];
+                document.getElementById('input-min-dist').value = values[0];
+                document.getElementById('input-max-dist').value = values[1];
+            });
+        }
+
+        if (sliderElev) {
+            const minE = parseInt(document.getElementById('input-min-elev').value) || 0;
+            const maxE = parseInt(document.getElementById('input-max-elev').value) || 5000;
+
+            noUiSlider.create(sliderElev, {
+                start: [minE, maxE],
+                connect: true,
+                range: { 'min': 0, 'max': 8000 },
+                step: 50,
+                format: {
+                    to: v => Math.round(v),
+                    from: v => Number(v)
+                }
+            });
+
+            sliderElev.noUiSlider.on('update', function (values, handle) {
+                document.getElementById('elev-min-val').innerText = values[0];
+                document.getElementById('elev-max-val').innerText = values[1];
+                document.getElementById('input-min-elev').value = values[0];
+                document.getElementById('input-max-elev').value = values[1];
+            });
+        }
+
+        // --- Auto Submit Logic ---
+        const form = document.getElementById('filter-form');
+        const submitForm = () => form.submit();
+
+        if (sliderDist && sliderDist.noUiSlider) sliderDist.noUiSlider.on('set', submitForm);
+        if (sliderElev && sliderElev.noUiSlider) sliderElev.noUiSlider.on('set', submitForm);
+
+        if (form) {
+            form.querySelectorAll('input').forEach(input => {
+                if (input.type === 'radio' || input.type === 'checkbox' || input.type === 'text') {
+                    input.addEventListener('change', submitForm);
+                }
+            });
+        }
+        // --- End Sliders & Logic ---
+
         const tracks = [
             {% for track in tracks %}
             { id: "{{ track.id }}", color: '#059669' },

@@ -70,7 +70,27 @@
                 </div>
 
                 <!-- Right Side (User or Login) -->
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 md:gap-4">
+
+                    <!-- Auth Links (Always Visible) -->
+                    <div class="flex items-center gap-2 md:gap-4">
+                        {% if user %}
+                        <a href="/profile"
+                            class="text-sm font-bold text-slate-700 mr-1 hover:text-brand-600 truncate max-w-[100px] md:max-w-none">{{
+                            user.username }}</a>
+                        <a href="/logout"
+                            class="text-xs md:text-sm font-medium text-red-500 hover:text-red-600 transition-colors">
+                            <span class="hidden md:inline">Déconnexion</span>
+                            <span class="md:hidden">Sortir</span>
+                        </a>
+                        {% else %}
+                        <a href="/login"
+                            class="text-sm font-bold text-slate-600 hover:text-brand-600 transition-colors">Connexion</a>
+                        <a href="/register"
+                            class="bg-brand-600 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-bold shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition-all">Inscription</a>
+                        {% endif %}
+                    </div>
+
                     <!-- Mobile Menu Button -->
                     <button id="mobile-menu-btn"
                         class="md:hidden p-2 rounded-md text-slate-600 hover:text-brand-600 hover:bg-slate-100 focus:outline-none">
@@ -80,19 +100,6 @@
                         </svg>
                     </button>
 
-                    <div class="hidden md:flex items-center gap-4">
-                        {% if user %}
-                        <a href="/profile" class="text-sm font-bold text-slate-700 mr-2 hover:text-brand-600">{{
-                            user.username }}</a>
-                        <a href="/logout"
-                            class="text-sm font-medium text-red-500 hover:text-red-600 transition-colors">Déconnexion</a>
-                        {% else %}
-                        <a href="/login"
-                            class="text-sm font-bold text-slate-600 hover:text-brand-600 transition-colors">Connexion</a>
-                        <a href="/register"
-                            class="bg-brand-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition-all">Inscription</a>
-                        {% endif %}
-                    </div>
                 </div>
             </div>
         </div>
@@ -109,19 +116,6 @@
                 <a href="/upload"
                     class="block px-3 py-3 rounded-md text-base font-medium text-slate-700 hover:text-brand-600 hover:bg-brand-50">Importer
                     une Trace</a>
-                <div class="border-t border-slate-100 my-2 pt-2">
-                    {% if user %}
-                    <div class="flex items-center justify-between px-3 py-2">
-                        <a href="/profile" class="text-base font-bold text-slate-900">{{ user.username }}</a>
-                        <a href="/logout" class="text-sm font-medium text-red-500">Déconnexion</a>
-                    </div>
-                    {% else %}
-                    <a href="/login"
-                        class="block px-3 py-3 rounded-md text-base font-medium text-slate-700 hover:text-brand-600">Connexion</a>
-                    <a href="/register"
-                        class="block px-3 py-3 rounded-md text-base font-bold text-brand-600 hover:bg-brand-50">Inscription</a>
-                    {% endif %}
-                </div>
             </div>
         </div>
 

@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex flex-col gap-6">
+
+        <div class="flex items-center justify-between">
+            <h1 class="text-3xl font-extrabold text-slate-900">Recherche Avancée</h1>
+            <a href="/" class="text-sm font-medium text-brand-600 hover:text-brand-700">Retour au tableau de bord</a>
+        </div>
+
+        <!-- Comprehensive Filter Form -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+            <form action="/search" method="get" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+
+                <!-- 1. Location (City/Country) -->
+                <div class="col-span-1 md:col-span-2">
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Localisation</label>
+                    <div class="relative">
+                        <input type="text" name="location" value="{{ request.query_params.get('location', '') }}"
+                            placeholder="Ville, Pays, Massif..."
+                            class="w-full pl-4 pr-4 py-2.5 rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:border-brand-500 focus:ring-brand-500 shadow-sm transition-all text-sm">
+                        <p class="text-xs text-slate-400 mt-1 ml-1">Ex: "Chamonix", "France", "Vercors"</p>
+                    </div>
+                </div>
+
+                <!-- 2. Distance Range -->
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Distance (km)</label>
+                    <div class="flex items-center gap-2">
+                        <input type="number" name="min_dist" placeholder="Min"
+                            value="{{ request.query_params.get('min_dist', '') }}"
+                            class="w-full px-3 py-2 rounded-xl border-slate-200 text-sm">
+                        <span class="text-slate-400">-</span>
+                        <input type="number" name="max_dist" placeholder="Max"
+                            value="{{ request.query_params.get('max_dist', '') }}"
+                            class="w-full px-3 py-2 rounded-xl border-slate-200 text-sm">
+                    </div>
+                </div>
+
+                <!-- 3. Elevation Range -->
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Dénivelé (m+)</label>
+                    <div class="flex items-center gap-2">
+                        <input type="number" name="min_elev" placeholder="Min"
+                            value="{{ request.query_params.get('min_elev', '') }}"
+                            class="w-full px-3 py-2 rounded-xl border-slate-200 text-sm">
+                        <span class="text-slate-400">-</span>
+                        <input type="number" name="max_elev" placeholder="Max"
+                            value="{{ request.query_params.get('max_elev', '') }}"
+                            class="w-full px-3 py-2 rounded-xl border-slate-200 text-sm">
+                    </div>
+                </div>
+
+                <!-- 4. Technicity -->
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Difficulté Technique</label>
+                    <select name="technicity"
+                        class="w-full px-3 py-2.5 rounded-xl border-slate-200 bg-slate-50 text-sm">
+                        <option value="">Indifférent</option>
+                        {% for t in technicity_options %}
+                        <option value="{{ t }}" {% if request.query_params.get('technicity')==t %}selected{% endif %}>
+                            {{ t | replace('_', ' ') }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- 5. Created By -->
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Créé par</label>
+                    <input type="text" name="author" value="{{ request.query_params.get('author', '') }}"
+                        placeholder="Nom d'utilisateur"
+                        class="w-full px-3 py-2.5 rounded-xl border-slate-200 bg-slate-50 text-sm">
+                </div>
+
+                <!-- 6. Submit -->
+                <div class="md:col-span-3 lg:col-span-4 flex justify-end">
+                    <button type="submit"
+                        class="bg-brand-600 text-white font-bold py-2.5 px-6 rounded-xl hover:bg-brand-700 transition-colors shadow-md">
+                        Rechercher
+                    </button>
+                </div>
+
+            </form>
+        </div>
+
+        <!-- Results -->
+        <div>
+            <h2 class="text-xl font-bold text-slate-900 mb-4">{{ tracks|length }} Résultats</h2>
+
+            {% if tracks %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for track in tracks %}
+                <a href="/track/{{ track.id }}"
+                    class="group block bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 hover:border-brand-200">
+                    <div class="p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-bold text-slate-900 group-hover:text-brand-600 truncate">{{ track.title }}
+                            </h3>
+                        </div>
+                        <div class="flex items-center text-xs text-slate-500 mb-3">
+                            <span class="font-bold text-slate-700 mr-1">{{ track.user_id }}</span>
+                            <span>•</span>
+                            <span class="ml-1">{{ track.created_at.strftime('%d/%m/%Y') }}</span>
+                        </div>
+                        <div class="flex gap-4 text-sm">
+                            <div><span class="font-bold text-slate-800">{{ track.distance_km }}</span> <span
+                                    class="text-slate-500">km</span></div>
+                            <div><span class="font-bold text-slate-800">{{ track.elevation_gain }}</span> <span
+                                    class="text-slate-500">m+</span></div>
+                        </div>
+                        <div class="mt-2 text-xs text-slate-400 truncate">
+                            📍 {{ track.location_city or 'Lieu inconnu' }}
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                <p class="text-slate-500">Aucun résultat ne correspond à votre recherche.</p>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+{% endblock %}

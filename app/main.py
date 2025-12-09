@@ -193,7 +193,13 @@ async def dashboard(
     is_desert: Optional[bool] = None,
     # New Standard Filters
     status_val: Optional[str] = None,
-    terrain: Optional[str] = None
+    terrain: Optional[str] = None,
+    # New Slider Filters
+    min_dist: Optional[float] = None,
+    max_dist: Optional[float] = None,
+    min_elev: Optional[float] = None,
+    max_elev: Optional[float] = None,
+    author: Optional[str] = None
 ):
     user = await get_current_user_optional(request, db)
     query = db.query(models.Track)
@@ -226,6 +232,22 @@ async def dashboard(
     if is_desert:
         query = query.filter(models.Track.is_desert == True)
 
+    # 6. Distance
+    if min_dist is not None:
+        query = query.filter(models.Track.distance_km >= min_dist)
+    if max_dist is not None:
+        query = query.filter(models.Track.distance_km <= max_dist)
+
+    # 7. Elevation
+    if min_elev is not None:
+        query = query.filter(models.Track.elevation_gain >= min_elev)
+    if max_elev is not None:
+        query = query.filter(models.Track.elevation_gain <= max_elev)
+
+    # 8. Author
+    if author:
+        query = query.filter(models.Track.user_id.ilike(f"%{author}%"))
+
     tracks = query.order_by(models.Track.created_at.desc()).all()
     
     # Enum values for filters
@@ -240,6 +262,66 @@ async def dashboard(
         "status_options": status_options,
         "terrain_options": terrain_options,
         "user": user
+    })
+
+
+@app.get("/search", response_class=HTMLResponse)
+async def advanced_search(
+    request: Request,
+    db: Session = Depends(get_db),
+    location: Optional[str] = None,
+    min_dist: Optional[float] = None,
+    max_dist: Optional[float] = None,
+    min_elev: Optional[float] = None,
+    max_elev: Optional[float] = None,
+    technicity: Optional[str] = None,
+    author: Optional[str] = None,
+):
+    user = await get_current_user_optional(request, db)
+    query = db.query(models.Track)
+
+    # 1. Location (City) - Could expand to country if we stored it separately or parsed it
+    if location:
+        # Simple ILIKE search on city field for now. 
+        # Future: use pycountry to detect if 'location' is a country and search a 'country' code column if it existed.
+        query = query.filter(models.Track.location_city.ilike(f"%{location}%"))
+
+    # 2. Distance
+    if min_dist is not None:
+        query = query.filter(models.Track.distance_km >= min_dist)
+    if max_dist is not None:
+        query = query.filter(models.Track.distance_km <= max_dist)
+
+    # 3. Elevation
+    if min_elev is not None:
+        query = query.filter(models.Track.elevation_gain >= min_elev)
+    if max_elev is not None:
+        query = query.filter(models.Track.elevation_gain <= max_elev)
+
+    # 4. Technicity
+    if technicity and technicity != "":
+        query = query.filter(models.Track.technicity == technicity)
+
+    # 5. Author
+    if author:
+        query = query.filter(models.Track.user_id.ilike(f"%{author}%"))
+
+    # Visibility: Public unless it's my own track
+    # Logic: Show PUBLIC OR (PRIVATE AND owner==me)
+    # For simplicity in search, we might only show PUBLIC results unless we add complex OR logic.
+    # Let's stick to Public + My Tracks logic if user is logged in, or just Public.
+    if user:
+         query = query.filter(or_(models.Track.visibility == models.Visibility.PUBLIC, models.Track.user_id == user.username))
+    else:
+         query = query.filter(models.Track.visibility == models.Visibility.PUBLIC)
+
+    tracks = query.order_by(models.Track.created_at.desc()).all()
+
+    return templates.TemplateResponse("search.html", {
+        "request": request,
+        "tracks": tracks,
+        "user": user,
+        "technicity_options": [e.value for e in models.TechnicityEnum],
     })
 
 @app.get("/upload", response_class=HTMLResponse)
