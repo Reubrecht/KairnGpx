@@ -138,13 +138,41 @@
 
                                     <label class="cursor-pointer group">
                                         <input type="radio" name="status_val" value="{{ status }}" class="peer sr-only"
-                                            {% if loop.first %}checked{% endif %}>
+                                            {% if loop.first %}checked{% endif %}
+                                            onchange="toggleRaceDetails(this.value)">
                                         <div
                                             class="h-14 w-full bg-white border border-slate-200 rounded-xl flex items-center justify-center text-center hover:shadow-md peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-700 transition-all">
                                             <span class="text-sm font-semibold">{{ status_label }}</span>
                                         </div>
                                     </label>
                                     {% endfor %}
+                                </div>
+
+                                <!-- Official Race Extra Fields -->
+                                <div id="race-details"
+                                    class="hidden mt-4 p-4 bg-yellow-50 rounded-xl border border-yellow-200 space-y-4 animate-fade-in-down">
+                                    <h3 class="text-sm font-bold text-yellow-800 flex items-center gap-2">
+                                        <span class="text-xl">🏆</span> Détails de l'événement
+                                    </h3>
+                                    <div>
+                                        <label class="block text-xs font-bold text-yellow-700 mb-1">Nom de la
+                                            Course</label>
+                                        <input type="text" name="race_name" placeholder="Ex: Marathon du Mont-Blanc"
+                                            class="w-full rounded-lg border-yellow-300 bg-white text-sm focus:border-yellow-500 focus:ring-yellow-500">
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-xs font-bold text-yellow-700 mb-1">Année</label>
+                                            <input type="number" name="race_year" value="2025"
+                                                class="w-full rounded-lg border-yellow-300 bg-white text-sm focus:border-yellow-500 focus:ring-yellow-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-yellow-700 mb-1">Distance /
+                                                Format</label>
+                                            <input type="text" name="race_category" placeholder="Ex: 80km"
+                                                class="w-full rounded-lg border-yellow-300 bg-white text-sm focus:border-yellow-500 focus:ring-yellow-500">
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -537,6 +565,16 @@
         val += amount;
         if (val < 0) val = 0;
         input.value = val;
+    }
+
+    // Toggle Race Details
+    function toggleRaceDetails(status) {
+        const details = document.getElementById('race-details');
+        if (status === 'OFFICIAL_RACE') {
+            details.classList.remove('hidden');
+        } else {
+            details.classList.add('hidden');
+        }
     }
 
     // Star Rating Interactivity (Optional visual feedback)

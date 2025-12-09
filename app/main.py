@@ -23,6 +23,21 @@ from datetime import datetime, timedelta
 
 from . import models, database
 
+def slugify(value, allow_unicode=False):
+    """
+    Convert to ASCII if 'allow_unicode' is False. Convert spaces or repeated
+    dashes to single dashes. Remove characters that aren't alphanumerics,
+    underscores, or hyphens. Convert to lowercase. Also strip leading and
+    trailing whitespace, dashes, and underscores.
+    """
+    value = str(value)
+    if allow_unicode:
+        value = unicodedata.normalize('NFKC', value)
+    else:
+        value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
+    value = re.sub(r'[^\w\s-]', '', value.lower())
+    return re.sub(r'[-\s]+', '-', value).strip('-_')
+
 # Create tables
 models.Base.metadata.create_all(bind=database.engine)
 
@@ -394,6 +409,12 @@ async def upload_track(
     tags: str = Form(None), # Comma separated
     water_points_count: int = Form(0),
     scenery_rating: int = Form(None),
+    
+    # Official Race Fields
+    race_name: Optional[str] = Form(None),
+    race_year: Optional[int] = Form(None),
+    race_category: Optional[str] = Form(None),
+    
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
@@ -437,7 +458,23 @@ async def upload_track(
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(simplified_xml if simplified_xml else content.decode('utf-8'))
 
-    # 6. Save to DB
+    # 6. Race Logic
+    race_id = None
+    if status_val == "OFFICIAL_RACE" and race_name:
+        race_slug = slugify(race_name)
+        existing_race = db.query(models.OfficialRace).filter(models.OfficialRace.slug == race_slug).first()
+        if not existing_race:
+            existing_race = models.OfficialRace(
+                name=race_name,
+                slug=race_slug,
+                description=f"Événement créé lors de l'import de la trace {title}."
+            )
+            db.add(existing_race)
+            db.commit()
+            db.refresh(existing_race)
+        race_id = existing_race.id
+
+    # 7. Save to DB
     base_slug = slugify(title)
     slug = base_slug
     counter = 1
@@ -448,6 +485,9 @@ async def upload_track(
     new_track = models.Track(
         title=title,
         slug=slug,
+        race_id=race_id,
+        race_year=race_year,
+        race_category=race_category,
         description=description,
         user_id=current_user.username,
         
@@ -520,6 +560,23 @@ async def track_detail(track_id: int, request: Request, db: Session = Depends(ge
     return templates.TemplateResponse("detail.html", {
         "request": request,
         "track": track,
+        "user": user
+    })
+
+@app.get("/race/{slug}", response_class=HTMLResponse)
+async def race_detail(slug: str, request: Request, db: Session = Depends(get_db)):
+    user = await get_current_user_optional(request, db)
+    race = db.query(models.OfficialRace).filter(models.OfficialRace.slug == slug).first()
+    if not race:
+        raise HTTPException(status_code=404, detail="Course non trouvée")
+    
+    # Tracks linked to this race (ordered by year descending, then distance)
+    tracks = db.query(models.Track).filter(models.Track.race_id == race.id).order_by(models.Track.race_year.desc()).all()
+    
+    return templates.TemplateResponse("race_detail.html", {
+        "request": request, 
+        "race": race, 
+        "tracks": tracks,
         "user": user
     })
 

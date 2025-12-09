@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Enum, JSON, Text
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Enum, JSON, Text, ForeignKey, Date
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
 import uuid
@@ -132,3 +133,21 @@ class Track(Base):
     is_forest = Column(Boolean, default=False)
     is_urban = Column(Boolean, default=False)
     is_desert = Column(Boolean, default=False)
+
+    # 7. Official Race Link
+    race_id = Column(Integer, ForeignKey("official_races.id"), nullable=True)
+    race_year = Column(Integer, nullable=True)
+    race_category = Column(String, nullable=True) # "42km", "Ultra"
+    
+    race = relationship("OfficialRace", back_populates="tracks")
+
+class OfficialRace(Base):
+    __tablename__ = "official_races"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    slug = Column(String, unique=True, index=True)
+    name = Column(String, index=True)
+    website = Column(String, nullable=True)
+    description = Column(Text, nullable=True)
+    
+    tracks = relationship("Track", back_populates="race")
