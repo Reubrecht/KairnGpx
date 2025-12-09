@@ -199,7 +199,11 @@ async def dashboard(
     max_dist: Optional[float] = None,
     min_elev: Optional[float] = None,
     max_elev: Optional[float] = None,
-    author: Optional[str] = None
+    author: Optional[str] = None,
+    # New Radius Filter
+    radius: Optional[int] = 50,
+    search_lat: Optional[str] = None,
+    search_lon: Optional[str] = None
 ):
     user = await get_current_user_optional(request, db)
     query = db.query(models.Track)
@@ -216,9 +220,45 @@ async def dashboard(
     if terrain and terrain != "ALL":
         query = query.filter(models.Track.terrain == terrain)
 
-    # 4. City
+    # 4. City Search (Geo Radius)
     if city_search:
-        query = query.filter(models.Track.location_city.ilike(f"%{city_search}%"))
+        try:
+            lat, lon = None, None
+            
+            # Priority 1: Direct Coordinates from Autocomplete
+            # Handle empty strings from form
+            if search_lat and search_lon:
+                try:
+                    lat = float(search_lat)
+                    lon = float(search_lon)
+                except ValueError:
+                    lat, lon = None, None
+            
+            # Priority 2: Geocoding (Fallback)
+            if lat is None or lon is None:
+                from geopy.geocoders import Nominatim
+                geolocator = Nominatim(user_agent="kairn_app")
+                location = geolocator.geocode(city_search)
+                if location:
+                    lat, lon = location.latitude, location.longitude
+
+            if lat is not None and lon is not None:
+                import math
+                # Bounding Box Filter (Approximate)
+                # 1 degree lat ~= 111 km
+                lat_delta = radius / 111.0
+                # 1 degree lon ~= 111 km * cos(lat)
+                lon_delta = radius / (111.0 * abs(math.cos(math.radians(lat)))) if abs(math.cos(math.radians(lat))) > 0.01 else 0
+
+                query = query.filter(
+                    models.Track.start_lat.between(lat - lat_delta, lat + lat_delta),
+                    models.Track.start_lon.between(lon - lon_delta, lon + lon_delta)
+                )
+            else:
+                 query = query.filter(models.Track.location_city.ilike(f"%{city_search}%"))
+        except Exception as e:
+            print(f"Geocoding error: {e}")
+            query = query.filter(models.Track.location_city.ilike(f"%{city_search}%"))
 
     # 5. Environments
     if is_high_mountain:
@@ -261,7 +301,9 @@ async def dashboard(
         "technicity_options": technicity_options,
         "status_options": status_options,
         "terrain_options": terrain_options,
-        "user": user
+        "user": user,
+        "current_radius": radius,
+        "current_city": city_search
     })
 
 

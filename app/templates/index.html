@@ -39,12 +39,36 @@
                 <form action="/" method="get" class="space-y-8" id="filter-form">
 
                     <!-- Location -->
-                    <div>
+                    <div class="relative">
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">📍
                             Localisation</label>
-                        <input type="text" name="city_search" value="{{ request.query_params.get('city_search', '') }}"
-                            placeholder="Ville, Pays..."
-                            class="w-full px-4 py-2 rounded-xl border-slate-200 bg-slate-50 text-sm focus:bg-white focus:border-brand-500 transition-colors">
+                        <div class="flex gap-2">
+                            <div class="relative flex-1">
+                                <input type="text" id="city-input" name="city_search" value="{{ current_city or '' }}"
+                                    placeholder="Ville, massif, région..." autocomplete="off"
+                                    class="w-full px-4 py-2 rounded-xl border-slate-200 bg-slate-50 text-sm focus:bg-white focus:border-brand-500 transition-colors">
+                                <input type="hidden" name="search_lat" id="search-lat"
+                                    value="{{ request.query_params.get('search_lat', '') }}">
+                                <input type="hidden" name="search_lon" id="search-lon"
+                                    value="{{ request.query_params.get('search_lon', '') }}">
+                                <!-- Suggestions List -->
+                                <ul id="suggestions-list"
+                                    class="hidden absolute z-50 w-full bg-white border border-slate-100 rounded-xl shadow-lg mt-1 max-h-60 overflow-y-auto">
+                                </ul>
+                            </div>
+
+                            <button type="button" id="btn-around-me"
+                                class="px-3 rounded-xl border border-slate-200 bg-white text-slate-400 hover:bg-brand-50 hover:text-brand-600 hover:border-brand-200 transition-all"
+                                title="Autour de moi">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Distance Slider -->
@@ -210,6 +234,116 @@
 <script>
     document.addEventListener("DOMContentLoaded", function () {
 
+        // --- Autocomplete Logic ---
+        const cityInput = document.getElementById('city-input');
+        const suggestionsList = document.getElementById('suggestions-list');
+        const searchLat = document.getElementById('search-lat');
+        const searchLon = document.getElementById('search-lon');
+        let debounceTimer;
+
+        // Define submitForm early so it can be used
+        const form = document.getElementById('filter-form');
+        const submitForm = () => form && form.submit();
+
+        if (cityInput) {
+            cityInput.addEventListener('input', function () {
+                const query = this.value;
+                // Clear hidden coords if user types freely, so main.py falls back to text search or geopy if they don't click a result
+                // But we probably want to keep them if they just refine? 
+                // Let's clear to be safe: if they type, they must re-select or rely on fallback.
+                searchLat.value = '';
+                searchLon.value = '';
+
+                if (query.length < 3) {
+                    suggestionsList.classList.add('hidden');
+                    return;
+                }
+
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&lang=fr&limit=5`)
+                        .then(res => res.json())
+                        .then(data => {
+                            suggestionsList.innerHTML = '';
+                            if (data.features && data.features.length > 0) {
+                                suggestionsList.classList.remove('hidden');
+                                data.features.forEach(feature => {
+                                    const props = feature.properties;
+                                    const coords = feature.geometry.coordinates; // [lon, lat]
+
+                                    const li = document.createElement('li');
+                                    li.className = "px-4 py-2 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 flex flex-col border-b border-slate-50 last:border-0";
+
+                                    // Construct label
+                                    let label = props.name;
+                                    let context = [];
+                                    if (props.city && props.name !== props.city) context.push(props.city);
+                                    if (props.state) context.push(props.state);
+                                    if (props.country) context.push(props.country);
+
+                                    li.innerHTML = `
+                                        <span class="font-bold">${label}</span>
+                                        <span class="text-xs text-slate-400">${context.join(', ')}</span>
+                                    `;
+
+                                    li.addEventListener('click', () => {
+                                        cityInput.value = label;
+                                        searchLat.value = coords[1]; // Lat
+                                        searchLon.value = coords[0]; // Lon
+                                        suggestionsList.classList.add('hidden');
+                                        submitForm(); // Trigger search
+                                    });
+                                    suggestionsList.appendChild(li);
+                                });
+                            } else {
+                                suggestionsList.classList.add('hidden');
+                            }
+                        })
+                        .catch(err => console.error(err));
+                }, 300);
+            });
+
+            // Close on click outside
+            document.addEventListener('click', function (e) {
+                if (cityInput && !cityInput.contains(e.target) && suggestionsList && !suggestionsList.contains(e.target)) {
+                    suggestionsList.classList.add('hidden');
+                }
+            });
+
+            // Around Me Button Logic
+            const btnAroundMe = document.getElementById('btn-around-me');
+            if (btnAroundMe) {
+                btnAroundMe.addEventListener('click', function () {
+                    if (!navigator.geolocation) {
+                        alert("La géolocalisation n'est pas supportée par votre navigateur.");
+                        return;
+                    }
+
+                    // Show loading state
+                    const originalContent = btnAroundMe.innerHTML;
+                    btnAroundMe.innerHTML = '<svg class="animate-spin h-5 w-5 text-brand-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            const lat = position.coords.latitude;
+                            const lon = position.coords.longitude;
+
+                            cityInput.value = "📍 Ma Position";
+                            searchLat.value = lat;
+                            searchLon.value = lon;
+
+                            submitForm();
+                        },
+                        (error) => {
+                            console.error("Geolocation error:", error);
+                            alert("Impossible de vous localiser. Vérifiez vos permissions.");
+                            btnAroundMe.innerHTML = originalContent;
+                        }
+                    );
+                });
+            }
+        }
+
         // --- SLIDERS Logic ---
         const sliderDist = document.getElementById('slider-dist');
         const sliderElev = document.getElementById('slider-elev');
@@ -262,15 +396,17 @@
         }
 
         // --- Auto Submit Logic ---
-        const form = document.getElementById('filter-form');
-        const submitForm = () => form.submit();
+        // form and submitForm are already defined above
 
         if (sliderDist && sliderDist.noUiSlider) sliderDist.noUiSlider.on('set', submitForm);
         if (sliderElev && sliderElev.noUiSlider) sliderElev.noUiSlider.on('set', submitForm);
 
         if (form) {
-            form.querySelectorAll('input').forEach(input => {
-                if (input.type === 'radio' || input.type === 'checkbox' || input.type === 'text') {
+            form.querySelectorAll('input, select').forEach(input => {
+                // Avoid binding to the autocomplete text input for 'change' if 'input' takes care of it, 
+                // BUT we want 'change' (enter key) to still work for custom typing.
+                // The Autocomplete logic has its own 'click' handler that calls submitForm.
+                if (input.type === 'radio' || input.type === 'checkbox' || input.type === 'text' || input.tagName === 'SELECT') {
                     input.addEventListener('change', submitForm);
                 }
             });
