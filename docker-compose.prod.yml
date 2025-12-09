@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    volumes:
+      - ./app/data:/app/data
+      - ./app/uploads:/app/uploads
+    environment:
+      - DATABASE_URL=sqlite:///./data/kairn.db
+    restart: unless-stopped
+    # No ports exposed directly to host, only to internal network for Caddy
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+
+volumes:
+  caddy_data:
+  caddy_config:
