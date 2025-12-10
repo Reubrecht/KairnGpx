@@ -342,23 +342,9 @@
 <script src="{{ url_for('static', path='/js/Control.Geocoder.js') }}"></script>
 <script src="{{ url_for('static', path='/js/gpx.min.js') }}"></script>
 
-<div id="debug-log"
-    style="position:fixed; bottom:10px; right:10px; background:rgba(0,0,0,0.8); color:white; padding:10px; z-index:9999; font-size:12px; max-width:300px; display:none;">
-    <strong>Debug Log:</strong><br>
-</div>
+
 
 <script>
-    function logDebug(msg) {
-        console.log(msg);
-        const el = document.getElementById('debug-log');
-        if (el) {
-            el.style.display = 'block';
-            el.innerHTML += msg + "<br>";
-        }
-    }
-
-    logDebug("Kairn: Starting script...");
-
     // --- Gradient Helper ---
     function drawGradientTrack(map, gpxLayer) {
         const elevData = gpxLayer.get_elevation_data();
@@ -400,35 +386,26 @@
 
     try {
         if (typeof L === 'undefined') {
-            logDebug("ERROR: Leaflet (L) is undefined!");
             alert("Erreur: Leaflet non chargé.");
         } else {
-            logDebug("Leaflet loaded.");
-
             // Initialize Map
             const lat = Number("{{ track.start_lat }}");
             const lon = Number("{{ track.start_lon }}");
-            logDebug("Coords: " + lat + ", " + lon);
 
             // Disable scrollWheelZoom to allow page scrolling
             const map = L.map('map', {
                 scrollWheelZoom: false
             }).setView([lat, lon], 13);
 
-            logDebug("Map initialized.");
-
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
-            logDebug("Tiles added.");
 
             if (!L.GPX) {
-                logDebug("ERROR: L.GPX plugin missing!");
                 alert("Erreur: Plugin GPX non chargé.");
             } else {
                 // Load GPX
                 const gpxUrl = "{{ url_for('get_raw_gpx', track_id=track.id) }}";
-                logDebug("Fetching GPX: " + gpxUrl);
 
                 new L.GPX(gpxUrl, {
                     async: true,
@@ -438,25 +415,39 @@
                         shadowUrl: "{{ url_for('static', path='/img/pin-shadow.png') }}"
                     }
                 }).on('loaded', function (e) {
-                    logDebug("GPX LOADED!");
                     map.fitBounds(e.target.getBounds(), {
                         paddingBottomRight: [0, 200], // Offset to account for bottom panel if needed, though panel scrolls
                         paddingTopLeft: [0, 0]
                     });
 
-                    // Draw Gradient Overlay
-                    drawGradientTrack(map, e.target);
+                    // Draw Gradient Overlay (Protected)
+                    try {
+                        drawGradientTrack(map, e.target);
+                    } catch (gradErr) {
+                        console.error("Kairn: Error drawing gradient track", gradErr);
+                    }
 
-                    // Chart logic
+                    // Chart logic (Protected)
                     try {
                         const gpx = e.target;
                         const elevationData = gpx.get_elevation_data();
+
+                        if (!elevationData || elevationData.length === 0) {
+                            console.warn("Kairn: No elevation data found.");
+                            return;
+                        }
+
                         const labels = elevationData.map(p => Math.round(p[0]) + 'km');
                         const data = elevationData.map(p => p[1]);
 
                         const ctx = document.getElementById('elevationChart').getContext('2d');
                         if (ctx) {
-                            new Chart(ctx, {
+                            // Destroy existing chart if any
+                            if (window.myElevationChart) {
+                                window.myElevationChart.destroy();
+                            }
+
+                            window.myElevationChart = new Chart(ctx, {
                                 type: 'line',
                                 data: {
                                     labels: labels,
@@ -479,22 +470,35 @@
                                         fill: true,
                                         tension: 0.3,
                                         pointRadius: 0,
-                                        pointHoverRadius: 4
+                                        pointHoverRadius: 6,
+                                        borderWidth: 2
                                     }]
                                 },
                                 options: {
                                     responsive: true,
                                     maintainAspectRatio: false,
                                     plugins: { legend: { display: false } },
+                                    interaction: {
+                                        mode: 'index',
+                                        intersect: false,
+                                    },
                                     scales: {
-                                        x: { display: false, grid: { display: false } },
+                                        x: {
+                                            grid: { display: false },
+                                            ticks: {
+                                                maxTicksLimit: 10,
+                                                callback: function (val, index) {
+                                                    // Show only few labels
+                                                    return index % Math.ceil(labels.length / 10) === 0 ? this.getLabelForValue(val) : '';
+                                                }
+                                            }
+                                        },
                                         y: {
                                             beginAtZero: false,
-                                            grid: { color: '#f3f4f6' },
-                                            ticks: { font: { size: 10 } }
+                                            grid: { color: '#f1f5f9' },
+                                            ticks: { callback: (value) => value + 'm' }
                                         }
                                     },
-                                    interaction: { intersect: false, mode: 'index' },
                                     onHover: (event, elements) => {
                                         if (elements && elements.length) {
                                             const index = elements[0].index;
@@ -535,6 +539,25 @@
                                                 window.mapSyncMarker.setStyle({ opacity: 0, fillOpacity: 0 });
                                             }
                                         }
+                                    },
+                                    plugins: {
+                                        tooltip: {
+                                            mode: 'index',
+                                            intersect: false,
+                                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                            titleColor: '#1e293b',
+                                            bodyColor: '#1e293b',
+                                            borderColor: '#e2e8f0',
+                                            borderWidth: 1,
+                                            displayColors: false,
+                                            callbacks: {
+                                                label: function (context) {
+                                                    return context.parsed.y + 'm';
+                                                }
+                                            }
+                                        },
+                                        // Custom vertical line plugin config (if any)
+                                        verticalLine: true
                                     }
                                 },
                                 plugins: [{
@@ -549,7 +572,7 @@
                                             ctx.moveTo(x, yAxis.top);
                                             ctx.lineTo(x, yAxis.bottom);
                                             ctx.lineWidth = 1.5;
-                                            ctx.strokeStyle = '#10b981';
+                                            ctx.strokeStyle = '#10b981'; // Brand color
                                             ctx.stroke();
                                             ctx.restore();
                                         }
@@ -562,13 +585,11 @@
                     }
 
                 }).on('error', function (e) {
-                    logDebug("GPX ERROR: " + JSON.stringify(e));
                     console.error("GPX ERROR Full:", e);
                 }).addTo(map);
             }
         }
     } catch (err) {
-        logDebug("CRASH: " + err.message);
         console.error(err);
         alert("Crash script: " + err.message);
     }
