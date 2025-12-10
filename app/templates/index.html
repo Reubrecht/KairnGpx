@@ -13,7 +13,70 @@
         display: none !important;
     }
 
-    /* Clean look */
+    /* Custom Slider Styling */
+    .noUi-target {
+        background-color: #f1f5f9;
+        /* slate-100 */
+        border: none;
+        border-radius: 9999px;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+        height: 10px;
+    }
+
+    .noUi-connect {
+        background: #10b981;
+        /* brand-500 */
+        border-radius: 9999px;
+    }
+
+    .noUi-handle {
+        border: 1px solid #e2e8f0;
+        border-radius: 50%;
+        background: #ffffff;
+        cursor: grab;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        width: 24px !important;
+        height: 24px !important;
+        right: -12px !important;
+        /* Half width to center */
+        top: -7px !important;
+    }
+
+    .noUi-handle::before,
+    .noUi-handle::after {
+        display: none;
+        /* Hide default decorative lines */
+    }
+
+    .noUi-handle:active {
+        cursor: grabbing;
+        transform: scale(1.1);
+        border-color: #10b981;
+    }
+
+    .noUi-tooltip {
+        background: #1e293b;
+        /* slate-800 */
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 6px;
+        /* Position below the slider to avoid covering titles */
+        bottom: auto !important;
+        top: 135% !important;
+    }
+
+    /* Hide pips values to keep it clean, or style them */
+    .noUi-marker {
+        background: #cbd5e1;
+    }
+
+    .noUi-value {
+        font-size: 10px;
+        color: #94a3b8;
+    }
 </style>
 {% endblock %}
 
@@ -33,10 +96,10 @@
                         </svg>
                         Filtres
                     </h3>
-                    <a href="/" class="text-xs font-semibold text-slate-400 hover:text-brand-600">Reset</a>
+                    <a href="/explore" class="text-xs font-semibold text-slate-400 hover:text-brand-600">Reset</a>
                 </div>
 
-                <form action="/" method="get" class="space-y-8" id="filter-form">
+                <form action="/explore" method="get" class="space-y-8" id="filter-form">
 
                     <!-- Location -->
                     <div class="relative">
@@ -75,11 +138,8 @@
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">📏 Distance
                             (km)</label>
-                        <div id="slider-dist" class="mb-4 px-2"></div>
-                        <div class="flex justify-between text-xs font-medium text-slate-600">
-                            <span><span id="dist-min-val">0</span>km</span>
-                            <span><span id="dist-max-val">100</span>km</span>
-                        </div>
+                        <div id="slider-dist" class="mb-10 px-2"></div>
+
                         <input type="hidden" name="min_dist" id="input-min-dist"
                             value="{{ request.query_params.get('min_dist', '0') }}">
                         <input type="hidden" name="max_dist" id="input-max-dist"
@@ -90,11 +150,8 @@
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">🏔️ Dénivelé
                             (m+)</label>
-                        <div id="slider-elev" class="mb-4 px-2"></div>
-                        <div class="flex justify-between text-xs font-medium text-slate-600">
-                            <span><span id="elev-min-val">0</span>m</span>
-                            <span><span id="elev-max-val">5000</span>m</span>
-                        </div>
+                        <div id="slider-elev" class="mb-10 px-2"></div>
+
                         <input type="hidden" name="min_elev" id="input-min-elev"
                             value="{{ request.query_params.get('min_elev', '0') }}">
                         <input type="hidden" name="max_elev" id="input-max-elev"
@@ -223,7 +280,8 @@
             {% else %}
             <div class="text-center py-12 bg-white rounded-lg border border-dashed border-gray-300">
                 <p class="text-gray-500">Aucune trace trouvée pour ces critères.</p>
-                <a href="/" class="text-green-600 hover:text-green-500 font-medium mt-2 inline-block">Tout voir</a>
+                <a href="/explore" class="text-green-600 hover:text-green-500 font-medium mt-2 inline-block">Tout
+                    voir</a>
             </div>
             {% endif %}
         </div>
@@ -233,6 +291,50 @@
 {% block scripts %}
 <script>
     document.addEventListener("DOMContentLoaded", function () {
+
+        // --- Gradient Drawing Helper ---
+        function drawGradientTrack(map, gpxLayer) {
+            const elevData = gpxLayer.get_elevation_data();
+            if (!elevData || elevData.length < 2) return;
+
+            // Calculate range
+            let minElev = Infinity;
+            let maxElev = -Infinity;
+            for (let i = 0; i < elevData.length; i++) {
+                const e = elevData[i][1];
+                if (e < minElev) minElev = e;
+                if (e > maxElev) maxElev = e;
+            }
+            const range = maxElev - minElev;
+
+            // Use Canvas renderer for better performance with many segments
+            const renderer = L.canvas({ padding: 0.5 });
+
+            for (let i = 0; i < elevData.length - 1; i++) {
+                const p1 = elevData[i];
+                const p2 = elevData[i + 1];
+                const pt1 = p1[2]; // LatLng
+                const pt2 = p2[2]; // LatLng
+
+                if (!pt1 || !pt2) continue;
+
+                // Color based on average segment elevation
+                const avgElev = (p1[1] + p2[1]) / 2;
+                const ratio = range === 0 ? 0 : (avgElev - minElev) / range;
+
+                // HSL Gradient: Green (120) -> Red (0)
+                const hue = (1 - ratio) * 120;
+                const color = `hsl(${hue}, 90%, 45%)`;
+
+                L.polyline([pt1, pt2], {
+                    color: color,
+                    weight: 3,
+                    opacity: 1,
+                    renderer: renderer,
+                    interactive: false
+                }).addTo(map);
+            }
+        }
 
         // --- Autocomplete Logic ---
         const cityInput = document.getElementById('city-input');
@@ -248,9 +350,6 @@
         if (cityInput) {
             cityInput.addEventListener('input', function () {
                 const query = this.value;
-                // Clear hidden coords if user types freely, so main.py falls back to text search or geopy if they don't click a result
-                // But we probably want to keep them if they just refine? 
-                // Let's clear to be safe: if they type, they must re-select or rely on fallback.
                 searchLat.value = '';
                 searchLon.value = '';
 
@@ -274,7 +373,6 @@
                                     const li = document.createElement('li');
                                     li.className = "px-4 py-2 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 flex flex-col border-b border-slate-50 last:border-0";
 
-                                    // Construct label
                                     let label = props.name;
                                     let context = [];
                                     if (props.city && props.name !== props.city) context.push(props.city);
@@ -291,7 +389,7 @@
                                         searchLat.value = coords[1]; // Lat
                                         searchLon.value = coords[0]; // Lon
                                         suggestionsList.classList.add('hidden');
-                                        submitForm(); // Trigger search
+                                        submitForm();
                                     });
                                     suggestionsList.appendChild(li);
                                 });
@@ -303,14 +401,12 @@
                 }, 300);
             });
 
-            // Close on click outside
             document.addEventListener('click', function (e) {
                 if (cityInput && !cityInput.contains(e.target) && suggestionsList && !suggestionsList.contains(e.target)) {
                     suggestionsList.classList.add('hidden');
                 }
             });
 
-            // Around Me Button Logic
             const btnAroundMe = document.getElementById('btn-around-me');
             if (btnAroundMe) {
                 btnAroundMe.addEventListener('click', function () {
@@ -319,7 +415,6 @@
                         return;
                     }
 
-                    // Show loading state
                     const originalContent = btnAroundMe.innerHTML;
                     btnAroundMe.innerHTML = '<svg class="animate-spin h-5 w-5 text-brand-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
 
@@ -327,11 +422,9 @@
                         (position) => {
                             const lat = position.coords.latitude;
                             const lon = position.coords.longitude;
-
                             cityInput.value = "📍 Ma Position";
                             searchLat.value = lat;
                             searchLon.value = lon;
-
                             submitForm();
                         },
                         (error) => {
@@ -350,14 +443,21 @@
 
         if (sliderDist) {
             const minD = parseInt(document.getElementById('input-min-dist').value) || 0;
-            const maxD = parseInt(document.getElementById('input-max-dist').value) || 100;
+            const maxD = parseInt(document.getElementById('input-max-dist').value) || 170;
 
             noUiSlider.create(sliderDist, {
                 start: [minD, maxD],
                 connect: true,
-                range: { 'min': 0, 'max': 200 },
+                range: { 'min': 0, 'max': 170 },
                 step: 1,
-                tooltips: false,
+                tooltips: [{
+                    to: function (value) { return Math.round(value) + 'km'; }
+                }, {
+                    to: function (value) {
+                        if (value >= 170) return '170km ➚';
+                        return Math.round(value) + 'km';
+                    }
+                }],
                 format: {
                     to: v => Math.round(v),
                     from: v => Number(v)
@@ -365,22 +465,28 @@
             });
 
             sliderDist.noUiSlider.on('update', function (values, handle) {
-                document.getElementById('dist-min-val').innerText = values[0];
-                document.getElementById('dist-max-val').innerText = values[1];
                 document.getElementById('input-min-dist').value = values[0];
-                document.getElementById('input-max-dist').value = values[1];
+                document.getElementById('input-max-dist').value = (values[1] >= 170) ? 999999 : values[1];
             });
         }
 
         if (sliderElev) {
             const minE = parseInt(document.getElementById('input-min-elev').value) || 0;
-            const maxE = parseInt(document.getElementById('input-max-elev').value) || 5000;
+            const maxE = parseInt(document.getElementById('input-max-elev').value) || 10000;
 
             noUiSlider.create(sliderElev, {
                 start: [minE, maxE],
                 connect: true,
-                range: { 'min': 0, 'max': 8000 },
+                range: { 'min': 0, 'max': 10000 },
                 step: 50,
+                tooltips: [{
+                    to: function (value) { return Math.round(value) + 'm'; }
+                }, {
+                    to: function (value) {
+                        if (value >= 10000) return '10000m ➚';
+                        return Math.round(value) + 'm';
+                    }
+                }],
                 format: {
                     to: v => Math.round(v),
                     from: v => Number(v)
@@ -388,34 +494,26 @@
             });
 
             sliderElev.noUiSlider.on('update', function (values, handle) {
-                document.getElementById('elev-min-val').innerText = values[0];
-                document.getElementById('elev-max-val').innerText = values[1];
                 document.getElementById('input-min-elev').value = values[0];
-                document.getElementById('input-max-elev').value = values[1];
+                document.getElementById('input-max-elev').value = (values[1] >= 10000) ? 999999 : values[1];
             });
         }
-
-        // --- Auto Submit Logic ---
-        // form and submitForm are already defined above
 
         if (sliderDist && sliderDist.noUiSlider) sliderDist.noUiSlider.on('set', submitForm);
         if (sliderElev && sliderElev.noUiSlider) sliderElev.noUiSlider.on('set', submitForm);
 
         if (form) {
             form.querySelectorAll('input, select').forEach(input => {
-                // Avoid binding to the autocomplete text input for 'change' if 'input' takes care of it, 
-                // BUT we want 'change' (enter key) to still work for custom typing.
-                // The Autocomplete logic has its own 'click' handler that calls submitForm.
                 if (input.type === 'radio' || input.type === 'checkbox' || input.type === 'text' || input.tagName === 'SELECT') {
                     input.addEventListener('change', submitForm);
                 }
             });
         }
-        // --- End Sliders & Logic ---
 
+        // --- Tracks Maps ---
         const tracks = [
             {% for track in tracks %}
-            { id: "{{ track.id }}", color: '#059669' },
+            { id: "{{ track.id }}" },
         {% endfor %}
         ];
 
@@ -436,7 +534,6 @@
             interaction: false
         });
 
-        // Minimalist CartoDB Light No Labels
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
             opacity: 0.8
         }).addTo(map);
@@ -449,13 +546,16 @@
                 shadowUrl: null
             },
             polyline_options: {
-                color: t.color,
+                color: '#cbd5e1', // Slate-300 (Neutral fallback)
                 weight: 3,
-                opacity: 0.9,
+                opacity: 1,
                 lineCap: 'round'
             }
         }).on('loaded', function (e) {
-            map.fitBounds(e.target.getBounds(), { padding: [20, 20] });
+            const gpx = e.target;
+            map.fitBounds(gpx.getBounds(), { padding: [20, 20] });
+            // Draw gradient track
+            drawGradientTrack(map, gpx);
         }).addTo(map);
     });
     });

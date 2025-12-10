@@ -194,7 +194,7 @@ def login(
         return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"})
     
     access_token = create_access_token(data={"sub": user.username})
-    response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+    response = RedirectResponse(url="/explore", status_code=status.HTTP_303_SEE_OTHER)
     response.set_cookie(key="access_token", value=f"Bearer {access_token}", httponly=True)
     return response
 
@@ -205,7 +205,32 @@ def logout():
     return response
 
 @app.get("/", response_class=HTMLResponse)
-async def dashboard(
+
+async def landing_page(request: Request, db: Session = Depends(get_db)):
+    user = await get_current_user_optional(request, db)
+    if user:
+        return RedirectResponse(url="/explore")
+    
+    # Check Beta Cookie
+    has_beta = request.cookies.get("beta_access") == "granted"
+    return templates.TemplateResponse("landing.html", {"request": request, "user": user, "has_beta": has_beta})
+
+@app.post("/verify-beta")
+async def verify_beta(request: Request, code: str = Form(...)):
+    required_code = os.getenv("INVITATION_CODE", "kairn2025") # Default fallback if env not set
+    if code and code.strip() == required_code:
+        response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+        response.set_cookie(key="beta_access", value="granted", max_age=60*60*24*30, httponly=True) # 30 days
+        return response
+    else:
+        return templates.TemplateResponse("landing.html", {
+            "request": request, 
+            "error": "Code incorrect.",
+            "has_beta": False
+        })
+
+@app.get("/explore", response_class=HTMLResponse)
+async def explore(
     request: Request,
     db: Session = Depends(get_db),
     technicity: Optional[str] = None,
@@ -231,6 +256,9 @@ async def dashboard(
     search_lon: Optional[str] = None
 ):
     user = await get_current_user_optional(request, db)
+    has_beta = request.cookies.get("beta_access") == "granted"
+    if not user and not has_beta:
+        return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     query = db.query(models.Track)
     
     # 1. Technicity
@@ -345,6 +373,9 @@ async def advanced_search(
     author: Optional[str] = None,
 ):
     user = await get_current_user_optional(request, db)
+    has_beta = request.cookies.get("beta_access") == "granted"
+    if not user and not has_beta:
+        return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     query = db.query(models.Track)
 
     # 1. Location (City) - Could expand to country if we stored it separately or parsed it
@@ -563,6 +594,9 @@ async def upload_track(
 @app.get("/track/{track_id}", response_class=HTMLResponse)
 async def track_detail(track_id: int, request: Request, db: Session = Depends(get_db)):
     user = await get_current_user_optional(request, db)
+    has_beta = request.cookies.get("beta_access") == "granted"
+    if not user and not has_beta:
+        return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     track = db.query(models.Track).filter(models.Track.id == track_id).first()
     if not track:
         raise HTTPException(status_code=404, detail="Track not found")
@@ -576,6 +610,9 @@ async def track_detail(track_id: int, request: Request, db: Session = Depends(ge
 @app.get("/race/{slug}", response_class=HTMLResponse)
 async def race_detail(slug: str, request: Request, db: Session = Depends(get_db)):
     user = await get_current_user_optional(request, db)
+    has_beta = request.cookies.get("beta_access") == "granted"
+    if not user and not has_beta:
+        return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     race = db.query(models.OfficialRace).filter(models.OfficialRace.slug == slug).first()
     if not race:
         raise HTTPException(status_code=404, detail="Course non trouvée")
@@ -680,6 +717,9 @@ async def edit_track_action(
 async def global_map_page(request: Request, db: Session = Depends(get_db)):
     # Optional: require login
     user = await get_current_user_optional(request, db)
+    has_beta = request.cookies.get("beta_access") == "granted"
+    if not user and not has_beta:
+        return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     
     # Fetch content (optimally select only needed fields: lat/lon/id)
     tracks = db.query(models.Track).filter(models.Track.visibility == models.Visibility.PUBLIC).all()

@@ -108,6 +108,17 @@
                     </div>
                 </div>
 
+                <!-- Elevation Chart (Moved Up) -->
+                <div class="mb-8">
+                    <div class="bg-gray-50 rounded-xl p-4 border border-gray-100 shadow-inner">
+                        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 ml-1">Profil
+                            Altimétrique</h3>
+                        <div class="h-48 w-full">
+                            <canvas id="elevationChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- KEY METRICS GRID -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                     <!-- Distance -->
@@ -302,16 +313,7 @@
                         {% endif %}
                     </div>
 
-                    <!-- Elevation Chart -->
-                    <div class="md:col-span-2">
-                        <div class="bg-gray-50 rounded-xl p-4 border border-gray-100 shadow-inner">
-                            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 ml-1">Profil
-                                Altimétrique</h3>
-                            <div class="h-48 w-full">
-                                <canvas id="elevationChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
+
                 </div>
 
             </div>
@@ -356,6 +358,45 @@
     }
 
     logDebug("Kairn: Starting script...");
+
+    // --- Gradient Helper ---
+    function drawGradientTrack(map, gpxLayer) {
+        const elevData = gpxLayer.get_elevation_data();
+        if (!elevData || elevData.length < 2) return;
+
+        let minElev = Infinity;
+        let maxElev = -Infinity;
+        for (let i = 0; i < elevData.length; i++) {
+            const e = elevData[i][1];
+            if (e < minElev) minElev = e;
+            if (e > maxElev) maxElev = e;
+        }
+        const range = maxElev - minElev;
+
+        const renderer = L.canvas({ padding: 0.5 });
+
+        for (let i = 0; i < elevData.length - 1; i++) {
+            const p1 = elevData[i];
+            const p2 = elevData[i + 1];
+            const pt1 = p1[2];
+            const pt2 = p2[2];
+
+            if (!pt1 || !pt2) continue;
+
+            const avgElev = (p1[1] + p2[1]) / 2;
+            const ratio = range === 0 ? 0 : (avgElev - minElev) / range;
+            const hue = (1 - ratio) * 120; // 120 (Green) -> 0 (Red)
+            const color = `hsl(${hue}, 90%, 45%)`;
+
+            L.polyline([pt1, pt2], {
+                color: color,
+                weight: 5,
+                opacity: 0.9,
+                renderer: renderer,
+                interactive: false
+            }).addTo(map);
+        }
+    }
 
     try {
         if (typeof L === 'undefined') {
@@ -402,6 +443,9 @@
                         paddingBottomRight: [0, 200], // Offset to account for bottom panel if needed, though panel scrolls
                         paddingTopLeft: [0, 0]
                     });
+
+                    // Draw Gradient Overlay
+                    drawGradientTrack(map, e.target);
 
                     // Chart logic
                     try {

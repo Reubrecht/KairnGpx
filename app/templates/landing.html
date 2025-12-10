@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="relative w-full h-[calc(100vh-64px)] flex items-center justify-center overflow-hidden">
+    <!-- Background Image -->
+    <div class="absolute inset-0 z-0">
+        <img src="{{ url_for('static', path='/img/hero.png') }}" class="w-full h-full object-cover"
+            alt="Trail runner on a ridge">
+        <!-- Gradient Overlay -->
+        <div class="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-slate-900/90"></div>
+    </div>
+
+    <!-- Content -->
+    <div class="relative z-10 text-center px-4 max-w-4xl mx-auto">
+        <h1 class="text-5xl md:text-7xl font-black text-white tracking-tight mb-6 drop-shadow-lg">
+            MY KAIRN
+        </h1>
+        <p class="text-xl md:text-2xl text-slate-100 font-medium mb-10 max-w-2xl mx-auto drop-shadow-md">
+            Plus qu'une trace GPX. Analysez votre effort, visualisez le relief et partagez vos aventures authentiques.
+        </p>
+
+        <!-- Beta & Auth Section -->
+        {% if has_beta %}
+        <!-- GRANTED STATE -->
+        <div class="animate-fade-in-up">
+            <div
+                class="bg-emerald-900/60 backdrop-blur-md p-6 rounded-2xl border border-emerald-500/30 mb-8 max-w-lg mx-auto shadow-2xl">
+                <div
+                    class="flex items-center justify-center gap-2 text-emerald-400 font-bold mb-4 uppercase tracking-wider text-xs">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Accès Beta Validé
+                </div>
+                <a href="/explore"
+                    class="block w-full px-8 py-4 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all transform hover:scale-105 text-lg mb-4">
+                    🚀 Explorer les Traces
+                </a>
+                <p class="text-emerald-100/70 text-sm leading-relaxed">
+                    Envie de plus ? <a href="/register"
+                        class="text-white underline decoration-2 underline-offset-4 font-bold hover:text-emerald-300">Créez
+                        un compte gratuitement</a> pour importer vos traces, analyser vos perfs et rejoindre le
+                    classement.
+                </p>
+            </div>
+        </div>
+        {% else %}
+        <!-- LOCKED STATE -->
+        <div class="max-w-md mx-auto mb-12 animate-fade-in-up">
+            <form action="/verify-beta" method="post" class="relative group">
+                <div
+                    class="absolute -inset-0.5 bg-gradient-to-r from-brand-600 to-cyan-600 rounded-xl blur opacity-30 group-hover:opacity-60 transition duration-1000 group-hover:duration-200">
+                </div>
+                <div
+                    class="relative flex bg-slate-900/90 backdrop-blur-sm rounded-xl p-1.5 shadow-2xl border border-slate-700/50">
+                    <input type="text" name="code" placeholder="Code d'accès Beta..."
+                        class="flex-1 bg-transparent text-white px-4 py-3 focus:outline-none placeholder-slate-400 font-medium"
+                        required>
+                    <button type="submit"
+                        class="px-6 py-2 bg-slate-800 hover:bg-brand-600 text-white font-bold rounded-lg transition-all border border-slate-700 hover:border-brand-500">
+                        Entrer
+                    </button>
+                </div>
+                {% if error %}
+                <div
+                    class="mt-4 bg-red-500/10 border border-red-500/20 text-red-200 px-4 py-2 rounded-lg text-sm font-bold backdrop-blur-sm">
+                    ⚠️ {{ error }}
+                </div>
+                {% endif %}
+            </form>
+
+            <p class="text-slate-400 text-sm mt-4">
+                Pas de code ? <a href="/register"
+                    class="text-white font-bold hover:text-brand-400 underline decoration-slate-600 underline-offset-4 transition-all">S'inscrire
+                    à la liste d'attente</a> ou <a href="/login"
+                    class="text-slate-300 hover:text-white transition-colors">Connexion</a>
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="py-24 bg-slate-900 text-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl font-bold tracking-tight mb-4">Pourquoi Kairn ?</h2>
+            <p class="text-slate-400 max-w-2xl mx-auto">Une plateforme conçue par des passionnés de montagne pour les
+                passionnés de montagne.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+            <!-- Feature 1 -->
+            <div class="flex flex-col items-center text-center group">
+                <div
+                    class="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-brand-900 transition-colors">
+                    <span class="text-3xl">🏔️</span>
+                </div>
+                <h3 class="text-xl font-bold mb-3">Visualisation 3D</h3>
+                <p class="text-slate-400 leading-relaxed">
+                    Visualisez le relief, la technicité et l'engagement de chaque parcours grâce à nos profils
+                    altimétriques détaillés.
+                </p>
+            </div>
+
+            <!-- Feature 2 -->
+            <div class="flex flex-col items-center text-center group">
+                <div
+                    class="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-brand-900 transition-colors">
+                    <span class="text-3xl">📊</span>
+                </div>
+                <h3 class="text-xl font-bold mb-3">Données Avancées</h3>
+                <p class="text-slate-400 leading-relaxed">
+                    Calcul automatique de l'effort, estimation des points ITRA, et détection des types de terrain
+                    (Forêt, Rocheux, Alpin).
+                </p>
+            </div>
+
+            <!-- Feature 3 -->
+            <div class="flex flex-col items-center text-center group">
+                <div
+                    class="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-brand-900 transition-colors">
+                    <span class="text-3xl">🤝</span>
+                </div>
+                <h3 class="text-xl font-bold mb-3">Communauté</h3>
+                <p class="text-slate-400 leading-relaxed">
+                    Partagez vos traces, découvrez des pépites locales et inspirez-vous pour votre prochaine sortie
+                    longue.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
