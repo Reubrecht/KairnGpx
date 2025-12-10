@@ -9,6 +9,11 @@ echo "🚀 Début du déploiement sur Freebox..."
 echo "📥 Pull du code..."
 git pull
 
+# 1b. Préparer les dossiers de données (Fix Permissions SQLite)
+echo "🔧 Configuration des permissions..."
+mkdir -p app/data app/uploads
+chmod -R 777 app/data app/uploads
+
 # 2. Vérifier si le token est là (sécurité basique)
 if [ ! -f .env ]; then
     echo "⚠️  ATTENTION : Fichier .env manquant !"
