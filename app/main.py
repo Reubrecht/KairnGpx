@@ -149,9 +149,19 @@ def register(
     username: str = Form(...),
     email: str = Form(...),
     password: str = Form(...),
+    invitation_code: str = Form(None), # Optional in form, but required if env var is set
     db: Session = Depends(get_db)
 ):
     try:
+        # 1. Check Invitation Code (Beta Lock)
+        required_code = os.getenv("INVITATION_CODE")
+        if required_code:
+            if not invitation_code or invitation_code.strip() != required_code:
+                 return templates.TemplateResponse("register.html", {
+                     "request": request, 
+                     "error": "Code d'invitation incorrect. L'inscription est restreinte."
+                 })
+
         # Check if user exists
         if db.query(models.User).filter(or_(models.User.username == username, models.User.email == email)).first():
             return templates.TemplateResponse("register.html", {"request": request, "error": "Ce nom d'utilisateur ou email existe déjà."})
