@@ -10,6 +10,7 @@ services:
       - ./app/uploads:/app/uploads
     environment:
       - DATABASE_URL=sqlite:///./data/kairn.db
+      - INVITATION_CODE=${INVITATION_CODE}
     ports:
       - "8000:8000" # Access locally via http://IP:8000 while waiting for Tunnel
 

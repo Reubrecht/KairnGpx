@@ -87,13 +87,10 @@
         <!-- Filters Sidebar -->
         <div class="w-full md:w-80 flex-shrink-0">
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sticky top-24">
-                <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4">
-                            </path>
-                        </svg>
+                <div class="flex items-center justify-between mb-8">
+                    <h3 class="text-xl font-bold flex items-center gap-2">
+                        <img src="{{ url_for('static', path='/img/icon_filter.png') }}" class="w-6 h-6 object-contain"
+                            alt="Filtres">
                         Filtres
                     </h3>
                     <a href="/explore" class="text-xs font-semibold text-slate-400 hover:text-brand-600">Reset</a>
@@ -103,8 +100,11 @@
 
                     <!-- Location -->
                     <div class="relative">
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">📍
-                            Localisation</label>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1">
+                            <img src="{{ url_for('static', path='/img/icon_location.png') }}"
+                                class="w-4 h-4 object-contain" alt="Loc">
+                            Localisation
+                        </label>
                         <div class="flex gap-2">
                             <div class="relative flex-1">
                                 <input type="text" id="city-input" name="city_search" value="{{ current_city or '' }}"
@@ -136,8 +136,11 @@
 
                     <!-- Distance Slider -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">📏 Distance
-                            (km)</label>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1">
+                            <img src="{{ url_for('static', path='/img/icon_distance.png') }}"
+                                class="w-4 h-4 object-contain" alt="Dist">
+                            Distance (km)
+                        </label>
                         <div id="slider-dist" class="mb-10 px-2"></div>
 
                         <input type="hidden" name="min_dist" id="input-min-dist"
@@ -148,8 +151,11 @@
 
                     <!-- Elevation Slider -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">🏔️ Dénivelé
-                            (m+)</label>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1">
+                            <img src="{{ url_for('static', path='/img/icon_elevation.png') }}"
+                                class="w-4 h-4 object-contain" alt="Elev">
+                            Dénivelé (m+)
+                        </label>
                         <div id="slider-elev" class="mb-10 px-2"></div>
 
                         <input type="hidden" name="min_elev" id="input-min-elev"
@@ -160,8 +166,11 @@
 
                     <!-- Technicity Tiles -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">⚡
-                            Technicité</label>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1">
+                            <img src="{{ url_for('static', path='/img/icon_technicity.png') }}"
+                                class="w-4 h-4 object-contain" alt="Tech">
+                            Technicité
+                        </label>
                         <div class="grid grid-cols-2 gap-2">
                             <label class="cursor-pointer">
                                 <input type="radio" name="technicity" value="ALL" class="peer sr-only" {% if not
@@ -187,8 +196,11 @@
 
                     <!-- Created By -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">👤 Créé
-                            par</label>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1">
+                            <img src="{{ url_for('static', path='/img/icon_user.png') }}" class="w-4 h-4 object-contain"
+                                alt="User">
+                            Créé par
+                        </label>
                         <input type="text" name="author" value="{{ request.query_params.get('author', '') }}"
                             placeholder="Nom d'utilisateur"
                             class="w-full px-4 py-2 rounded-xl border-slate-200 bg-slate-50 text-sm focus:bg-white focus:border-brand-500 transition-colors">

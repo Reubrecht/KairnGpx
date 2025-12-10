@@ -212,15 +212,15 @@ async def landing_page(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse(url="/explore")
     
     # Check Beta Cookie
-    has_beta = request.cookies.get("beta_access") == "granted"
+    has_beta = request.cookies.get("beta_access_v2") == "granted"
     return templates.TemplateResponse("landing.html", {"request": request, "user": user, "has_beta": has_beta})
 
 @app.post("/verify-beta")
 async def verify_beta(request: Request, code: str = Form(...)):
-    required_code = os.getenv("INVITATION_CODE", "kairn2025") # Default fallback if env not set
+    required_code = os.getenv("INVITATION_CODE", "ARC2025") # Default fallback if env not set
     if code and code.strip() == required_code:
         response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
-        response.set_cookie(key="beta_access", value="granted", max_age=60*60*24*30, httponly=True) # 30 days
+        response.set_cookie(key="beta_access_v2", value="granted", max_age=60*60*24*30, httponly=True) # 30 days
         return response
     else:
         return templates.TemplateResponse("landing.html", {
@@ -256,7 +256,7 @@ async def explore(
     search_lon: Optional[str] = None
 ):
     user = await get_current_user_optional(request, db)
-    has_beta = request.cookies.get("beta_access") == "granted"
+    has_beta = request.cookies.get("beta_access_v2") == "granted"
     if not user and not has_beta:
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     query = db.query(models.Track)
@@ -373,7 +373,7 @@ async def advanced_search(
     author: Optional[str] = None,
 ):
     user = await get_current_user_optional(request, db)
-    has_beta = request.cookies.get("beta_access") == "granted"
+    has_beta = request.cookies.get("beta_access_v2") == "granted"
     if not user and not has_beta:
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     query = db.query(models.Track)
@@ -594,7 +594,7 @@ async def upload_track(
 @app.get("/track/{track_id}", response_class=HTMLResponse)
 async def track_detail(track_id: int, request: Request, db: Session = Depends(get_db)):
     user = await get_current_user_optional(request, db)
-    has_beta = request.cookies.get("beta_access") == "granted"
+    has_beta = request.cookies.get("beta_access_v2") == "granted"
     if not user and not has_beta:
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     track = db.query(models.Track).filter(models.Track.id == track_id).first()
@@ -610,7 +610,7 @@ async def track_detail(track_id: int, request: Request, db: Session = Depends(ge
 @app.get("/race/{slug}", response_class=HTMLResponse)
 async def race_detail(slug: str, request: Request, db: Session = Depends(get_db)):
     user = await get_current_user_optional(request, db)
-    has_beta = request.cookies.get("beta_access") == "granted"
+    has_beta = request.cookies.get("beta_access_v2") == "granted"
     if not user and not has_beta:
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     race = db.query(models.OfficialRace).filter(models.OfficialRace.slug == slug).first()

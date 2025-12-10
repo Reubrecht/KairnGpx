@@ -6,6 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Kairn - Trail Running Community</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', path='/img/favicon.png') }}">
     <!-- Tailwind CSS (Dev Mode) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -44,18 +45,13 @@
             <div class="flex justify-between h-16">
                 <!-- Logo & Desktop Nav -->
                 <div class="flex items-center gap-4 md:gap-8">
-                    <a href="/" class="flex items-center gap-2 group flex-shrink-0">
-                        <!-- Icon -->
-                        <div
-                            class="bg-brand-600 text-white p-2 rounded-lg transform group-hover:rotate-6 transition-transform">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                            </svg>
-                        </div>
-                        <span class="text-2xl font-bold tracking-tight text-slate-900 hidden sm:block">MY KAIRN</span>
-                        <span class="text-2xl font-bold tracking-tight text-slate-900 sm:hidden">K</span>
+                    <a href="/" class="flex items-center gap-3 group">
+                        <img src="{{ url_for('static', path='/img/logo.png') }}" alt="My Kairn Logo"
+                            class="h-10 w-auto object-contain drop-shadow-md group-hover:scale-105 transition-transform">
+                        <span
+                            class="text-2xl font-black tracking-tighter text-slate-900 hidden sm:block font-['Inter']">MY
+                            KAIRN</span>
+                        <!-- Mobile shortened version removed as image handles it well, or keep text hidden on mobile -->
                     </a>
 
                     <div class="hidden md:flex items-center gap-1">
