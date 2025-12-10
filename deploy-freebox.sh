@@ -12,7 +12,8 @@ git pull
 # 1b. Préparer les dossiers de données (Fix Permissions SQLite)
 echo "🔧 Configuration des permissions..."
 mkdir -p app/data app/uploads
-chmod -R 777 app/data app/uploads
+# On tente de mettre les droits, mais on continue si ça échoue (car déjà fait via sudo par exemple)
+chmod -R 777 app/data app/uploads || true
 
 # 2. Vérifier si le token est là (sécurité basique)
 if [ ! -f .env ]; then
