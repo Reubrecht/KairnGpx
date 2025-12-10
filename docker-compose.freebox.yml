@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./app/data:/app/data
-      - ./app/uploads:/app/uploads
+      - ./app/uploads:/app/app/uploads
     environment:
       - DATABASE_URL=sqlite:///./data/kairn.db
       - INVITATION_CODE=${INVITATION_CODE}
