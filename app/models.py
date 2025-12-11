@@ -86,6 +86,7 @@ class Track(Base):
     
     max_slope = Column(Float, nullable=True) # Percentage
     avg_slope_uphill = Column(Float, nullable=True) # Percentage
+    longest_climb = Column(Integer, nullable=True) # Vertical gain of longest continuous climb
 
     # 3. Effort & Difficulty
     itra_points_estim = Column(Integer, nullable=True)

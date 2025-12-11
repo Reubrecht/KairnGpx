@@ -45,6 +45,16 @@
                     </div>
 
                     <div class="flex flex-col items-end gap-3">
+                        <!-- Share Button -->
+                        <button onclick="copyLink()" id="shareBtn"
+                            class="inline-flex items-center px-4 py-2 border border-gray-200 shadow-sm text-sm font-bold rounded-xl text-slate-700 bg-white hover:bg-slate-50 hover:border-brand-200 transition-all cursor-pointer">
+                            <svg class="w-4 h-4 mr-2 text-slate-400 group-hover:text-brand-500 transition-colors"
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                            </svg>
+                            <span id="shareBtnText">Partager</span>
+                        </button>
                         <a href="/raw_gpx/{{ track.id }}"
                             class="inline-flex items-center px-4 py-2 border border-gray-200 shadow-sm text-sm font-bold rounded-xl text-slate-700 bg-white hover:bg-slate-50 hover:border-brand-200 transition-all">
                             <svg class="w-4 h-4 mr-2 text-slate-400" fill="none" stroke="currentColor"
@@ -249,6 +259,11 @@
                                         <dd class="font-bold text-slate-800">{{ track.max_slope or 0 }}%</dd>
                                     </div>
                                     <div class="flex flex-col">
+                                        <dt class="text-[10px] text-slate-400 font-bold uppercase">Plus longue montée
+                                        </dt>
+                                        <dd class="font-bold text-slate-800">{{ track.longest_climb or 0 }} m</dd>
+                                    </div>
+                                    <div class="flex flex-col">
                                         <dt class="text-[10px] text-slate-400 font-bold uppercase">Pente Moy. (Montée)
                                         </dt>
                                         <dd class="font-bold text-slate-800">{{ track.avg_slope_uphill or 0 }}%</dd>
@@ -308,7 +323,9 @@
                         <div class="pt-6 border-t border-gray-100">
                             <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-2">Note de l'auteur
                             </h3>
-                            <p class="text-gray-600 text-sm leading-relaxed">{{ track.description }}</p>
+                            <div class="prose prose-sm prose-slate max-w-none">
+                                {{ track.description | markdown | safe }}
+                            </div>
                         </div>
                         {% endif %}
                     </div>
@@ -323,275 +340,293 @@
 {% endblock %}
 
 {% block head %}
-<!-- Leaflet CSS -->
-<link rel="stylesheet" href="{{ url_for('static', path='/css/leaflet.css') }}" />
-<link rel="stylesheet" href="{{ url_for('static', path='/css/Control.Geocoder.css') }}" />
+<!-- MapLibre CSS -->
+<link rel="stylesheet" href="{{ url_for('static', path='/css/maplibre-gl.css') }}" />
 <style>
-    /* Hide scrollbar for cleaner look if desired, or keep default */
-    /* Ensure map container stays fixed */
     body {
         overflow-x: hidden;
+    }
+
+    .maplibregl-popup-content {
+        padding: 10px;
+        border-radius: 8px;
+        font-family: 'Inter', sans-serif;
     }
 </style>
 {% endblock %}
 
 {% block scripts %}
-<!-- GPX Parser + Chart.js -->
+<!-- Chart.js + MapLibre -->
 <script src="{{ url_for('static', path='/js/chart.min.js') }}"></script>
-<script src="{{ url_for('static', path='/js/leaflet.js') }}"></script>
-<script src="{{ url_for('static', path='/js/Control.Geocoder.js') }}"></script>
-<script src="{{ url_for('static', path='/js/gpx.min.js') }}"></script>
-
-
+<script src="{{ url_for('static', path='/js/maplibre-gl.js') }}"></script>
+<!-- Previously used scripts removed: leaflet, Control.Geocoder, gpx.min.js -->
 
 <script>
-    // --- Gradient Helper ---
-    function drawGradientTrack(map, gpxLayer) {
-        const elevData = gpxLayer.get_elevation_data();
-        if (!elevData || elevData.length < 2) return;
+    document.addEventListener('DOMContentLoaded', function () {
+        const trackGeoJSON = {{ track_geojson | safe
+    }};
+    if (!trackGeoJSON) {
+        console.error("No GeoJSON data available");
+        return;
+    }
 
-        let minElev = Infinity;
-        let maxElev = -Infinity;
-        for (let i = 0; i < elevData.length; i++) {
-            const e = elevData[i][1];
-            if (e < minElev) minElev = e;
-            if (e > maxElev) maxElev = e;
-        }
-        const range = maxElev - minElev;
+    // Initialize MapLibre
+    const map = new maplibregl.Map({
+        container: 'map',
+        style: '/static/style.json', // OpenTrailMap style
+        center: [{{ track.start_lon }}, {{ track.start_lat }}],
+    zoom: 13,
+        attributionControl: false
+        });
 
-        const renderer = L.canvas({ padding: 0.5 });
+    // Add controls
+    map.addControl(new maplibregl.NavigationControl(), 'top-right');
+    map.addControl(new maplibregl.AttributionControl({
+        customAttribution: 'OpenTrailMap | OpenStreetMap contributors'
+    }), 'bottom-right');
 
-        for (let i = 0; i < elevData.length - 1; i++) {
-            const p1 = elevData[i];
-            const p2 = elevData[i + 1];
-            const pt1 = p1[2];
-            const pt2 = p2[2];
+    map.on('load', function () {
+        // 1. Add Track Source
+        // breakdown to segments for elevation gradient
+        const coords = trackGeoJSON.geometry.coordinates;
+        const segments = [];
+        let minElev = Infinity, maxElev = -Infinity;
 
-            if (!pt1 || !pt2) continue;
+        // First pass: Find min/max elevation
+        coords.forEach(c => {
+            const ele = c[2];
+            if (ele !== null) {
+                if (ele < minElev) minElev = ele;
+                if (ele > maxElev) maxElev = ele;
+            }
+        });
+        const elevRange = maxElev - minElev;
 
-            const avgElev = (p1[1] + p2[1]) / 2;
-            const ratio = range === 0 ? 0 : (avgElev - minElev) / range;
-            const hue = (1 - ratio) * 120; // 120 (Green) -> 0 (Red)
+        // Second pass: Create segments
+        for (let i = 0; i < coords.length - 1; i++) {
+            const p1 = coords[i];
+            const p2 = coords[i + 1];
+            const avgElev = ((p1[2] || 0) + (p2[2] || 0)) / 2;
+
+            // Calculate Color (Green to Red or specific gradient)
+            // Kairn Gradient: Green(Low) -> Red(High) or similar? 
+            // Previous was: hue = (1 - ratio) * 120 (Green=120 low, Red=0 high)
+            // Actually usually Low=Green, High=Red is common for effort, but for altitude:
+            // Let's stick to the previous logic: Green (120) -> Red (0) based on relative altitude? 
+            // Or maybe Brand Color (#10b981) to Darker? 
+            // Let's use the HSL logic from before: 
+            const ratio = elevRange === 0 ? 0 : (avgElev - minElev) / elevRange;
+            const hue = (1 - ratio) * 120;
             const color = `hsl(${hue}, 90%, 45%)`;
 
-            L.polyline([pt1, pt2], {
-                color: color,
-                weight: 5,
-                opacity: 0.9,
-                renderer: renderer,
-                interactive: false
-            }).addTo(map);
+            segments.push({
+                type: "Feature",
+                geometry: {
+                    type: "LineString",
+                    coordinates: [p1, p2]
+                },
+                properties: {
+                    color: color
+                }
+            });
+        }
+
+        const segmentGeoJSON = {
+            type: "FeatureCollection",
+            features: segments
+        };
+
+        map.addSource('track-segments', {
+            type: 'geojson',
+            data: segmentGeoJSON
+        });
+
+        map.addLayer({
+            id: 'track-line',
+            type: 'line',
+            source: 'track-segments',
+            layout: {
+                'line-join': 'round',
+                'line-cap': 'round'
+            },
+            paint: {
+                'line-color': ['get', 'color'],
+                'line-width': 5,
+                'line-opacity': 0.9
+            }
+        });
+
+        // Fit Bounds
+        const bounds = new maplibregl.LngLatBounds();
+        coords.forEach(coord => bounds.extend(coord));
+        map.fitBounds(bounds, {
+            padding: { top: 50, bottom: 250, left: 50, right: 50 }
+        });
+
+        // 2. Setup Chart.js
+        initElevationChart(coords);
+
+        // Sync Chart Hover -> Map Marker
+        // Init Sync Marker
+        const markerEl = document.createElement('div');
+        markerEl.className = 'w-4 h-4 bg-white rounded-full border-4 border-emerald-500 shadow-lg';
+        const syncMarker = new maplibregl.Marker({ element: markerEl })
+            .setLngLat(coords[0])
+            .addTo(map);
+
+        // Hide initially
+        markerEl.style.opacity = '0';
+
+        window.updateMapMarker = (index) => {
+            if (coords[index]) {
+                syncMarker.setLngLat(coords[index]);
+                markerEl.style.opacity = '1';
+            }
+        };
+
+        window.hideMapMarker = () => {
+            markerEl.style.opacity = '0';
+        };
+    });
+    });
+
+    function initElevationChart(coords) {
+        if (!coords || coords.length === 0) return;
+
+        // Calculate cumulative distance for X axis
+        const labels = [];
+        const data = [];
+        let totalDist = 0;
+
+        // Helper to calc distance between two points in km
+        function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+            var R = 6371;
+            var dLat = deg2rad(lat2 - lat1);
+            var dLon = deg2rad(lon2 - lon1);
+            var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            var d = R * c;
+            return d;
+        }
+        function deg2rad(deg) { return deg * (Math.PI / 180) }
+
+        for (let i = 0; i < coords.length; i++) {
+            if (i > 0) {
+                totalDist += getDistanceFromLatLonInKm(coords[i - 1][1], coords[i - 1][0], coords[i][1], coords[i][0]);
+            }
+            // Only add point every X meters to avoid chart overload? Chart.js handles it okay usually, but optimization is good.
+            // For now, take all points.
+            labels.push(totalDist.toFixed(1) + 'km');
+            data.push(coords[i][2]); // Altitude
+        }
+
+        const ctx = document.getElementById('elevationChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Altitude (m)',
+                    data: data,
+                    borderColor: '#10b981',
+                    backgroundColor: function (context) {
+                        const chart = context.chart;
+                        const { ctx, chartArea } = chart;
+                        if (!chartArea) return null;
+                        const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                        gradient.addColorStop(0, 'rgba(16, 185, 129, 0.05)');
+                        gradient.addColorStop(1, 'rgba(16, 185, 129, 0.4)');
+                        return gradient;
+                    },
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            maxTicksLimit: 10,
+                            callback: function (val, index) {
+                                return index % Math.ceil(labels.length / 10) === 0 ? this.getLabelForValue(val) : '';
+                            }
+                        }
+                    },
+                    y: {
+                        grid: { color: '#f1f5f9' },
+                        ticks: { callback: (value) => value + 'm' }
+                    }
+                },
+                onHover: (event, elements) => {
+                    if (elements && elements.length) {
+                        const index = elements[0].index;
+                        if (window.updateMapMarker) window.updateMapMarker(index);
+                    } else {
+                        if (window.hideMapMarker) window.hideMapMarker();
+                    }
+                }
+            }
+        });
+    }
+
+    function copyLink() {
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(window.location.href).then(function () {
+                showCopyFeedback();
+            }, function (err) {
+                console.error('Could not copy text: ', err);
+                fallbackCopyTextToClipboard(window.location.href);
+            });
+        } else {
+            // Fallback for non-secure contexts (like http localhost sometimes behaves)
+            fallbackCopyTextToClipboard(window.location.href);
         }
     }
 
-    try {
-        if (typeof L === 'undefined') {
-            alert("Erreur: Leaflet non chargé.");
-        } else {
-            // Initialize Map
-            const lat = Number("{{ track.start_lat }}");
-            const lon = Number("{{ track.start_lon }}");
+    function fallbackCopyTextToClipboard(text) {
+        var textArea = document.createElement("textarea");
+        textArea.value = text;
 
-            // Disable scrollWheelZoom to allow page scrolling
-            const map = L.map('map', {
-                scrollWheelZoom: false
-            }).setView([lat, lon], 13);
+        // Avoid scrolling to bottom
+        textArea.style.top = "0";
+        textArea.style.left = "0";
+        textArea.style.position = "fixed";
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(map);
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
 
-            if (!L.GPX) {
-                alert("Erreur: Plugin GPX non chargé.");
-            } else {
-                // Load GPX
-                const gpxUrl = "{{ url_for('get_raw_gpx', track_id=track.id) }}";
-
-                new L.GPX(gpxUrl, {
-                    async: true,
-                    marker_options: {
-                        startIconUrl: "{{ url_for('static', path='/img/pin-icon-start.png') }}",
-                        endIconUrl: "{{ url_for('static', path='/img/pin-icon-end.png') }}",
-                        shadowUrl: "{{ url_for('static', path='/img/pin-shadow.png') }}"
-                    }
-                }).on('loaded', function (e) {
-                    map.fitBounds(e.target.getBounds(), {
-                        paddingBottomRight: [0, 200], // Offset to account for bottom panel if needed, though panel scrolls
-                        paddingTopLeft: [0, 0]
-                    });
-
-                    // Draw Gradient Overlay (Protected)
-                    try {
-                        drawGradientTrack(map, e.target);
-                    } catch (gradErr) {
-                        console.error("Kairn: Error drawing gradient track", gradErr);
-                    }
-
-                    // Chart logic (Protected)
-                    try {
-                        const gpx = e.target;
-                        const elevationData = gpx.get_elevation_data();
-
-                        if (!elevationData || elevationData.length === 0) {
-                            console.warn("Kairn: No elevation data found.");
-                            return;
-                        }
-
-                        const labels = elevationData.map(p => Math.round(p[0]) + 'km');
-                        const data = elevationData.map(p => p[1]);
-
-                        const ctx = document.getElementById('elevationChart').getContext('2d');
-                        if (ctx) {
-                            // Destroy existing chart if any
-                            if (window.myElevationChart) {
-                                window.myElevationChart.destroy();
-                            }
-
-                            window.myElevationChart = new Chart(ctx, {
-                                type: 'line',
-                                data: {
-                                    labels: labels,
-                                    datasets: [{
-                                        label: 'Altitude (m)',
-                                        data: data,
-                                        borderColor: '#10b981', // Brand color
-                                        backgroundColor: function (context) {
-                                            const chart = context.chart;
-                                            const { ctx, chartArea } = chart;
-                                            if (!chartArea) {
-                                                // This case happens on initial chart load
-                                                return null;
-                                            }
-                                            const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-                                            gradient.addColorStop(0, 'rgba(16, 185, 129, 0.05)');
-                                            gradient.addColorStop(1, 'rgba(16, 185, 129, 0.4)');
-                                            return gradient;
-                                        },
-                                        fill: true,
-                                        tension: 0.3,
-                                        pointRadius: 0,
-                                        pointHoverRadius: 6,
-                                        borderWidth: 2
-                                    }]
-                                },
-                                options: {
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    plugins: { legend: { display: false } },
-                                    interaction: {
-                                        mode: 'index',
-                                        intersect: false,
-                                    },
-                                    scales: {
-                                        x: {
-                                            grid: { display: false },
-                                            ticks: {
-                                                maxTicksLimit: 10,
-                                                callback: function (val, index) {
-                                                    // Show only few labels
-                                                    return index % Math.ceil(labels.length / 10) === 0 ? this.getLabelForValue(val) : '';
-                                                }
-                                            }
-                                        },
-                                        y: {
-                                            beginAtZero: false,
-                                            grid: { color: '#f1f5f9' },
-                                            ticks: { callback: (value) => value + 'm' }
-                                        }
-                                    },
-                                    onHover: (event, elements) => {
-                                        if (elements && elements.length) {
-                                            const index = elements[0].index;
-
-                                            // Get all points from the GPX layer
-                                            // Need to flatten because getLatLngs() can return arrays of arrays for segments
-                                            let allPoints = [];
-                                            gpx.getLayers().forEach(layer => {
-                                                if (layer.getLatLngs) {
-                                                    const latlngs = layer.getLatLngs();
-                                                    // Simple check if nested
-                                                    if (Array.isArray(latlngs[0])) {
-                                                        latlngs.forEach(segment => allPoints.push(...segment));
-                                                    } else {
-                                                        allPoints.push(...latlngs);
-                                                    }
-                                                }
-                                            });
-
-                                            // Sync Marker
-                                            if (allPoints[index]) {
-                                                if (!window.mapSyncMarker) {
-                                                    window.mapSyncMarker = L.circleMarker(allPoints[index], {
-                                                        radius: 6,
-                                                        color: '#ffffff',
-                                                        fillColor: '#10b981',
-                                                        fillOpacity: 1,
-                                                        weight: 2,
-                                                        zIndexOffset: 1000
-                                                    }).addTo(map);
-                                                } else {
-                                                    window.mapSyncMarker.setLatLng(allPoints[index]);
-                                                    window.mapSyncMarker.setStyle({ opacity: 1, fillOpacity: 1 });
-                                                }
-                                            }
-                                        } else {
-                                            if (window.mapSyncMarker) {
-                                                window.mapSyncMarker.setStyle({ opacity: 0, fillOpacity: 0 });
-                                            }
-                                        }
-                                    },
-                                    plugins: {
-                                        tooltip: {
-                                            mode: 'index',
-                                            intersect: false,
-                                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                                            titleColor: '#1e293b',
-                                            bodyColor: '#1e293b',
-                                            borderColor: '#e2e8f0',
-                                            borderWidth: 1,
-                                            displayColors: false,
-                                            callbacks: {
-                                                label: function (context) {
-                                                    return context.parsed.y + 'm';
-                                                }
-                                            }
-                                        },
-                                        // Custom vertical line plugin config (if any)
-                                        verticalLine: true
-                                    }
-                                },
-                                plugins: [{
-                                    id: 'verticalLine',
-                                    afterDraw: (chart) => {
-                                        if (chart.tooltip?._active?.length) {
-                                            const x = chart.tooltip._active[0].element.x;
-                                            const yAxis = chart.scales.y;
-                                            const ctx = chart.ctx;
-                                            ctx.save();
-                                            ctx.beginPath();
-                                            ctx.moveTo(x, yAxis.top);
-                                            ctx.lineTo(x, yAxis.bottom);
-                                            ctx.lineWidth = 1.5;
-                                            ctx.strokeStyle = '#10b981'; // Brand color
-                                            ctx.stroke();
-                                            ctx.restore();
-                                        }
-                                    }
-                                }]
-                            });
-                        }
-                    } catch (chartErr) {
-                        console.error("Kairn: Error building chart", chartErr);
-                    }
-
-                }).on('error', function (e) {
-                    console.error("GPX ERROR Full:", e);
-                }).addTo(map);
-            }
+        try {
+            var successful = document.execCommand('copy');
+            if (successful) showCopyFeedback();
+        } catch (err) {
+            console.error('Fallback: Oops, unable to copy', err);
         }
-    } catch (err) {
-        console.error(err);
-        alert("Crash script: " + err.message);
+
+        document.body.removeChild(textArea);
+    }
+
+    function showCopyFeedback() {
+        const btnText = document.getElementById('shareBtnText');
+        if (!btnText) return;
+        const originalText = btnText.innerText;
+        btnText.innerText = 'Lien copié !';
+        setTimeout(() => {
+            btnText.innerText = "Partager";
+        }, 2000);
     }
 </script>
 {% endblock %}

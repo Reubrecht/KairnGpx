@@ -9,3 +9,5 @@ passlib
 python-jose
 aiofiles
 requests
+markdown
+google-generativeai

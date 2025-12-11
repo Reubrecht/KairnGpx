@@ -14,7 +14,9 @@ from sqlalchemy import between, or_
 from sqlalchemy.orm import Session
 from geopy.geocoders import Nominatim
 import gpxpy
+import gpxpy
 import gpxpy.gpx
+import markdown
 
 # Auth Dependencies
 from passlib.context import CryptContext
@@ -22,6 +24,7 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta
 
 from . import models, database
+import json
 
 def slugify(value, allow_unicode=False):
     """
@@ -58,6 +61,14 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Templates
 templates = Jinja2Templates(directory="app/templates")
+
+# Custom Filters
+def markdown_filter(text):
+    if text:
+        return markdown.markdown(text)
+    return ""
+
+templates.env.filters['markdown'] = markdown_filter
 
 # Dependency
 def get_db():
@@ -434,6 +445,7 @@ async def upload_form(request: Request, db: Session = Depends(get_db)):
     })
 
 from .services.analytics import GpxAnalytics
+from .services.ai_analyzer import AiAnalyzer
 
 @app.post("/upload")
 async def upload_track(
@@ -484,6 +496,26 @@ async def upload_track(
     
     if not metrics:
          raise HTTPException(status_code=400, detail="Could not parse or analyze GPX file.")
+
+    # 3b. AI Enrichment (Gemini)
+    try:
+        ai_analyzer = AiAnalyzer()
+        # Only call if API key is present to save time/errors, handled in class but good to be explicit
+        if ai_analyzer.model:
+            print("Calling Gemini for analysis...")
+            ai_data = ai_analyzer.analyze_track(metrics)
+            
+            # Auto-fill description if empty
+            if not description and ai_data.get("ai_description"):
+                description = ai_data["ai_description"]
+                # Append AI title if we want? Maybe not for now.
+                
+            # Append AI tags
+            if ai_data.get("ai_tags"):
+                inferred["tags"].extend(ai_data["ai_tags"])
+                
+    except Exception as e:
+        print(f"AI Integration skipped: {e}")
 
     # 4. Geocoding
     start_lat, start_lon = metrics["start_coords"]
@@ -545,6 +577,8 @@ async def upload_track(
         # Effort
         km_effort=metrics["km_effort"],
         itra_points_estim=metrics["itra_points_estim"],
+        ibp_index=metrics.get("ibp_index"),
+        longest_climb=metrics.get("longest_climb"),
         
         # Logistics
         route_type=metrics["route_type"],
@@ -601,10 +635,20 @@ async def track_detail(track_id: int, request: Request, db: Session = Depends(ge
     if not track:
         raise HTTPException(status_code=404, detail="Track not found")
     
+    
+    # Generate GeoJSON for MapLibre
+    import os
+    track_geojson = None
+    if os.path.exists(track.file_path):
+        with open(track.file_path, "r", encoding="utf-8") as f:
+            analytics = GpxAnalytics(f.read())
+            track_geojson = analytics.get_geojson()
+            
     return templates.TemplateResponse("detail.html", {
         "request": request,
         "track": track,
-        "user": user
+        "user": user,
+        "track_geojson": json.dumps(track_geojson) if track_geojson else "null"
     })
 
 @app.get("/race/{slug}", response_class=HTMLResponse)
