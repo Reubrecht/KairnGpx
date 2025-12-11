@@ -164,35 +164,8 @@
                             value="{{ request.query_params.get('max_elev', '5000') }}">
                     </div>
 
-                    <!-- Technicity Tiles -->
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1">
-                            <img src="{{ url_for('static', path='/img/icon_technicity.png') }}"
-                                class="w-4 h-4 object-contain" alt="Tech">
-                            Technicité
-                        </label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <label class="cursor-pointer">
-                                <input type="radio" name="technicity" value="ALL" class="peer sr-only" {% if not
-                                    request.query_params.get('technicity') or
-                                    request.query_params.get('technicity')=='ALL' %}checked{% endif %}>
-                                <div
-                                    class="text-center py-2 rounded-lg border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-50 peer-checked:bg-slate-800 peer-checked:text-white peer-checked:border-slate-800 transition-all">
-                                    Tout
-                                </div>
-                            </label>
-                            {% for tech in technicity_options %}
-                            <label class="cursor-pointer">
-                                <input type="radio" name="technicity" value="{{ tech }}" class="peer sr-only" {% if
-                                    request.query_params.get('technicity')==tech %}checked{% endif %}>
-                                <div
-                                    class="text-center py-2 rounded-lg border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-50 peer-checked:bg-brand-600 peer-checked:text-white peer-checked:border-brand-600 transition-all">
-                                    {{ tech | replace('_', ' ') }}
-                                </div>
-                            </label>
-                            {% endfor %}
-                        </div>
-                    </div>
+                    <!-- Technicity Tiles Removed -->
+                    <!-- <div> ... </div> -->
 
                     <!-- Created By -->
                     <div>
@@ -234,10 +207,11 @@
                             class="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/20 to-transparent z-10">
                         </div>
 
-                        {% if track.status.value == "OFFICIAL_RACE" %}
+                        <!-- Status badge removed/hidden for now -->
+                        <!-- {% if track.status and track.status.value == "OFFICIAL_RACE" %}
                         <span
                             class="absolute top-2 right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full shadow-sm">Officiel</span>
-                        {% endif %}
+                        {% endif %} -->
                     </div>
 
                     <div class="p-4">
@@ -264,26 +238,18 @@
                                 <span class="block text-xs text-gray-400 uppercase">D+</span>
                                 <span class="font-bold text-slate-700">{{ track.elevation_gain }}m</span>
                             </div>
-                            <div>
-                                <span class="block text-xs text-gray-400 uppercase">Tech</span>
-                                <span class="text-xs font-semibold px-2 py-0.5 rounded
-                                        {% if track.technicity.value in ['TECHNIQUE', 'TRES_TECHNIQUE', 'AERIEN'] %} bg-red-100 text-red-700
-                                        {% else %} bg-green-100 text-green-700 {% endif %}">
-                                    {{ track.technicity.value[:4] }}.
-                                </span>
-                            </div>
+                            <!-- Tech badge removed -->
                         </div>
 
+                        <!-- Environment tags removed - fields not in new schema -->
                         <div class="mt-4 flex flex-wrap gap-1">
-                            {% if track.is_coastal %}<span
-                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">Côtier</span>{%
-                            endif %}
-                            {% if track.is_high_mountain %}<span
-                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-800">Montagne</span>{%
-                            endif %}
-                            {% if track.is_forest %}<span
-                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-50- text-green-800">Forêt</span>{%
-                            endif %}
+                            {% if track.tags %}
+                            {% for tag in track.tags %}
+                            <span
+                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">#{{
+                                tag }}</span>
+                            {% endfor %}
+                            {% endif %}
                         </div>
                     </div>
                 </a>

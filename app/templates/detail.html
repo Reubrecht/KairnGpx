@@ -77,44 +77,21 @@
                         </a>
                         {% endif %}
 
-                        <!-- Categorization Chips -->
-                        <div class="flex flex-wrap justify-end gap-2">
-                            <!-- Status -->
-                            <!-- Status / Race Link -->
-                            {% if track.race %}
-                            <a href="/race/{{ track.race.slug }}"
-                                class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold border bg-yellow-50 text-yellow-800 border-yellow-200 hover:bg-yellow-100 transition-colors"
-                                title="Voir toutes les traces de cet événement">
-                                🏆 {{ track.race.name }}
-                            </a>
-                            {% else %}
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold border 
-                                {% if track.status.value == 'OFFICIAL_RACE' %} bg-yellow-50 text-yellow-800 border-yellow-200
-                                {% else %} bg-slate-50 text-slate-600 border-slate-200 {% endif %}">
-                                {% if track.status.value == 'OFFICIAL_RACE' %}Course Officielle{% else %}Entraînement{%
-                                endif %}
-                            </span>
-                            {% endif %}
+                        <!-- Status / Race Link -->
+                        {% if track.race %}
+                        <a href="/race/{{ track.race.slug }}"
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold border bg-yellow-50 text-yellow-800 border-yellow-200 hover:bg-yellow-100 transition-colors"
+                            title="Voir toutes les traces de cet événement">
+                            🏆 {{ track.race.name }}
+                        </a>
+                        {% else %}
+                        <span
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold border bg-slate-50 text-slate-600 border-slate-200">
+                            {{ track.activity_type.value | default('Activité') | replace('_', ' ') | capitalize }}
+                        </span>
+                        {% endif %}
 
-                            <!-- Terrain -->
-                            <span
-                                class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-slate-50 text-slate-600 border border-slate-200">
-                                {{ track.terrain.value | replace('_', ' ') | capitalize }}
-                            </span>
-
-                            <!-- Technicity (Color Coded) -->
-                            {% set tech_colors = {
-                            'ROULANT': 'bg-emerald-50 text-emerald-800 border-emerald-200',
-                            'PEU_TECHNIQUE': 'bg-green-50 text-green-800 border-green-200',
-                            'TECHNIQUE': 'bg-yellow-50 text-yellow-800 border-yellow-200',
-                            'TRES_TECHNIQUE': 'bg-orange-50 text-orange-800 border-orange-200',
-                            'AERIEN': 'bg-red-50 text-red-800 border-red-200'
-                            } %}
-                            <span
-                                class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold border {{ tech_colors.get(track.technicity.value, 'bg-slate-50 text-slate-600 border-slate-200') }}">
-                                {{ track.technicity.value | replace('_', ' ') | capitalize }}
-                            </span>
-                        </div>
+                        <!-- Detailed Tags are below -->
                     </div>
                 </div>
 
@@ -183,32 +160,8 @@
                             <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3">🏷️
                                 Caractéristiques</h3>
                             <div class="flex flex-wrap gap-2">
-                                <!-- Environments -->
-                                {% if track.is_high_mountain %}
-                                <span
-                                    class="px-2.5 py-1 bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold">⛰️
-                                    Haute Montagne</span>
-                                {% endif %}
-                                {% if track.is_coastal %}
-                                <span
-                                    class="px-2.5 py-1 bg-cyan-50 text-cyan-700 border border-cyan-100 rounded-lg text-xs font-bold">🌊
-                                    Côtier</span>
-                                {% endif %}
-                                {% if track.is_forest %}
-                                <span
-                                    class="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-lg text-xs font-bold">🌲
-                                    Forêt</span>
-                                {% endif %}
-                                {% if track.is_urban %}
-                                <span
-                                    class="px-2.5 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded-lg text-xs font-bold">🏙️
-                                    Urbain</span>
-                                {% endif %}
-                                {% if track.is_desert %}
-                                <span
-                                    class="px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-100 rounded-lg text-xs font-bold">🏜️
-                                    Aride</span>
-                                {% endif %}
+                                <!-- Environments (Moved to Tags) -->
+                                <!-- Old boolean checks removed -->
 
                                 <!-- Seasons -->
                                 {% if track.best_season %}
