@@ -13,6 +13,12 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import between, or_
 from sqlalchemy.orm import Session
 from geopy.geocoders import Nominatim
+from dotenv import load_dotenv
+
+# Load local env only if file exists (Local Dev)
+if os.path.exists("local.env"):
+    load_dotenv("local.env", override=True)
+
 import gpxpy
 import gpxpy
 import gpxpy.gpx
@@ -260,25 +266,21 @@ async def explore(
     request: Request,
     db: Session = Depends(get_db),
     city_search: Optional[str] = None,
-    # Environments
-    is_high_mountain: Optional[bool] = None,
-    is_coastal: Optional[bool] = None,
-    is_forest: Optional[bool] = None,
-    is_urban: Optional[bool] = None,
-    is_desert: Optional[bool] = None,
     # New Standard Filters
-    status_val: Optional[str] = None,
-    # New Slider Filters
+    activity_type: Optional[str] = None,
+    ratio_category: Optional[str] = None,
+    is_official: Optional[bool] = None,
+    # Sliders
     min_dist: Optional[float] = None,
     max_dist: Optional[float] = None,
     min_elev: Optional[float] = None,
     max_elev: Optional[float] = None,
     author: Optional[str] = None,
-    # New Radius Filter
+    # Radius & Geo
     radius: Optional[int] = 50,
     search_lat: Optional[str] = None,
     search_lon: Optional[str] = None,
-    tag: Optional[str] = None # New Tag Filter
+    tag: Optional[str] = None
 ):
     try:
         user = await get_current_user_optional(request, db)
@@ -286,28 +288,23 @@ async def explore(
         if not user and not has_beta:
             return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
         
-        # Start Query
         query = db.query(models.Track)
         
-        # 1. Status (Activity Type) - Renaming status_val to activity_type in UI later, keeping var name for now
-        if status_val and status_val != "ALL":
-             # Note: In new model 'status' might be 'activity_type' or 'status'? 
-             # Let's check model: 'activity_type' is the Enum(ActivityType). 'status' is gone or different?
-             # Checking model again... 'status' column is NOT in the new model snippet I saw (saw activity_type).
-             # Wait, I need to be sure about 'status'. 
-             # Snippet showed: activity_type, technical_rating_context...
-             # Snippet did NOT show 'status' (VerificationStatus is distinct).
-             # I should comment this out to be safe until UI is updated.
-             pass
-             # query = query.filter(models.Track.status == status_val)
+        # 1. Activity Type
+        if activity_type:
+            query = query.filter(models.Track.activity_type == activity_type)
 
-        # 4. City Search (Geo Radius)
+        # 2. Official Race
+        if is_official:
+            query = query.filter(models.Track.is_official_route == True)
+
+        # 3. City/Radius Search
+        current_city = city_search
         if city_search:
             try:
                 lat, lon = None, None
                 
                 # Priority 1: Direct Coordinates from Autocomplete
-                # Handle empty strings from form
                 if search_lat and search_lon:
                     try:
                         lat = float(search_lat)
@@ -336,69 +333,84 @@ async def explore(
                         models.Track.start_lon.between(lon - lon_delta, lon + lon_delta)
                     )
                 else:
+                     # Fallback to simple string match
                      query = query.filter(models.Track.location_city.ilike(f"%{city_search}%"))
             except Exception as e:
                 print(f"Geocoding error: {e}")
                 query = query.filter(models.Track.location_city.ilike(f"%{city_search}%"))
 
-        # 5. Environments (Mapping to new logic or keeping if columns exist)
-        # Model snippet showed 2. Activity Type... 5. Terrain & Env... but didn't show the boolean flags explicitly
-        # I need to verify if is_high_mountain etc exist.
-        # Assuming they were removed or moved to JSON 'surface_composition' or similar?
-        # To be safe, I will Disable these filters for now to get Login working.
-        pass
-        # if is_high_mountain: query = query.filter(models.Track.is_high_mountain == True)
-
-        # 6. Distance (Exists)
+        # 4. Distance
         if min_dist is not None:
             query = query.filter(models.Track.distance_km >= min_dist)
         if max_dist is not None:
             query = query.filter(models.Track.distance_km <= max_dist)
 
-        # 7. Elevation (Exists)
+        # 5. Elevation
         if min_elev is not None:
             query = query.filter(models.Track.elevation_gain >= min_elev)
         if max_elev is not None:
             query = query.filter(models.Track.elevation_gain <= max_elev)
 
-        # 8. Author (Exists)
+        # 6. Author
         if author:
             query = query.filter(models.Track.user_id.ilike(f"%{author}%"))
         
-        # 9. Tags (JSON array contains)
+        # 7. Tags (JSON array contains)
         if tag:
             # SQLite JSON search (simplified for basic tags)
             query = query.filter(models.Track.tags.ilike(f'%"{tag}"%'))
+            
+        # Visibility
+        if user:
+             query = query.filter(or_(models.Track.visibility == models.Visibility.PUBLIC, models.Track.user_id == user.username))
+        else:
+             query = query.filter(models.Track.visibility == models.Visibility.PUBLIC)
 
         tracks = query.order_by(models.Track.created_at.desc()).all()
         
-        # Collect unique tags from ALL visible tracks (for filter list)
+        # 8. Post-Processing for Ratio D+
+        if ratio_category:
+            filtered_tracks = []
+            for t in tracks:
+                if not t.distance_km or t.distance_km == 0:
+                    continue
+                ratio = t.elevation_gain / t.distance_km
+                if ratio_category == "FLAT" and ratio < 15:
+                    filtered_tracks.append(t)
+                elif ratio_category == "ROLLING" and 15 <= ratio < 40:
+                    filtered_tracks.append(t)
+                elif ratio_category == "HILLY" and 40 <= ratio < 80:
+                    filtered_tracks.append(t)
+                elif ratio_category == "MOUNTAIN" and ratio >= 80:
+                    filtered_tracks.append(t)
+            tracks = filtered_tracks
+        
+        # Collect unique tags
         all_visible_tracks = db.query(models.Track.tags).filter(models.Track.visibility == models.Visibility.PUBLIC).all()
         unique_tags = set()
         for t_row in all_visible_tracks:
             if t_row.tags:
-                tag_list = t_row.tags if isinstance(t_row.tags, list) else json.loads(t_row.tags)
-                for t in tag_list:
-                    unique_tags.add(t)
+                try:
+                    tag_list = t_row.tags if isinstance(t_row.tags, list) else json.loads(t_row.tags)
+                    for t in tag_list:
+                        unique_tags.add(t)
+                except:
+                    pass
         sorted_tags = sorted(list(unique_tags))
         
-        # Context for Template (Safe mode)
         return templates.TemplateResponse("index.html", {
-            "request": request, 
+            "request": request,
             "tracks": tracks,
-            "technicity_options": [],
-            "status_options": [],
-            "terrain_options": [],
             "user": user,
-            "current_radius": radius,
-            "current_city": city_search,
+            "active_page": "explore",
+            "current_city": current_city,
+            "radius": radius,
             "all_tags": sorted_tags,
             "current_tag": tag
         })
     except Exception as e:
         import traceback
         import sys
-        # Print to console
         error_msg = f"\n{'='*80}\nEXPLORE ENDPOINT ERROR\n{'='*80}\n{str(e)}\n{traceback.format_exc()}\n{'='*80}\n"
         print(error_msg, file=sys.stderr, flush=True)
         
@@ -412,7 +424,6 @@ async def explore(
         
         raise e
 
-
 @app.get("/search", response_class=HTMLResponse)
 async def advanced_search(
     request: Request,
@@ -422,36 +433,48 @@ async def advanced_search(
     max_dist: Optional[float] = None,
     min_elev: Optional[float] = None,
     max_elev: Optional[float] = None,
-    # technicity: Optional[str] = None, # Removed
+    activity_type: Optional[str] = None,
+    ratio_category: Optional[str] = None,
+    is_official: Optional[bool] = None,
     author: Optional[str] = None,
 ):
     user = await get_current_user_optional(request, db)
     has_beta = request.cookies.get("beta_access_v2") == "granted"
     if not user and not has_beta:
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+
     query = db.query(models.Track)
 
-    # 1. Location (City)
+    # 1. Location (City search based on contains)
     if location:
-        query = query.filter(models.Track.location_city.ilike(f"%{location}%"))
+        # Simple wildcard search on city or region
+        query = query.filter(or_(
+            models.Track.location_city.ilike(f"%{location}%"),
+            models.Track.location_region.ilike(f"%{location}%"),
+            models.Track.title.ilike(f"%{location}%") # Also search title
+        ))
 
-    # 2. Distance
+    # 2. Activity Type
+    if activity_type:
+        query = query.filter(models.Track.activity_type == activity_type)
+
+    # 3. Official Race
+    if is_official:
+        query = query.filter(models.Track.is_official_route == True)
+
+    # 4. Distance
     if min_dist is not None:
         query = query.filter(models.Track.distance_km >= min_dist)
     if max_dist is not None:
         query = query.filter(models.Track.distance_km <= max_dist)
 
-    # 3. Elevation
+    # 5. Elevation
     if min_elev is not None:
         query = query.filter(models.Track.elevation_gain >= min_elev)
     if max_elev is not None:
         query = query.filter(models.Track.elevation_gain <= max_elev)
 
-    # 4. Technicity (Removed)
-    # if technicity and technicity != "":
-    #     query = query.filter(models.Track.technicity == technicity)
-
-    # 5. Author
+    # 6. Author
     if author:
         query = query.filter(models.Track.user_id.ilike(f"%{author}%"))
 
@@ -461,13 +484,33 @@ async def advanced_search(
     else:
          query = query.filter(models.Track.visibility == models.Visibility.PUBLIC)
 
+    # Execute main query to list tracks
     tracks = query.order_by(models.Track.created_at.desc()).all()
+
+    # 7. Post-Processing for Ratio D+ (Sqlite division is tricky/unsafe sometimes, Python is easier for small scale)
+    if ratio_category:
+        filtered_tracks = []
+        for t in tracks:
+            if not t.distance_km or t.distance_km == 0:
+                continue
+            
+            ratio = t.elevation_gain / t.distance_km # m/km
+            
+            if ratio_category == "FLAT" and ratio < 15:
+                filtered_tracks.append(t)
+            elif ratio_category == "ROLLING" and 15 <= ratio < 40:
+                filtered_tracks.append(t)
+            elif ratio_category == "HILLY" and 40 <= ratio < 80:
+                filtered_tracks.append(t)
+            elif ratio_category == "MOUNTAIN" and ratio >= 80:
+                filtered_tracks.append(t)
+        
+        tracks = filtered_tracks
 
     return templates.TemplateResponse("search.html", {
         "request": request,
         "tracks": tracks,
         "user": user,
-        "technicity_options": [], # [e.value for e in models.TechnicityEnum],
     })
 
 @app.get("/upload", response_class=HTMLResponse)
@@ -530,6 +573,27 @@ async def upload_track(
     analytics = GpxAnalytics(content)
     metrics = analytics.calculate_metrics()
     inferred = analytics.infer_attributes(metrics)
+    gpx_meta = analytics.get_metadata() # Extract internal GPX metadata
+    
+    # 4. Apply GPX Metadata (Fallback/Default)
+    # If the user provided title looks like a filename (contains .gpx) and we have a better internal name, use it.
+    # Or simply if we have an internal name, append or prefer it? 
+    # Let's say: if current 'title' is just the filename (heuristic), and gpx_meta['name'] exists, use gpx_meta['name'].
+    # The form usually sends filename if user didn't type.
+    if gpx_meta.get("name") and (title.lower().endswith(".gpx") or title == "Trace"):
+        title = gpx_meta["name"]
+        
+    if not description and gpx_meta.get("description"):
+        description = gpx_meta["description"]
+        
+    if gpx_meta.get("keywords"):
+        # keywords is usually a comma-sep string or list? gpxpy returns string or list depending on version? 
+        # usually string "tag1, tag2"
+        kws = gpx_meta["keywords"]
+        if isinstance(kws, str):
+            inferred["tags"].extend([k.strip() for k in kws.split(",") if k.strip()])
+        elif isinstance(kws, list):
+             inferred["tags"].extend(kws)
     
     if not metrics:
          raise HTTPException(status_code=400, detail="Could not parse or analyze GPX file.")
@@ -540,14 +604,20 @@ async def upload_track(
         # Only call if API key is present to save time/errors, handled in class but good to be explicit
         if ai_analyzer.model:
             print("Calling Gemini for analysis...")
-            ai_data = ai_analyzer.analyze_track(metrics)
+            ai_data = ai_analyzer.analyze_track(metrics, metadata=gpx_meta, user_title=title, is_race=is_official_bot)
             
-            # Auto-fill description if empty
-            if not description and ai_data.get("ai_description"):
-                description = ai_data["ai_description"]
+            # Auto-fill description if empty OR if we only have generic GPX desc?
+            # AI description is usually better structured.
+            if ai_data.get("ai_description"):
+                if description:
+                     description += "\n\n" + ai_data["ai_description"] # Append if existing
+                else:
+                     description = ai_data["ai_description"]
             
-            # Use AI Title if generated (Override or append? User asked to "Name the track", so we override if valid)
+            # Use AI Title if generated (Override if title seems generic)
             if ai_data.get("ai_title"):
+                # If we still have a filename-like title, overwrite. 
+                # Otherwise, maybe AI title is better? Let's overwrite for consistency.
                 title = ai_data["ai_title"]
                 
             # Append AI tags
@@ -557,7 +627,7 @@ async def upload_track(
     except Exception as e:
         print(f"AI Integration skipped: {e}")
 
-    # 4. Geocoding
+    # 4. Geocoding (Renumbered logic flow, but code remains same)
     start_lat, start_lon = metrics["start_coords"]
     city, region = get_location_info(start_lat, start_lon)
     
@@ -694,12 +764,66 @@ async def track_detail(track_id: int, request: Request, db: Session = Depends(ge
     track_geojson = None
     if os.path.exists(track.file_path):
         with open(track.file_path, "r", encoding="utf-8") as f:
-            analytics = GpxAnalytics(f.read())
+            content = f.read()
+            analytics = GpxAnalytics(content)
             track_geojson = analytics.get_geojson()
             
+            # --- Lazy AI Analysis (Trigger if missing tags/desc) ---
+            # Check if analysis is needed (e.g. no tags or very short desc)
+            has_tags = track.tags and (isinstance(track.tags, list) and len(track.tags) > 0)
+            needs_analysis = not has_tags or not track.description or len(track.description) < 20
+            
+            if needs_analysis:
+                try:
+                    # We need metrics and metadata for AI
+                    metrics = analytics.calculate_metrics()
+                    gpx_meta = analytics.get_metadata()
+                    
+                    ai_analyzer = AiAnalyzer()
+                    if ai_analyzer.model:
+                        print(f"Lazy Analysis triggered for Track {track.id}...")
+                        ai_data = ai_analyzer.analyze_track(metrics, metadata=gpx_meta)
+                        
+                        made_changes = False
+                        # Update fields if AI provided data
+                        if ai_data.get("ai_description"):
+                             # If description empty, replace. If short, append? Let's just prepend/replace if it looks better.
+                             # Simple logic: if empty, set it.
+                             if not track.description:
+                                 track.description = ai_data["ai_description"]
+                                 made_changes = True
+                             elif len(track.description) < 20: # Overwrite short ones
+                                 track.description = ai_data["ai_description"]
+                                 made_changes = True
+                        
+                        if ai_data.get("ai_tags"):
+                             # Merge tags
+                             current_tags = []
+                             if track.tags:
+                                 current_tags = track.tags if isinstance(track.tags, list) else json.loads(track.tags)
+                             
+                             new_tags = [t for t in ai_data["ai_tags"] if t not in current_tags]
+                             if new_tags:
+                                 track.tags = current_tags + new_tags
+                                 made_changes = True
+                                 
+                        if made_changes:
+                            db.commit()
+                            db.refresh(track)
+                            print(f"Lazy Analysis applied for Track {track.id}")
+                except Exception as e:
+                    print(f"Lazy Analysis failed: {e}")
+            # -------------------------------------------------------
+            
+    # Ensure JSON fields are parsed correctly (SQLite fallback)
+    tags_list = []
+    if track.tags:
+        tags_list = track.tags if isinstance(track.tags, list) else json.loads(track.tags)
+    
     return templates.TemplateResponse("detail.html", {
         "request": request,
         "track": track,
+        "tags_list": tags_list,
         "user": user,
         "track_geojson": json.dumps(track_geojson) if track_geojson else "null"
     })
@@ -710,12 +834,15 @@ async def race_detail(slug: str, request: Request, db: Session = Depends(get_db)
     has_beta = request.cookies.get("beta_access_v2") == "granted"
     if not user and not has_beta:
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
-    race = db.query(models.OfficialRace).filter(models.OfficialRace.slug == slug).first()
+    
+    # 1. Fetch Event
+    race = db.query(models.RaceEvent).filter(models.RaceEvent.slug == slug).first()
     if not race:
         raise HTTPException(status_code=404, detail="Course non trouvée")
     
-    # Tracks linked to this race (ordered by year descending, then distance)
-    tracks = db.query(models.Track).filter(models.Track.race_id == race.id).order_by(models.Track.race_year.desc()).all()
+    # 2. Fetch Tracks via RaceRoute -> RaceEdition -> RaceEvent
+    # Join Track -> RaceRoute -> RaceEdition
+    tracks = db.query(models.Track).join(models.RaceRoute).join(models.RaceEdition).filter(models.RaceEdition.event_id == race.id).all()
     
     return templates.TemplateResponse("race_detail.html", {
         "request": request, 

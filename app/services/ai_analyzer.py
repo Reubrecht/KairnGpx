@@ -8,18 +8,20 @@ class AiAnalyzer:
         self.api_key = os.getenv("GEMINI_API_KEY")
         if self.api_key:
             genai.configure(api_key=self.api_key)
-            # Try 2.0 Flash Exp first (Fast & New), fallback to 1.5 Flash
+            # Allow model override via env var, default to 2.0 Flash (More stable quotas)
+            model_name = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
             try:
-                self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
+                self.model = genai.GenerativeModel(model_name)
             except:
-                self.model = genai.GenerativeModel('gemini-1.5-flash')
+                print(f"Failed to load {model_name}, falling back to gemini-2.0-flash")
+                self.model = genai.GenerativeModel('gemini-2.0-flash')
         else:
             self.model = None
             print("WARNING: GEMINI_API_KEY not found. AI features disabled.")
 
-    def analyze_track(self, metrics: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze_track(self, metrics: Dict[str, Any], metadata: Dict[str, Any] = None, user_title: str = None, is_race: bool = False) -> Dict[str, Any]:
         """
-        Generates a title, description, and tags based on GPX metrics.
+        Generates a title, description, and tags based on GPX metrics, metadata, and user input.
         Returns a dictionary with keys: 'ai_title', 'ai_description', 'ai_tags'.
         """
         if not self.model:
@@ -29,8 +31,8 @@ class AiAnalyzer:
                 "ai_tags": []
             }
 
-        prompt = f"""
-        Tu es un expert en analyse de données géographiques et sportives. Analyse les métriques suivantes d'une trace GPX :
+        # Build context from metrics
+        context_str = f"""
         - Distance: {metrics.get('distance_km')} km
         - Dénivelé positif: {metrics.get('elevation_gain')} m
         - Altitude max: {metrics.get('max_altitude')} m
@@ -38,13 +40,48 @@ class AiAnalyzer:
         - Pente max: {metrics.get('max_slope')}%
         - Effort (km-effort): {metrics.get('km_effort')}
         - Ville/Région (si dispo): {metrics.get('location_city', 'Inconnue')}
+        """
 
-        Tâche :
-        1. Rédige un titre au format STRICT suivant : "Lieu (Ville ou Massif principal) - Distance km - Dénivelé m". Exemple: "Chamonix - 42km - 2500m".
-        2. Rédige une description FACTUELLE et TECHNIQUE (2-3 phrases). Décris le profil, la difficulté objective et le type d'effort sans émotions ni marketing.
-        3. Suggère 3 à 5 tags pertinents (ex: "Panoramique", "Vertical", "Roulant", "Technique", "Forêt", etc.).
+        # Add GPX metadata if available
+        if metadata:
+            name = metadata.get('name', '')
+            desc = metadata.get('description', '')
+            if name:
+                context_str += f"\n        - Nom original du fichier GPX: {name}"
+            if desc:
+                context_str += f"\n        - Description originale GPX: {desc}"
 
-        Réponds UNIQUEMENT au format JSON strict comme ceci :
+        # Add User Input Context
+        if user_title:
+             context_str += f"\n        - Titre fourni par l'utilisateur : {user_title}"
+        
+        if is_race:
+             context_str += f"\n        - CONTEXTE : C'est une COURSE OFFICIELLE (Compétition)."
+
+        prompt = f"""
+        Tu es un expert en référencement (SEO) et en analyse de données pour le trail running et les sports outdoor (Randonnée, VTT, Cyclisme, Alpinisme, Ski de Rando). 
+        Ton but est de maximiser la visibilité et l'attractivité de la trace GPX analysée pour une communauté de passionnés.
+        
+        Données techniques :
+        {context_str}
+
+        Tes instructions :
+        1. **TITRE (SEO)** : Génère un titre optimisé pour la recherche (5-8 mots max).
+           - Format souhaité : "Massif/Lieu - Nom de l'itinéraire - Distance/D+ " ou "Activité - Lieu - Point fort".
+           - **IMPORTANT** : Base-toi prioritairement sur le "Titre fourni par l'utilisateur" ou le "Nom original du fichier GPX". Améliore-le pour le SEO (ajoute le lieu s'il manque), mais NE L'INVENTE PAS totalement si l'utilisateur a été précis.
+           - Si c'est une COURSE OFFICIELLE : Le titre DOIT inclure le nom de la course, l'année (si dispo) et la distance. Ex: "Marathon du Mont-Blanc 2025 - 42km".
+           - Mentionne obligatoirement le massif ou la ville principale.
+
+        2. **DESCRIPTION (Contenu)** : Rédige une description de 2 à 4 phrases.
+           - Ton ton doit être professionnel, technique mais inspirant.
+           - Si c'est une COURSE OFFICIELLE : Mentionne que c'est un parcours de compétition, parle de l'exigence et de l'ambiance typique de cette course.
+           - Si une description originale existe, utilise-la comme base pour l'enrichir et corriger les fautes éventuelles.
+           - Mentionne le type de terrain (ex: technique, roulant) et les points d'intérêts (sommets, lacs).
+
+        3. **TAGS (Catégorisation)** : Sélectionne STRICTEMENT 3 à 5 tags parmi cette liste fermée (et UNIQUEMENT cette liste) :
+           ["Roulant", "Technique", "Vertical", "Aérien", "Boucle", "Aller-Retour", "Sommet", "Lac", "Forêt", "Crête", "Skyrunning", "Ultra", "Off-Road", "Sentier", "Piste"]
+
+        Réponds UNIQUEMENT au format JSON strict (sans markdown autour si possible, juste le json) :
         {{
             "title": "...",
             "description": "...",

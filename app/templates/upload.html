@@ -194,10 +194,12 @@
                                 <option value="RUNNING">👟 Course à pied</option>
                                 <option value="HIKING">🥾 Randonnée</option>
                                 <option value="MTB_CROSS_COUNTRY">🚵 VTT Cross-Country</option>
+                                <option value="MTB_ENDURO">🚵 VTT Enduro</option>
                                 <option value="GRAVEL">🚴 Gravel</option>
                                 <option value="ROAD_CYCLING">🚴 Route</option>
                                 <option value="ALPINISM">🧗 Alpinisme</option>
                                 <option value="SKI_TOURING">🎿 Ski de Rando</option>
+                                <option value="OTHER">🚩 Autre</option>
                             </select>
                         </div>
 
@@ -409,6 +411,53 @@
     </div>
 </div>
 
+<!-- Loading Overlay -->
+<div id="loading-overlay"
+    class="fixed inset-0 bg-slate-900/80 z-50 hidden flex flex-col items-center justify-center backdrop-blur-sm transition-opacity duration-300">
+    <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center space-y-6 animate-fade-in-up">
+        <div class="relative w-24 h-24 mx-auto">
+            <div class="absolute inset-0 border-4 border-brand-200 rounded-full animate-ping opacity-75"></div>
+            <div
+                class="absolute inset-0 border-4 border-t-brand-600 border-r-transparent border-b-brand-600 border-l-transparent rounded-full animate-spin">
+            </div>
+            <div class="absolute inset-0 flex items-center justify-center text-4xl">
+                🧠
+            </div>
+        </div>
+        <div>
+            <h3 class="text-xl font-bold text-slate-900">Analyse IA en cours...</h3>
+            <p class="text-slate-500 mt-2 text-sm">Notre IA étudie votre parcours pour optimiser le titre, la
+                description et les tags.</p>
+        </div>
+        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+            <div class="h-full bg-brand-500 rounded-full animate-progress-indeterminate"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @keyframes progress-indeterminate {
+        0% {
+            width: 0%;
+            margin-left: 0%;
+        }
+
+        50% {
+            width: 50%;
+            margin-left: 25%;
+        }
+
+        100% {
+            width: 0%;
+            margin-left: 100%;
+        }
+    }
+
+    .animate-progress-indeterminate {
+        animation: progress-indeterminate 1.5s infinite ease-in-out;
+    }
+</style>
+
 <script>
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file');
@@ -416,6 +465,17 @@
     const fileFeedback = document.getElementById('file-feedback');
     const titleInput = document.getElementById('title-input');
     const descInput = document.getElementById('desc-input');
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const form = document.querySelector('form');
+
+    // Show loading on submit
+    form.addEventListener('submit', (e) => {
+        // Simple check if form is valid (browser validation triggers first, but just in case)
+        if (form.checkValidity()) {
+            loadingOverlay.classList.remove('hidden');
+            loadingOverlay.classList.add('flex');
+        }
+    });
 
     // Drag & Drop Visuals
     dropZone.addEventListener('dragover', (e) => {
