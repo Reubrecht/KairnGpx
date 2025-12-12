@@ -95,8 +95,28 @@ docker logs cloudflared
 
 ### Redémarrer les conteneurs
 ```bash
-docker-compose -f docker-compose.freebox.yml restart
+docker compose -f docker-compose.freebox.yml restart
 ```
+
+## 💥 Reset Complet (Repartir de Zéro)
+
+⚠️ **ATTENTION : Cette action effacera TOUTES les données (utilisateurs, traces, images) !**
+
+```bash
+# 1. Arrêter les conteneurs et supprimer les volumes
+docker compose -f docker-compose.freebox.yml down -v
+
+# 2. Supprimer les fichiers de données
+sudo rm -rf app/data app/uploads
+
+# 3. Recréer les dossiers propres
+mkdir -p app/data app/uploads
+sudo chown -R 1000:1000 app/data app/uploads 2>/dev/null || chmod 777 app/data app/uploads
+
+# 4. Redémarrer
+docker compose -f docker-compose.freebox.yml up -d --build
+```
+
 
 ## Sécurité
 
