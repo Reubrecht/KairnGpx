@@ -277,7 +277,8 @@ async def explore(
     # New Radius Filter
     radius: Optional[int] = 50,
     search_lat: Optional[str] = None,
-    search_lon: Optional[str] = None
+    search_lon: Optional[str] = None,
+    tag: Optional[str] = None # New Tag Filter
 ):
     try:
         user = await get_current_user_optional(request, db)
@@ -363,8 +364,23 @@ async def explore(
         # 8. Author (Exists)
         if author:
             query = query.filter(models.Track.user_id.ilike(f"%{author}%"))
+        
+        # 9. Tags (JSON array contains)
+        if tag:
+            # SQLite JSON search (simplified for basic tags)
+            query = query.filter(models.Track.tags.ilike(f'%"{tag}"%'))
 
         tracks = query.order_by(models.Track.created_at.desc()).all()
+        
+        # Collect unique tags from ALL visible tracks (for filter list)
+        all_visible_tracks = db.query(models.Track.tags).filter(models.Track.visibility == models.Visibility.PUBLIC).all()
+        unique_tags = set()
+        for t_row in all_visible_tracks:
+            if t_row.tags:
+                tag_list = t_row.tags if isinstance(t_row.tags, list) else json.loads(t_row.tags)
+                for t in tag_list:
+                    unique_tags.add(t)
+        sorted_tags = sorted(list(unique_tags))
         
         # Context for Template (Safe mode)
         return templates.TemplateResponse("index.html", {
@@ -375,7 +391,9 @@ async def explore(
             "terrain_options": [],
             "user": user,
             "current_radius": radius,
-            "current_city": city_search
+            "current_city": city_search,
+            "all_tags": sorted_tags,
+            "current_tag": tag
         })
     except Exception as e:
         import traceback
@@ -525,7 +543,10 @@ async def upload_track(
             # Auto-fill description if empty
             if not description and ai_data.get("ai_description"):
                 description = ai_data["ai_description"]
-                # Append AI title if we want? Maybe not for now.
+            
+            # Use AI Title if generated (Override or append? User asked to "Name the track", so we override if valid)
+            if ai_data.get("ai_title"):
+                title = ai_data["ai_title"]
                 
             # Append AI tags
             if ai_data.get("ai_tags"):
