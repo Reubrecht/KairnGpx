@@ -11,3 +11,4 @@ aiofiles
 requests
 markdown
 google-generativeai
+python-dotenv
