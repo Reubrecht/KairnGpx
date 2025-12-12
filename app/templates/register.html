@@ -1,26 +1,20 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="min-h-[80vh] flex items-center justify-center relative overflow-hidden py-12">
-    <!-- Background Elements -->
-    <div class="absolute top-0 right-1/4 w-96 h-96 bg-brand-400/20 rounded-full blur-3xl -z-10 animate-pulse delay-300">
-    </div>
-    <div
-        class="absolute bottom-0 left-1/4 w-96 h-96 bg-purple-400/20 rounded-full blur-3xl -z-10 animate-pulse delay-500">
-    </div>
-
-    <div
-        class="w-full max-w-lg p-8 backdrop-blur-xl bg-white/70 border border-white/50 rounded-3xl shadow-2xl relative z-10 hover:shadow-brand-500/10 transition-all">
-        <div class="text-center mb-8">
-            <h2
-                class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-brand-600 to-purple-600 mb-2">
-                Rejoindre Kairn</h2>
-            <p class="text-slate-500 font-medium">Créez votre profil et analysez vos traces</p>
+<div class="min-h-[calc(100vh-64px)] flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-lg w-full space-y-8 bg-white p-10 rounded-2xl shadow-sm border border-slate-100">
+        <div class="text-center">
+            <h2 class="mt-6 text-3xl font-extrabold text-slate-900">
+                Créer un compte
+            </h2>
+            <p class="mt-2 text-sm text-slate-600">
+                Rejoignez la communauté My Kairn
+            </p>
         </div>
 
         {% if error %}
         <div
-            class="bg-red-50/80 backdrop-blur-sm border border-red-100 text-red-600 p-4 rounded-xl mb-6 text-sm font-medium flex items-center gap-3">
+            class="bg-red-50 border border-red-100 text-red-600 p-4 rounded-xl text-sm font-medium flex items-center gap-3">
             <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -29,51 +23,55 @@
         </div>
         {% endif %}
 
-        <form action="/register" method="post" class="space-y-5">
-            <div class="grid grid-cols-2 gap-4">
-                <div class="group">
-                    <label class="block text-sm font-bold text-slate-700 mb-2 ml-1">Nom d'utilisateur</label>
+        <form class="mt-8 space-y-6" action="/register" method="post">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Nom d'utilisateur</label>
                     <input type="text" name="username" required placeholder="User123"
-                        class="w-full px-5 py-3.5 rounded-xl bg-white/50 border border-slate-200 focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all outline-none font-medium placeholder-slate-400">
+                        class="appearance-none block w-full px-4 py-3 border border-slate-300 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm transition-colors">
                 </div>
-                <div class="group">
-                    <label class="block text-sm font-bold text-slate-700 mb-2 ml-1">Nom Complet</label>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Nom Complet</label>
                     <input type="text" name="full_name" placeholder="Jean Dupont"
-                        class="w-full px-5 py-3.5 rounded-xl bg-white/50 border border-slate-200 focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all outline-none font-medium placeholder-slate-400">
+                        class="appearance-none block w-full px-4 py-3 border border-slate-300 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm transition-colors">
                 </div>
             </div>
 
-            <div class="group">
-                <label class="block text-sm font-bold text-slate-700 mb-2 ml-1">Email</label>
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">Email</label>
                 <input type="email" name="email" required placeholder="jean@example.com"
-                    class="w-full px-5 py-3.5 rounded-xl bg-white/50 border border-slate-200 focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all outline-none font-medium placeholder-slate-400">
+                    class="appearance-none block w-full px-4 py-3 border border-slate-300 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm transition-colors">
             </div>
 
-            <div class="group">
-                <label class="block text-sm font-bold text-slate-700 mb-2 ml-1">Mot de passe</label>
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">Mot de passe</label>
                 <input type="password" name="password" required placeholder="••••••••"
-                    class="w-full px-5 py-3.5 rounded-xl bg-white/50 border border-slate-200 focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all outline-none font-medium placeholder-slate-400">
+                    class="appearance-none block w-full px-4 py-3 border border-slate-300 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm transition-colors">
             </div>
 
-            <div class="pt-6 border-t border-slate-200/60">
-                <label class="block text-sm font-bold text-brand-600 mb-3 text-center uppercase tracking-wider">Code
+            <div class="pt-4 border-t border-slate-100">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 text-center">Code
                     d'invitation (Beta)</label>
                 <input type="text" name="invitation_code" placeholder="CODE-123"
-                    class="w-full px-5 py-3.5 rounded-xl bg-brand-50/50 border border-brand-100 focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all outline-none text-brand-900 font-mono text-center tracking-[0.2em] font-bold placeholder-brand-300">
+                    class="appearance-none block w-full px-4 py-3 border border-slate-300 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm text-center font-mono tracking-widest transition-colors">
             </div>
 
-            <button type="submit"
-                class="w-full bg-gradient-to-r from-brand-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:shadow-lg hover:shadow-brand-500/30 hover:-translate-y-0.5 transition-all duration-300 transform active:scale-[0.98] mt-2">
-                Créer mon compte
-            </button>
+            <div>
+                <button type="submit"
+                    class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-all shadow-lg shadow-brand-500/30">
+                    Créer mon compte
+                </button>
+            </div>
         </form>
 
-        <p class="mt-8 text-center text-slate-500 text-sm font-medium">
-            Déjà un compte ?
-            <a href="/login" class="text-brand-600 font-bold hover:text-brand-700 hover:underline transition-colors">
-                Se connecter
-            </a>
-        </p>
+        <div class="text-center mt-6">
+            <p class="text-sm text-slate-600">
+                Déjà un compte ?
+                <a href="/login" class="font-bold text-brand-600 hover:text-brand-500 transition-colors">
+                    Se connecter
+                </a>
+            </p>
+        </div>
     </div>
 </div>
 {% endblock %}
