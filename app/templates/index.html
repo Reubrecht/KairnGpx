@@ -264,67 +264,134 @@
 
         <!-- Results Grid -->
         <div class="flex-1">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">{{ tracks|length }} Traces trouvées</h2>
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">{{ real_track_count|default(tracks|length) }} Traces
+                trouvées</h2>
 
             {% if tracks %}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {% for track in tracks %}
+                {% if track.is_grouped_event %}
+                <!-- Grouped Event Card -->
+                <div onclick="window.location.href='/event/{{ track.id|replace('event_', '') }}'"
+                    class="group block bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 hover:border-brand-200 hover:-translate-y-1 relative h-full flex flex-col cursor-pointer">
+                    <div class="h-32 bg-slate-900 relative overflow-hidden flex items-center justify-center">
+                        <div class="absolute inset-0 opacity-20 bg-[url('/static/img/hero.png')] bg-cover bg-center">
+                        </div>
+                        <div class="z-10 text-center">
+                            <h3 class="text-white font-bold text-xl px-4">{{ track.title }}</h3>
+                            <p class="text-slate-400 text-sm flex items-center justify-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                </svg>
+                                {{ track.location_city }}
+                            </p>
+                        </div>
+                        <span
+                            class="absolute top-2 right-2 bg-yellow-400 text-yellow-900 text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm opacity-90">Événement
+                            Officiel</span>
+                    </div>
+                    <div class="p-4 flex-1 bg-slate-50">
+                        <h4 class="text-xs font-bold text-slate-500 uppercase mb-3">Parcours en attente</h4>
+                        <div class="space-y-3">
+                            {% for route in track.routes %}
+                            <div
+                                class="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-200 shadow-sm">
+                                <div>
+                                    <p class="font-bold text-slate-800 text-sm">{{ route.name }}</p>
+                                    <p class="text-xs text-slate-500">{{ route.distance_km }}km • {{
+                                        route.elevation_gain }}m+</p>
+                                </div>
+                                {% if user and user.role.value in ['moderator', 'admin', 'super_admin'] %}
+                                <a href="/upload?race_route_id={{ route.id }}" onclick="event.stopPropagation()"
+                                    class="flex items-center gap-1 px-2 py-1 bg-brand-50 text-brand-700 rounded text-xs font-bold hover:bg-brand-100 transition-colors"
+                                    title="Uploader la trace pour ce parcours">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                    </svg>
+                                    Add
+                                </a>
+                                {% else %}
+                                <span class="text-slate-300 text-xs italic">En attente</span>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                {% else %}
+                <!-- Standard Track Card -->
                 <a href="/track/{{ track.id }}"
                     class="group block bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 hover:border-brand-200 hover:-translate-y-1">
-                    <!-- Map Thumbnail -->
-                    <div class="h-48 bg-slate-100 relative overflow-hidden">
-                        <div id="map-{{ track.id }}" class="absolute inset-0 z-0"></div>
+                    <!-- Map Thumbnail with Overlay -->
+                    <div class="h-48 bg-slate-100 relative overflow-hidden flex items-center justify-center isolate">
+                        <div id="map-{{ track.id }}" class="absolute inset-0 z-0 settings-map"></div>
                         <!-- Gradient Overlay -->
                         <div
-                            class="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/20 to-transparent z-10">
+                            class="absolute inset-0 pointer-events-none bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent z-10 opacity-90">
                         </div>
 
-                        <!-- Status badge removed/hidden for now -->
-                        <!-- {% if track.status and track.status.value == "OFFICIAL_RACE" %}
+                        <!-- Title & Location Overlay -->
+                        <div class="absolute bottom-0 left-0 p-4 z-20 w-full">
+                            <h3 class="text-white font-bold text-lg leading-tight truncate drop-shadow-sm">{{
+                                track.title }}</h3>
+                            <div class="flex items-center text-slate-300 text-xs mt-1">
+                                <svg class="h-3 w-3 mr-1 opacity-80" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                </svg>
+                                <span class="truncate pr-4">{{ track.location_city or 'Lieu inconnu' }}</span>
+                            </div>
+                        </div>
+
+                        {% if track.is_official_route %}
                         <span
-                            class="absolute top-2 right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full shadow-sm">Officiel</span>
-                        {% endif %} -->
+                            class="absolute top-2 right-2 z-20 bg-yellow-400/90 text-yellow-900 text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm backdrop-blur-sm">Officiel</span>
+                        {% endif %}
                     </div>
 
                     <div class="p-4">
-                        <div class="flex justify-between items-start mb-2">
-                            <h3 class="text-lg font-bold text-gray-900 group-hover:text-green-600 truncate">{{
-                                track.title }}</h3>
-                        </div>
-
-                        <div class="flex items-center text-sm text-gray-500 mb-4">
-                            <svg class="h-4 w-4 mr-1 text-gray-400" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            </svg>
-                            {{ track.location_city or 'Lieu inconnu' }}
-                        </div>
-
-                        <div class="grid grid-cols-3 gap-2 py-3 border-t border-b border-gray-50 text-center">
+                        <!-- Stats Grid -->
+                        <div class="grid grid-cols-3 gap-2 pb-3 border-b border-gray-50 text-center">
                             <div>
-                                <span class="block text-xs text-gray-400 uppercase">Dist</span>
-                                <span class="font-bold text-slate-700">{{ track.distance_km }}km</span>
+                                <span class="block text-[10px] text-gray-400 uppercase tracking-wide">Distance</span>
+                                <span class="font-bold text-slate-700 text-sm">{{ "%.1f"|format(track.distance_km)
+                                    }}<span class="text-xs font-normal text-gray-400">km</span></span>
                             </div>
                             <div>
-                                <span class="block text-xs text-gray-400 uppercase">D+</span>
-                                <span class="font-bold text-slate-700">{{ track.elevation_gain }}m</span>
+                                <span class="block text-[10px] text-gray-400 uppercase tracking-wide">D+</span>
+                                <span class="font-bold text-slate-700 text-sm">{{ track.elevation_gain|int }}<span
+                                        class="text-xs font-normal text-gray-400">m</span></span>
                             </div>
-                            <!-- Tech badge removed -->
+                            <div>
+                                <span class="block text-[10px] text-gray-400 uppercase tracking-wide">Auteur</span>
+                                <span class="font-bold text-slate-700 text-sm truncate px-1">{{
+                                    track.user_id|truncate(8, True) }}</span>
+                            </div>
                         </div>
 
-                        <!-- Environment tags removed - fields not in new schema -->
-                        <div class="mt-4 flex flex-wrap gap-1">
+                        <!-- Tags Compact -->
+                        <div class="mt-3 flex flex-wrap gap-1.5 h-6 overflow-hidden">
                             {% if track.tags %}
+                            {% if track.tags is string %}
+                            <span
+                                class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">#{{
+                                track.tags }}</span>
+                            {% else %}
                             {% for tag in track.tags %}
                             <span
-                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">#{{
+                                class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">#{{
                                 tag }}</span>
                             {% endfor %}
+                            {% endif %}
                             {% endif %}
                         </div>
                     </div>
                 </a>
+                {% endif %}
                 {% endfor %}
             </div>
             {% else %}
@@ -563,8 +630,10 @@
         // --- Tracks Maps ---
         const tracks = [
             {% for track in tracks %}
-            { id: "{{ track.id }}" },
-        {% endfor %}
+            {% if not track.is_grouped_event %}
+    { id: "{{ track.id }}" },
+    {% endif %}
+    {% endfor %}
         ];
 
     tracks.forEach(t => {

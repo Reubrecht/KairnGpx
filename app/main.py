@@ -382,6 +382,7 @@ async def explore(
 
         tracks = query.order_by(models.Track.created_at.desc()).all()
         
+        
         # 8. Post-Processing for Ratio D+
         if ratio_category:
             filtered_tracks = []
@@ -398,6 +399,85 @@ async def explore(
                 elif ratio_category == "MOUNTAIN" and ratio >= 80:
                     filtered_tracks.append(t)
             tracks = filtered_tracks
+
+        # 9. FETCH PENDING OFFICIAL RACES (Official Races without Track)
+        # Grouped by Event
+        if not author: 
+            import re
+            
+            # Query routes without official track
+            pending_query = db.query(models.RaceRoute).filter(models.RaceRoute.official_track_id == None)\
+                .join(models.RaceEdition).join(models.RaceEvent)
+
+            # Apply Location Filter (Region/Ville match)
+            if city_search:
+                 pending_query = pending_query.filter(models.RaceEvent.region.ilike(f"%{city_search}%"))
+            
+            pending_routes = pending_query.all()
+            
+            # Group by Event (via Edition)
+            # key: event_id, value: MockEventObject
+            grouped_events = {}
+
+            for pr in pending_routes:
+                event = pr.edition.event
+                edition = pr.edition
+                
+                # Create wrapper if not exists
+                if event.id not in grouped_events:
+                    grouped_events[event.id] = {
+                        "id": f"event_{event.id}",
+                        "title": f"{event.name} {edition.year}", # Assume one active edition for now? Or group by edition too? 
+                                                                  # Usually filtering by upcoming vs past. For now simplest is Event Name.
+                        "location_city": event.region,
+                        "created_at": datetime.now(), # To float to top
+                        "is_grouped_event": True, # Flag for template
+                        "routes": [],
+                        "tags": ["Course Officielle", "Trace à venir"],
+                        # Dummy fields for track compatibility
+                        "distance_km": 0,
+                        "elevation_gain": 0,
+                        "user_id": "Official",
+                        "map_thumbnail_url": None 
+                    }
+                
+                # Parse Stats
+                p_dist = 0
+                p_elev = 0
+                m_dist = re.search(r'(\d+)\s*km', pr.name, re.IGNORECASE)
+                if m_dist: p_dist = int(m_dist.group(1))
+                m_elev = re.search(r'(\d+)\s*m', pr.name, re.IGNORECASE)
+                if m_elev: p_elev = int(m_elev.group(1))
+
+                # Apply Filters to this route? 
+                # If we filter routes, and an event has 0 matching routes, do we show the event?
+                # Probably not.
+                
+                match_filters = True
+                if min_dist is not None and p_dist < min_dist: match_filters = False
+                if max_dist is not None and p_dist > max_dist: match_filters = False
+                if min_elev is not None and p_elev < min_elev: match_filters = False
+                if max_elev is not None and p_elev > max_elev: match_filters = False
+
+                if match_filters:
+                     grouped_events[event.id]["routes"].append({
+                         "id": pr.id,
+                         "name": pr.name,
+                         "distance_km": p_dist,
+                         "elevation_gain": p_elev
+                     })
+            
+            # Add only events with at least one matching route
+            class MockObj:
+                 def __init__(self, **kwargs):
+                        self.__dict__.update(kwargs)
+
+            for ev_data in grouped_events.values():
+                if len(ev_data["routes"]) > 0:
+                    # Sort routes by distance
+                    ev_data["routes"].sort(key=lambda x: x["distance_km"])
+                    tracks.append(MockObj(**ev_data))
+
         
         # Collect unique tags
         all_visible_tracks = db.query(models.Track.tags).filter(models.Track.visibility == models.Visibility.PUBLIC).all()
@@ -412,9 +492,14 @@ async def explore(
                     pass
         sorted_tags = sorted(list(unique_tags))
         
+        
+        # Count actual tracks (excluding grouped events)
+        real_track_count = len([t for t in tracks if not getattr(t, 'is_grouped_event', False)])
+
         return templates.TemplateResponse("index.html", {
             "request": request,
             "tracks": tracks,
+            "real_track_count": real_track_count,
             "user": user,
             "active_page": "explore",
             "current_city": current_city,
@@ -528,14 +613,33 @@ async def advanced_search(
     })
 
 @app.get("/upload", response_class=HTMLResponse)
-async def upload_form(request: Request, db: Session = Depends(get_db)):
+async def upload_form(request: Request, db: Session = Depends(get_db), race_route_id: Optional[int] = None):
     user = await get_current_user(request, db) # Force login
+    
+    prefill_race = None
+    if race_route_id:
+        # Fetch race details to prefill form
+        route = db.query(models.RaceRoute).filter(models.RaceRoute.id == race_route_id).first()
+        if route:
+            prefill_race = {
+                "id": route.id,
+                "name": route.edition.event.name,
+                "year": route.edition.year,
+                "route_name": route.name,
+                "category": route.distance_category
+            }
+
+    # Fetch all race events for dropdown
+    race_events = db.query(models.RaceEvent).order_by(models.RaceEvent.name).all()
+
     return templates.TemplateResponse("upload.html", {
         "request": request,
         "status_options": [], # [e.value for e in models.StatusEnum],
         "technicity_options": [], # [e.value for e in models.TechnicityEnum],
         "terrain_options": [], # [e.value for e in models.TerrainEnum],
-        "user": user
+        "user": user,
+        "prefill_race": prefill_race,
+        "race_events": race_events
     })
 
 from .services.analytics import GpxAnalytics
@@ -558,6 +662,7 @@ async def upload_track(
     
     # Official Race Fields
     is_official_bot: bool = Form(False),
+    linked_race_route_id: Optional[int] = Form(None), # FROM HIDDEN INPUT
     race_name: Optional[str] = Form(None),
     race_year: Optional[int] = Form(None),
     race_route_name: Optional[str] = Form(None),
@@ -760,7 +865,45 @@ async def upload_track(
         except Exception as e:
             print(f"Failed to create RaceRoute: {e}")
 
+
+    # 9. Link to Official Race (Pre-existing)
+    if linked_race_route_id:
+        race_route = db.query(models.RaceRoute).filter(models.RaceRoute.id == linked_race_route_id).first()
+        if race_route:
+            print(f"Linking Track {new_track.id} to Official Route {race_route.name}")
+            race_route.official_track_id = new_track.id
+            
+            # Enforce Official Status
+            new_track.is_official_route = True
+            new_track.status = models.StatusEnum.RACE
+            new_track.user_id = "Official" # Or keep uploader? Usually Official tracks are owned by admin/system, but Moderator upload is fine.
+                                          # Let's keep the uploader so we know who did it, but mark as is_official_route=True.
+            
+            # Auto-fill metadata from Race if missing?
+            # Already handled by form inputs usually.
+            
+            db.commit()
+
     return RedirectResponse(url=f"/track/{new_track.id}", status_code=status.HTTP_303_SEE_OTHER)
+
+@app.get("/event/{event_id}", response_class=HTMLResponse)
+async def event_detail(event_id: int, request: Request, db: Session = Depends(get_db)):
+    user = await get_current_user_optional(request, db)
+    
+    event = db.query(models.RaceEvent).filter(models.RaceEvent.id == event_id).first()
+    if not event:
+        # Fallback by slug?
+        return RedirectResponse(url="/explore")
+
+    # Fetch editions ordered by year desc
+    editions = db.query(models.RaceEdition).filter(models.RaceEdition.event_id == event.id).order_by(models.RaceEdition.year.desc()).all()
+
+    return templates.TemplateResponse("event.html", {
+        "request": request,
+        "event": event,
+        "editions": editions,
+        "user": user
+    })
 
 @app.get("/track/{track_identifier}", response_class=HTMLResponse)
 async def track_detail(track_identifier: str, request: Request, db: Session = Depends(get_db)):

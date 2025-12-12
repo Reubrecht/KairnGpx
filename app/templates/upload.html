@@ -29,6 +29,9 @@
             </div>
             {% endif %}
             <form action="/upload" method="post" enctype="multipart/form-data" class="divide-y divide-slate-100">
+                {% if prefill_race %}
+                <input type="hidden" name="linked_race_route_id" value="{{ prefill_race.id }}">
+                {% endif %}
 
                 <!-- 1. File Upload Section -->
                 <div class="p-8 bg-slate-50/50">
@@ -204,35 +207,66 @@
                         </div>
 
                         <!-- Official Race Option -->
-                        <div class="mt-6 pt-6 border-t border-slate-100" x-data="{ isRace: false }">
+                        <div class="mt-6 pt-6 border-t border-slate-100"
+                            x-data="{ isRace: {{ 'true' if prefill_race else 'false' }} }">
                             <label class="inline-flex items-center cursor-pointer mb-4">
                                 <input type="checkbox" name="is_official_bot" value="true" x-model="isRace"
-                                    class="rounded border-slate-300 text-brand-600 focus:ring-brand-500 w-4 h-4">
+                                    class="rounded border-slate-300 text-brand-600 focus:ring-brand-500 w-4 h-4" {% if
+                                    prefill_race %}checked{% endif %}>
                                 <span class="ml-2 text-sm font-bold text-slate-700">C'est une course officielle ?</span>
                             </label>
 
                             <div x-show="isRace" x-transition
                                 class="space-y-4 bg-yellow-50 p-4 rounded-xl border border-yellow-100">
+                                {% if race_events %}
                                 <div>
-                                    <label class="block text-xs font-bold text-yellow-800 uppercase mb-1">Nom de
-                                        l'événement</label>
-                                    <input type="text" name="race_name" placeholder="Ex: UTMB Mont-Blanc"
-                                        class="w-full rounded-lg border-yellow-300 bg-white text-sm focus:border-yellow-500 focus:ring-yellow-500">
-                                    <p class="text-[10px] text-yellow-600 mt-1">Le nom de l'événement global (pas le
-                                        parcours)</p>
+                                    <label class="block text-xs font-bold text-yellow-800 uppercase mb-1">Sélectionner
+                                        un événement</label>
+                                    <select name="race_name"
+                                        class="w-full rounded-lg border-yellow-300 bg-white text-sm focus:border-yellow-500 focus:ring-yellow-500 mb-1">
+                                        <option value="">-- Choisir dans la liste --</option>
+                                        {% for ev in race_events %}
+                                        <option value="{{ ev.name }}" {% if prefill_race and prefill_race.name==ev.name
+                                            %}selected{% endif %}>{{ ev.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="text-right mt-1">
+                                        <a href="mailto:admin@kairn.com?subject=Demande ajout événement Kairn"
+                                            class="text-[10px] text-yellow-700 underline hover:text-yellow-900 flex items-center justify-end gap-1">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            L'événement n'existe pas ? Demander l'ajout
+                                        </a>
+                                    </div>
+                                    <p class="text-[10px] text-yellow-600 mt-1">Si l'événement n'est pas dans la liste,
+                                        merci de faire une demande d'ajout.</p>
                                 </div>
+                                {% else %}
+                                <div class="text-sm text-yellow-800 p-2 bg-yellow-100 rounded">
+                                    Aucun événement disponible. <br>
+                                    <a href="mailto:admin@kairn.com?subject=Demande ajout événement Kairn"
+                                        class="underline font-bold">Contacter l'admin</a> pour initialiser la liste.
+                                    <input type="hidden" name="race_name" value="">
+                                    <!-- Avoid backend error if race_name missing? Actually backend checks validity -->
+                                </div>
+                                {% endif %}
+
 
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
                                         <label
                                             class="block text-xs font-bold text-yellow-800 uppercase mb-1">Année</label>
-                                        <input type="number" name="race_year" value="2025"
+                                        <input type="number" name="race_year"
+                                            value="{{ prefill_race.year if prefill_race else '2025' }}"
                                             class="w-full rounded-lg border-yellow-300 bg-white text-sm focus:border-yellow-500 focus:ring-yellow-500">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold text-yellow-800 uppercase mb-1">Nom du
                                             parcours</label>
                                         <input type="text" name="race_route_name" placeholder="Ex: OCC"
+                                            value="{{ prefill_race.route_name if prefill_race else '' }}"
                                             class="w-full rounded-lg border-yellow-300 bg-white text-sm focus:border-yellow-500 focus:ring-yellow-500">
                                     </div>
                                 </div>
