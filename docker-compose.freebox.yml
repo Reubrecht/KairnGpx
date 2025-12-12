@@ -6,11 +6,12 @@ services:
     build: .
     restart: unless-stopped
     volumes:
-      - ./app/data:/app/data
+      - ./app/data:/app/app/data
       - ./app/uploads:/app/app/uploads
     environment:
-      - DATABASE_URL=sqlite:///./data/kairn.db
+      - DATABASE_URL=sqlite:///./app/data/kairn.db
       - INVITATION_CODE=${INVITATION_CODE}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     ports:
       - "8000:8000" # Access locally via http://IP:8000 while waiting for Tunnel
 

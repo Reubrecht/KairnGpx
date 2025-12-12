@@ -1,0 +1,58 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+venv/
+env/
+ENV/
+
+# Environment
+.env
+local.env
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Database (will be in mounted volume)
+*.db
+*.sqlite3
+app/data/
+
+# Uploads (will be in mounted volume)
+app/uploads/*.gpx
+
+# Logs
+*.log
+kairn_error.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Documentation
+README.md
+*.md
+
+# Scripts
+run_local.ps1
+reset_db.py
+debug_auth.py
+create_test_data.py
+test_*.py

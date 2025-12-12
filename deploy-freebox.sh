@@ -1,29 +1,39 @@
 #!/bin/bash
+# Kairn Freebox Deployment Script
 
-# Arrêter le script en cas d'erreur
 set -e
 
-echo "🚀 Début du déploiement sur Freebox..."
+echo "🚀 Kairn Freebox Deployment Script"
+echo "===================================="
 
-# 1. Récupérer les dernières modifications du code
-echo "📥 Pull du code..."
-git pull
-
-# 1b. Préparer les dossiers de données (Fix Permissions SQLite)
-echo "🔧 Configuration des permissions..."
-mkdir -p app/data app/uploads
-# On tente de mettre les droits, mais on continue si ça échoue (car déjà fait via sudo par exemple)
-chmod -R 777 app/data app/uploads || true
-
-# 2. Vérifier si le token est là (sécurité basique)
+# Check if .env exists
 if [ ! -f .env ]; then
-    echo "⚠️  ATTENTION : Fichier .env manquant !"
-    echo "Créez-le avec : Please create it with: TUNNEL_TOKEN=votre_token_ici"
+    echo "❌ Fichier .env manquant !"
+    echo "📝 Copiez .env.freebox.example vers .env et remplissez les variables"
+    echo ""
+    echo "  cp .env.freebox.example .env"
+    echo "  nano .env"
+    echo ""
     exit 1
 fi
 
-# 3. Reconstruire et relancer les conteneurs (Kairn + Tunnel)
-echo "🏗️  Build et Redémarrage..."
-docker compose -f docker-compose.freebox.yml up -d --build --remove-orphans
+# Create data directories
+echo "📁 Création des dossiers de données..."
+mkdir -p app/data
+mkdir -p app/uploads
+chmod 755 app/data app/uploads
 
-echo "✨ Déploiement terminé ! Vérifiez les logs si besoin : docker compose -f docker-compose.freebox.yml logs -f"
+#Build and start containers
+echo "🐳 Construction et démarrage des conteneurs..."
+docker-compose -f docker-compose.freebox.yml down
+docker-compose -f docker-compose.freebox.yml build --no-cache
+docker-compose -f docker-compose.freebox.yml up -d
+
+echo ""
+echo "✅ Déploiement terminé !"
+echo ""
+echo "📊 Vérifiez les logs avec :"
+echo "   docker-compose -f docker-compose.freebox.yml logs -f"
+echo ""
+echo "🌐 Accès local : http://$(hostname -I | awk '{print $1}'):8000"
+echo ""
