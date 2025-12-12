@@ -300,6 +300,20 @@ class GpxAnalytics:
 
         return attributes
 
+    def get_metadata(self) -> Dict[str, Any]:
+        """
+        Extract metadata from the GPX header (name, description, author, keywords).
+        """
+        if not self.gpx:
+            return {}
+            
+        return {
+            "name": self.gpx.name,
+            "description": self.gpx.description,
+            "author": self.gpx.author_name,
+            "keywords": self.gpx.keywords
+        }
+
     def get_geojson(self) -> Dict[str, Any]:
         """
         Return the track as a GeoJSON Feature.

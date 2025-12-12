@@ -1,89 +1,64 @@
 ﻿{% extends "base.html" %}
 
 {% block content %}
-<div class="relative w-full min-h-[calc(100vh-64px)]">
-    <!-- Fixed Map Background -->
-    <!-- We use fixed positioning to keep it in place while content scrolls over it -->
-    <div class="fixed inset-x-0 bottom-0 top-[64px] z-0">
-        <div id="map" class="h-full w-full bg-slate-200"></div>
+<div class="relative w-full h-[calc(100vh-64px)] flex flex-col md:block">
+
+    <!-- Map Container -->
+    <!-- Mobile: Top 40-50% height. Desktop: Fixed full background -->
+    <div class="relative w-full h-[50vh] md:fixed md:inset-x-0 md:bottom-0 md:top-[64px] md:h-auto md:z-0 bg-slate-200">
+        <div id="map" class="h-full w-full"></div>
+        <!-- Gradient overlay for desktop to make text readable if overlapping -->
+        <div
+            class="hidden md:block absolute inset-0 bg-gradient-to-t from-white/90 via-white/50 to-transparent pointer-events-none z-10">
+        </div>
     </div>
 
-    <!-- Scrollable Content Overlay -->
-    <!-- pointer-events-none on wrapper allows clicks on the transparent spacer to reach the map -->
-    <div class="relative z-10 w-full pointer-events-none">
+    <!-- Scrollable Content Container -->
+    <!-- Mobile: Remaining height, scrollable. Desktop: Overlay card -->
+    <div
+        class="flex-1 bg-white relative z-10 md:bg-transparent md:pointer-events-none overflow-y-auto md:overflow-visible">
 
-        <!-- Transparent Spacer (shows map) -->
-        <!-- Adjust h-[55vh] to control how much map is visible initially -->
-        <div class="h-[55vh] w-full"></div>
+        <!-- Desktop Spacer -->
+        <div class="hidden md:block h-[50vh] w-full"></div>
 
-        <!-- Main Content Card -->
-        <!-- pointer-events-auto restores interaction for the content itself -->
+        <!-- Main Card -->
         <div
-            class="bg-white rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.12)] border-t border-gray-100 min-h-[60vh] pointer-events-auto">
+            class="bg-white md:rounded-t-3xl md:shadow-[0_-8px_30px_rgba(0,0,0,0.12)] md:border-t md:border-gray-100 md:min-h-[60vh] md:pointer-events-auto p-4 md:p-8">
 
-            <!-- Drag Handle (Visual cue) -->
-            <div class="w-full flex justify-center pt-3 pb-1">
-                <div class="w-12 h-1.5 bg-gray-300 rounded-full"></div>
+            <!-- Mobile Drag Handle -->
+            <div class="w-full flex justify-center py-2 md:py-4 mb-2">
+                <div class="w-12 h-1.5 bg-gray-200 rounded-full"></div>
             </div>
 
-            <div class="max-w-7xl mx-auto px-4 pb-12 pt-4">
+            <div class="max-w-7xl mx-auto">
 
-                <!-- Header Section -->
-                <div class="flex flex-col md:flex-row justify-between items-start gap-4 mb-8">
-                    <div>
-                        <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">{{ track.title }}</h1>
-                        <div class="flex items-center mt-2 text-gray-500 font-medium">
-                            <svg class="h-5 w-5 mr-1.5 text-brand-600" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            {{ track.location_city }}, {{ track.location_region }}
-                        </div>
-                    </div>
-
-                    <div class="flex flex-col items-end gap-3">
-                        <!-- Share Button -->
-                        <button onclick="copyLink()" id="shareBtn"
-                            class="inline-flex items-center px-4 py-2 border border-gray-200 shadow-sm text-sm font-bold rounded-xl text-slate-700 bg-white hover:bg-slate-50 hover:border-brand-200 transition-all cursor-pointer">
-                            <svg class="w-4 h-4 mr-2 text-slate-400 group-hover:text-brand-500 transition-colors"
-                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                            </svg>
-                            <span id="shareBtnText">Partager</span>
-                        </button>
-                        <a href="/raw_gpx/{{ track.id }}"
-                            class="inline-flex items-center px-4 py-2 border border-gray-200 shadow-sm text-sm font-bold rounded-xl text-slate-700 bg-white hover:bg-slate-50 hover:border-brand-200 transition-all">
-                            <svg class="w-4 h-4 mr-2 text-slate-400" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                            </svg>
-                            GPX
-                        </a>
-
-                        <!-- Edit Button -->
-                        {% if user and (user.username == track.user_id or user.is_admin) %}
-                        <a href="/track/{{ track.id }}/edit"
-                            class="inline-flex items-center px-4 py-2 border border-gray-200 shadow-sm text-sm font-bold rounded-xl text-brand-700 bg-white hover:bg-slate-50 hover:border-brand-200 transition-all">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                            </svg>
-                            Modifier
-                        </a>
-                        {% endif %}
+                <!-- HEADER: Title & Badges -->
+                <div class="flex flex-col gap-4 mb-6">
+                    <div class="flex flex-wrap items-center gap-2 mb-1">
+                        <!-- Activity Badge -->
+                        <span
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-50 text-brand-700 border border-brand-100">
+                            {% if track.activity_type.value == 'TRAIL_RUNNING' %}🏃 Trail
+                            {% elif track.activity_type.value == 'RUNNING' %}👟 Course
+                            {% elif track.activity_type.value == 'HIKING' %}🥾 Rando
+                            {% elif track.activity_type.value == 'MTB_CROSS_COUNTRY' %}🚴 VTT
+                            {% elif track.activity_type.value == 'ROAD_CYCLING' %}🚴 Route
+                            {% elif track.activity_type.value == 'GRAVEL' %}🚲 Gravel
+                            {% else %}📍 {{ track.activity_type.value | replace('_', ' ') | title }}{% endif %}
+                        </span>
 
                         <!-- Status / Race Link -->
-                        {% if track.race %}
-                        <a href="/race/{{ track.race.slug }}"
+                        {% if track.race_route and track.race_route.edition and track.race_route.edition.event %}
+                        <a href="/race/{{ track.race_route.edition.event.slug }}"
                             class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold border bg-yellow-50 text-yellow-800 border-yellow-200 hover:bg-yellow-100 transition-colors"
                             title="Voir toutes les traces de cet événement">
-                            🏆 {{ track.race.name }}
+                            🏆 {{ track.race_route.edition.event.name }}
                         </a>
+                        <!-- Also show route name if specific -->
+                        {% if track.race_route.name and track.race_route.name != track.title %}
+                        <span class="ml-2 text-xs text-slate-500 font-medium hidden md:inline">({{ track.race_route.name
+                            }})</span>
+                        {% endif %}
                         {% else %}
                         <span
                             class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold border bg-slate-50 text-slate-600 border-slate-200">
@@ -91,198 +66,189 @@
                         </span>
                         {% endif %}
 
-                        <!-- Detailed Tags are below -->
+                        <!-- Visibilité (Admin/User only) -->
+                        {% if user and (user.username == track.user_id or user.is_admin) %}
+                        {% if track.visibility.value == 'private' %}
+                        <span
+                            class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-500">🔒
+                            Privé</span>
+                        {% endif %}
+                        {% endif %}
                     </div>
-                </div>
 
-                <!-- Elevation Chart (Moved Up) -->
-                <div class="mb-8">
-                    <div class="bg-gray-50 rounded-xl p-4 border border-gray-100 shadow-inner">
-                        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 ml-1">Profil
-                            Altimétrique</h3>
-                        <div class="h-48 w-full">
-                            <canvas id="elevationChart"></canvas>
+                    <h1 class="text-2xl md:text-4xl font-black text-gray-900 leading-tight">
+                        {{ track.title }}
+                    </h1>
+
+                    <div class="flex flex-wrap justify-between items-end gap-4">
+                        <div class="flex items-center text-sm text-gray-500 font-medium">
+                            <svg class="h-4 w-4 mr-1 text-slate-400" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            {{ track.location_city or 'Lieu inconnu' }}
+                            {% if track.location_region %}<span class="mx-1">•</span>{{ track.location_region }}{% endif
+                            %}
                         </div>
-                    </div>
-                </div>
 
-                <!-- KEY METRICS GRID -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                    <!-- Distance -->
-                    <div
-                        class="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex flex-col items-center justify-center text-center">
-                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Distance</span>
-                        <span class="text-3xl font-black text-slate-900">{{ track.distance_km }}<span
-                                class="text-lg text-slate-500 font-bold ml-0.5">km</span></span>
-                    </div>
+                        <!-- Actions Toolbar -->
+                        <div class="flex items-center gap-2 w-full md:w-auto mt-2 md:mt-0">
+                            <button onclick="copyLink()"
+                                class="flex-1 md:flex-none justify-center inline-flex items-center px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                                <svg class="w-4 h-4 mr-2 text-slate-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                                </svg>
+                                Partager
+                            </button>
 
-                    <!-- Elevation Gain -->
-                    <div
-                        class="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex flex-col items-center justify-center text-center">
-                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Dénivelé +</span>
-                        <span class="text-3xl font-black text-slate-900">+{{ track.elevation_gain }}<span
-                                class="text-lg text-slate-500 font-bold ml-0.5">m</span></span>
-                    </div>
+                            <a href="/raw_gpx/{{ track.id }}"
+                                class="flex-1 md:flex-none justify-center inline-flex items-center px-4 py-2 bg-brand-600 border border-transparent rounded-xl text-sm font-bold text-white hover:bg-brand-700 transition-colors shadow-sm shadow-brand-200">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                GPX
+                            </a>
 
-                    <!-- Max Altitude -->
-                    <div
-                        class="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex flex-col items-center justify-center text-center">
-                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Alt. Max</span>
-                        <span class="text-3xl font-black text-slate-900">{{ track.max_altitude }}<span
-                                class="text-lg text-slate-500 font-bold ml-0.5">m</span></span>
-                    </div>
-
-                    <!-- Effort / ITRA -->
-                    <div
-                        class="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex flex-col items-center justify-center text-center">
-                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Effort</span>
-                        <div class="flex items-baseline gap-2">
-                            <span class="text-3xl font-black text-slate-900">{{ track.km_effort | int }}</span>
-                            {% if track.itra_points_estim > 0 %}
-                            <span
-                                class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-brand-100 text-brand-700">
-                                {{ track.itra_points_estim }} pts ITRA
-                            </span>
+                            {% if user and (user.username == track.user_id or user.is_admin) %}
+                            <a href="/track/{{ track.id }}/edit"
+                                class="p-2 text-slate-400 hover:text-brand-600 hover:bg-slate-50 rounded-lg transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </a>
                             {% endif %}
                         </div>
                     </div>
                 </div>
 
-                <!-- Stats Grid -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                <!-- KEY METRICS (Mobile Grid) -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
+                    <!-- Distance -->
+                    <div
+                        class="bg-slate-50 rounded-2xl p-3 md:p-4 border border-slate-100 flex flex-col items-center justify-center text-center">
+                        <span
+                            class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Distance</span>
+                        <div class="flex items-baseline text-slate-900">
+                            <span class="text-2xl md:text-3xl font-black">{{ track.distance_km }}</span>
+                            <span class="text-sm md:text-lg font-bold ml-0.5 text-slate-500">km</span>
+                        </div>
+                    </div>
+                    <!-- D+ -->
+                    <div
+                        class="bg-slate-50 rounded-2xl p-3 md:p-4 border border-slate-100 flex flex-col items-center justify-center text-center">
+                        <span
+                            class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Dénivelé
+                            +</span>
+                        <div class="flex items-baseline text-slate-900">
+                            <span class="text-2xl md:text-3xl font-black">+{{ track.elevation_gain }}</span>
+                            <span class="text-sm md:text-lg font-bold ml-0.5 text-slate-500">m</span>
+                        </div>
+                    </div>
+                    <!-- Max Alt -->
+                    <div
+                        class="bg-slate-50 rounded-2xl p-3 md:p-4 border border-slate-100 flex flex-col items-center justify-center text-center">
+                        <span class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Alt.
+                            Max</span>
+                        <div class="flex items-baseline text-slate-900">
+                            <span class="text-2xl md:text-3xl font-black">{{ track.max_altitude }}</span>
+                            <span class="text-sm md:text-lg font-bold ml-0.5 text-slate-500">m</span>
+                        </div>
+                    </div>
+                    <!-- Effort -->
+                    <div
+                        class="bg-slate-50 rounded-2xl p-3 md:p-4 border border-slate-100 flex flex-col items-center justify-center text-center">
+                        <span
+                            class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Effort
+                            KM</span>
+                        <div class="flex flex-col items-center">
+                            <span class="text-2xl md:text-3xl font-black text-slate-900">{{ track.km_effort | int
+                                }}</span>
+                            {% if track.itra_points_estim > 0 %}
+                            <span class="text-[10px] font-bold text-brand-600 bg-brand-50 px-1.5 rounded mt-1">{{
+                                track.itra_points_estim }} pts ITRA</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
 
-                    <!-- Environment Tags -->
-                    <!-- Detailed Stats Column -->
-                    <div class="col-span-1 space-y-8">
+                <!-- CHART -->
+                <div class="mb-8">
+                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Profil</h3>
+                    <div class="h-40 md:h-64 w-full bg-slate-50 rounded-xl border border-slate-100 p-2">
+                        <canvas id="elevationChart"></canvas>
+                    </div>
+                </div>
 
-                        <!-- 1. Tags & Environment -->
+                <!-- TAGS & DESC -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+                    <!-- Metadata Column -->
+                    <div class="md:col-span-1 space-y-6">
+                        <!-- Tags -->
+                        {% if tags_list %}
                         <div>
-                            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3">🏷️
-                                Caractéristiques</h3>
+                            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Tags & Ambiance
+                            </h3>
                             <div class="flex flex-wrap gap-2">
-                                <!-- Environments (Moved to Tags) -->
-                                <!-- Old boolean checks removed -->
-
-                                <!-- Seasons -->
-                                {% if track.best_season %}
-                                {% for season in track.best_season %}
-                                <span
-                                    class="px-2.5 py-1 bg-pink-50 text-pink-700 border border-pink-100 rounded-lg text-xs font-bold">🗓️
-                                    {{ season }}</span>
-                                {% endfor %}
-                                {% endif %}
-
                                 <!-- Custom Tags -->
-                                {% if track.tags %}
-                                {% for tag in track.tags %}
+                                {% if tags_list %}
+                                {% for tag in tags_list %}
                                 <span
-                                    class="px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-lg text-xs font-bold">#{{
-                                    tag }}</span>
+                                    class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-600">
+                                    #{{ tag }}
+                                </span>
                                 {% endfor %}
                                 {% endif %}
 
                                 <!-- Fallback if empty -->
-                                {% if not track.is_high_mountain and not track.is_coastal and not track.is_forest and
-                                not track.is_urban and not track.is_desert and not track.tags %}
+                                {% if not track.best_season and not tags_list %}
                                 <span class="text-xs text-gray-400 italic">Aucune étiquette spécifique</span>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <!-- 2. Technical Data Grid -->
-                        <div>
-                            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3">📐 Données
-                                Techniques</h3>
-                            <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
-                                <dl class="grid grid-cols-2 gap-x-4 gap-y-6">
-
-                                    <!-- Altitudes -->
-                                    <div class="flex flex-col">
-                                        <dt class="text-[10px] text-slate-400 font-bold uppercase">Altitude Min</dt>
-                                        <dd class="font-bold text-slate-800">{{ track.min_altitude or 'N/A' }} m</dd>
-                                    </div>
-                                    <div class="flex flex-col">
-                                        <dt class="text-[10px] text-slate-400 font-bold uppercase">Altitude Moy.</dt>
-                                        <dd class="font-bold text-slate-800">{{ track.avg_altitude or 'N/A' }} m</dd>
-                                    </div>
-
-                                    <!-- Slopes -->
-                                    <div class="flex flex-col">
-                                        <dt class="text-[10px] text-slate-400 font-bold uppercase">Pente Max</dt>
-                                        <dd class="font-bold text-slate-800">{{ track.max_slope or 0 }}%</dd>
-                                    </div>
-                                    <div class="flex flex-col">
-                                        <dt class="text-[10px] text-slate-400 font-bold uppercase">Plus longue montée
-                                        </dt>
-                                        <dd class="font-bold text-slate-800">{{ track.longest_climb or 0 }} m</dd>
-                                    </div>
-                                    <div class="flex flex-col">
-                                        <dt class="text-[10px] text-slate-400 font-bold uppercase">Pente Moy. (Montée)
-                                        </dt>
-                                        <dd class="font-bold text-slate-800">{{ track.avg_slope_uphill or 0 }}%</dd>
-                                    </div>
-
-                                    <!-- IBP / Water -->
-                                    <div class="flex flex-col">
-                                        <dt class="text-[10px] text-slate-400 font-bold uppercase">Index IBP</dt>
-                                        <dd class="font-bold text-slate-800">{{ track.ibp_index or '-' }}</dd>
-                                    </div>
-                                    <div class="flex flex-col">
-                                        <dt class="text-[10px] text-slate-400 font-bold uppercase">Points d'eau (est.)
-                                        </dt>
-                                        <dd class="font-bold text-slate-800">{{ track.water_points_count or 0 }}</dd>
-                                    </div>
-                                </dl>
-                            </div>
-                        </div>
-
-                        <!-- 3. Terrain Composition (if available) -->
-                        {% if track.surface_composition or track.path_type %}
-                        <div>
-                            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3">⛰️ Terrain</h3>
-                            <div class="space-y-3">
-                                {% if track.surface_composition %}
-                                <div class="text-xs">
-                                    <p class="text-slate-400 font-bold mb-1">Composition</p>
-                                    <div class="flex flex-wrap gap-2">
-                                        {% for k, v in track.surface_composition.items() %}
-                                        <span
-                                            class="inline-flex items-center text-slate-600 bg-slate-50 border border-slate-200 px-2 py-1 rounded">
-                                            <span class="font-bold mr-1">{{ v }}%</span> {{ k }}
-                                        </span>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                                {% endif %}
-
-                                {% if track.path_type %}
-                                <div class="text-xs">
-                                    <p class="text-slate-400 font-bold mb-1">Type de Sentier</p>
-                                    <div class="flex flex-wrap gap-2">
-                                        {% for k, v in track.path_type.items() %}
-                                        <span
-                                            class="inline-flex items-center text-slate-600 bg-slate-50 border border-slate-200 px-2 py-1 rounded">
-                                            <span class="font-bold mr-1">{{ v }}%</span> {{ k }}
-                                        </span>
-                                        {% endfor %}
-                                    </div>
-                                </div>
                                 {% endif %}
                             </div>
                         </div>
                         {% endif %}
 
-                        {% if track.description %}
-                        <div class="pt-6 border-t border-gray-100">
-                            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-2">Note de l'auteur
-                            </h3>
-                            <div class="prose prose-sm prose-slate max-w-none">
-                                {{ track.description | markdown | safe }}
+                        <!-- Surfaces -->
+                        {% if track.surface_composition %}
+                        <div>
+                            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Surface</h3>
+                            <div class="space-y-2">
+                                {% for k, v in track.surface_composition.items() %}
+                                <div class="flex items-center text-xs">
+                                    <div class="w-12 font-bold text-slate-700 text-right mr-2">{{ v }}%</div>
+                                    <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                        <div class="h-full bg-slate-400" style="width: {{ v }}%"></div>
+                                    </div>
+                                    <div class="ml-2 text-slate-500 capitalize">{{ k }}</div>
+                                </div>
+                                {% endfor %}
                             </div>
                         </div>
                         {% endif %}
                     </div>
 
+                    <!-- Description Column -->
+                    <div class="md:col-span-2">
+                        {% if track.description %}
+                        <div>
+                            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Description</h3>
+                            <div class="prose prose-slate prose-sm max-w-none text-slate-600">
+                                {{ track.description | markdown | safe }}
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="p-6 text-center border-2 border-dashed border-slate-100 rounded-xl">
+                            <p class="text-sm text-slate-400 italic">Aucune description fournie pour cette trace.</p>
+                        </div>
+                        {% endif %}
+                    </div>
 
                 </div>
 
