@@ -591,9 +591,9 @@
         new L.GPX(`/raw_gpx/${t.id}`, {
             async: true,
             marker_options: {
-                startIconUrl: null,
-                endIconUrl: null,
-                shadowUrl: null
+                startIconUrl: "{{ url_for('static', path='/img/pin-icon-start.png') }}",
+                endIconUrl: "{{ url_for('static', path='/img/pin-icon-end.png') }}",
+                shadowUrl: "{{ url_for('static', path='/img/pin-shadow.png') }}"
             },
             polyline_options: {
                 color: '#cbd5e1', // Slate-300 (Neutral fallback)
