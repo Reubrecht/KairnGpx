@@ -2,66 +2,175 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-8">
-        <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
-            <div>
-                <h3 class="text-lg leading-6 font-medium text-gray-900">Mon Profil</h3>
-                <p class="mt-1 max-w-2xl text-sm text-gray-500">Informations personnelles et statistiques.</p>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <!-- Left Column: Profile Edit -->
+        <div class="lg:col-span-1 space-y-6">
+            <div class="bg-white shadow rounded-2xl p-6 border border-slate-100">
+                <h3 class="text-lg font-bold text-slate-900 mb-4">Mon Profil</h3>
+
+                <form action="/profile" method="POST" class="space-y-4">
+                    <!-- Identity -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nom Complet</label>
+                        <input type="text" name="full_name" value="{{ user.full_name or '' }}" placeholder="Votre nom"
+                            class="w-full rounded-lg border-slate-200 text-sm focus:border-brand-500 focus:ring-brand-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Localisation</label>
+                        <input type="text" name="location" value="{{ user.location or '' }}" placeholder="Ville, Pays"
+                            class="w-full rounded-lg border-slate-200 text-sm focus:border-brand-500 focus:ring-brand-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Bio</label>
+                        <textarea name="bio" rows="3" placeholder="Quelques mots sur vous..."
+                            class="w-full rounded-lg border-slate-200 text-sm focus:border-brand-500 focus:ring-brand-500">{{ user.bio or '' }}</textarea>
+                    </div>
+
+                    <!-- Club / Team -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Club / Team</label>
+                        <input type="text" name="club_affiliation" value="{{ user.club_affiliation or '' }}"
+                            placeholder="Ex: Team Hoka"
+                            class="w-full rounded-lg border-slate-200 text-sm focus:border-brand-500 focus:ring-brand-500">
+                    </div>
+
+                    <!-- Links -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Lien Strava</label>
+                        <input type="url" name="strava_url" value="{{ user.strava_url or '' }}"
+                            placeholder="https://www.strava.com/athletes/..."
+                            class="w-full rounded-lg border-slate-200 text-sm focus:border-brand-500 focus:ring-brand-500">
+                    </div>
+
+                    <!-- Performance Stats -->
+                    <div class="pt-4 border-t border-slate-100">
+                        <h4 class="text-sm font-bold text-slate-900 mb-3">Performance Indices</h4>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase">ITRA</label>
+                                <input type="number" name="itra_score" value="{{ user.itra_score or '' }}"
+                                    placeholder="0" class="w-full rounded-lg border-slate-200 text-sm text-center px-1">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase">UTMB</label>
+                                <input type="number" name="utmb_index" value="{{ user.utmb_index or '' }}"
+                                    placeholder="0" class="w-full rounded-lg border-slate-200 text-sm text-center px-1">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase">Betrail</label>
+                                <input type="number" step="0.1" name="betrail_score"
+                                    value="{{ user.betrail_score or '' }}" placeholder="0.0"
+                                    class="w-full rounded-lg border-slate-200 text-sm text-center px-1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-4">
+                        <button type="submit"
+                            class="w-full bg-brand-600 text-white font-bold py-2 rounded-lg hover:bg-brand-700 transition-colors shadow-sm">
+                            Enregistrer les modifications
+                        </button>
+                    </div>
+                </form>
             </div>
+
             {% if user.is_admin %}
-            <a href="/admin"
-                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700">
-                Administration
-            </a>
+            <div class="bg-slate-900 rounded-2xl p-6 text-white text-center">
+                <h3 class="font-bold mb-2">Administration</h3>
+                <a href="/admin"
+                    class="inline-block bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    Accéder au panel Admin
+                </a>
+            </div>
             {% endif %}
         </div>
-        <div class="border-t border-gray-200">
-            <dl>
-                <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                    <dt class="text-sm font-medium text-gray-500">Nom d'utilisateur</dt>
-                    <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ user.username }}</dd>
-                </div>
-                <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                    <dt class="text-sm font-medium text-gray-500">Email</dt>
-                    <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ user.email }}</dd>
-                </div>
-            </dl>
-        </div>
-    </div>
 
-    <h3 class="text-xl font-bold text-gray-900 mb-6">Mes Traces ({{ tracks|length }})</h3>
+        <!-- Right Column: Tracks -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xl font-bold text-slate-900">Mes Traces ({{ tracks|length }})</h3>
+                <a href="/upload" class="text-sm font-bold text-brand-600 hover:text-brand-700">+ Nouvelle Trace</a>
+            </div>
 
-    {% if tracks %}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {% for track in tracks %}
-        <div
-            class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-            <div class="p-4">
-                <div class="flex justify-between items-start">
-                    <h4 class="text-lg font-bold text-gray-900 truncate">{{ track.title }}</h4>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium 
-                        {% if track.visibility.value == 'public' %}bg-green-100 text-green-800
-                        {% elif track.visibility.value == 'private' %}bg-red-100 text-red-800
-                        {% else %}bg-gray-100 text-gray-800{% endif %}">
-                        {{ track.visibility.value }}
-                    </span>
+            {% if tracks %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for track in tracks %}
+                <div
+                    class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full">
+                    <div class="p-4 flex-grow">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex gap-2">
+                                <span
+                                    class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 uppercase tracking-wider">
+                                    {{ track.activity_type.value if track.activity_type else 'TRAIL' }}
+                                </span>
+                                {% if track.is_official_route %}
+                                <span
+                                    class="px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-100 text-yellow-800 uppercase tracking-wider">
+                                    COURSE
+                                </span>
+                                {% endif %}
+                            </div>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium 
+                                {% if track.visibility.value == 'public' %}bg-green-50 text-green-700
+                                {% elif track.visibility.value == 'private' %}bg-red-50 text-red-700
+                                {% else %}bg-gray-50 text-gray-700{% endif %}">
+                                {{ track.visibility.value }}
+                            </span>
+                        </div>
+
+                        <h4 class="text-lg font-bold text-slate-900 mb-1 truncate">{{ track.title }}</h4>
+
+                        <div class="flex items-center gap-3 text-xs text-slate-500 font-medium">
+                            <span class="flex items-center gap-1">
+                                📏 {{ track.distance_km }}km
+                            </span>
+                            <span class="flex items-center gap-1">
+                                ⛰️ {{ track.elevation_gain }}m+
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="px-4 py-3 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+                        <a href="/track/{{ track.id }}"
+                            class="text-slate-600 hover:text-brand-600 font-bold text-xs uppercase tracking-wide">
+                            Voir détails
+                        </a>
+                        <form action="/track/{{ track.id }}/delete" method="POST"
+                            onsubmit="return confirm('Supprimer définitivement ?');">
+                            <button type="submit"
+                                class="text-red-400 hover:text-red-600 text-xs font-bold uppercase tracking-wide">
+                                Supprimer
+                            </button>
+                        </form>
+                    </div>
                 </div>
-                <div class="mt-4 flex justify-between items-center">
-                    <a href="/track/{{ track.id }}" class="text-brand-600 hover:text-brand-700 font-medium text-sm">Voir
-                        la trace &rarr;</a>
-                    <!-- Delete Button (Form) -->
-                    <form action="/track/{{ track.id }}/delete" method="POST"
-                        onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette trace ?');">
-                        <button type="submit" class="text-red-500 hover:text-red-700 text-sm">Supprimer</button>
-                    </form>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center">
+                <div class="mx-auto h-12 w-12 text-slate-300 mb-4">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0121 18.382V7.618a1 1 0 01-1.447-.894L15 7m0 13V7m0 0L9 4" />
+                    </svg>
+                </div>
+                <h3 class="text-sm font-medium text-slate-900">Pas de traces</h3>
+                <p class="mt-1 text-sm text-slate-500">Commencez par importer votre première trace GPX.</p>
+                <div class="mt-6">
+                    <a href="/upload"
+                        class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-bold rounded-md text-white bg-brand-600 hover:bg-brand-700">
+                        Importer une trace
+                    </a>
                 </div>
             </div>
+            {% endif %}
         </div>
-        {% endfor %}
+
     </div>
-    {% else %}
-    <p class="text-gray-500">Vous n'avez importé aucune trace pour le moment.</p>
-    <a href="/upload" class="mt-4 inline-block text-brand-600 font-medium">Importer ma première trace &rarr;</a>
-    {% endif %}
 </div>
 {% endblock %}

@@ -494,14 +494,16 @@ async def upload_track(
     environment: List[str] = Form([]),
     # New Fields
     visibility: str = Form("public"),
+    activity_type: str = Form("TRAIL_RUNNING"),
     tags: str = Form(None), # Comma separated
     water_points_count: int = Form(0),
     scenery_rating: int = Form(None),
     
     # Official Race Fields
+    is_official_bot: bool = Form(False),
     race_name: Optional[str] = Form(None),
     race_year: Optional[int] = Form(None),
-    race_category: Optional[str] = Form(None),
+    race_route_name: Optional[str] = Form(None),
     
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
@@ -569,10 +571,35 @@ async def upload_track(
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(simplified_xml if simplified_xml else content.decode('utf-8'))
 
-    # 6. Race Logic
-    race_id = None
-    # if status_val == "OFFICIAL_RACE" and race_name: # Disabled race logic for now as status_val is missing from Form
-    #     pass 
+    # 6. Race Logic (Event & Edition creation)
+    race_route_obj = None
+    is_official = False
+    
+    if is_official_bot and race_name and race_year:
+        try:
+            is_official = True
+            # 1. Event
+            event_slug = slugify(race_name)
+            event = db.query(models.RaceEvent).filter(models.RaceEvent.slug == event_slug).first()
+            if not event:
+                event = models.RaceEvent(name=race_name, slug=event_slug)
+                db.add(event)
+                db.commit()
+                db.refresh(event)
+            
+            # 2. Edition
+            edition = db.query(models.RaceEdition).filter(models.RaceEdition.event_id == event.id, models.RaceEdition.year == race_year).first()
+            if not edition:
+                edition = models.RaceEdition(event_id=event.id, year=race_year)
+                db.add(edition)
+                db.commit()
+                db.refresh(edition)
+                
+            # 3. Route (will be linked after track creation)
+             # We prepare data but creation happens after track has ID? 
+             # Actually we can create it after.
+        except Exception as e:
+            print(f"Race logic error: {e}")
 
     # 7. Save to DB
     base_slug = slugify(title)
@@ -585,9 +612,12 @@ async def upload_track(
     new_track = models.Track(
         title=title,
         slug=slug,
-        # race_id, race_year, race_category removed - not in Track model
         description=description,
         user_id=current_user.username,
+        
+        # New Enums & Booleans
+        activity_type=models.ActivityType(activity_type),
+        is_official_route=is_official,
         
         # Metrics
         distance_km=metrics["distance_km"],
@@ -632,6 +662,19 @@ async def upload_track(
     db.add(new_track)
     db.commit()
     db.refresh(new_track)
+    
+    # 8. Finalize Race Linking if needed
+    if is_official and 'edition' in locals():
+        try:
+            new_race_route = models.RaceRoute(
+                edition_id=edition.id,
+                name=race_route_name or title, # Default to track title if route name not given
+                official_track_id=new_track.id
+            )
+            db.add(new_race_route)
+            db.commit()
+        except Exception as e:
+            print(f"Failed to create RaceRoute: {e}")
 
     return RedirectResponse(url=f"/track/{new_track.id}", status_code=status.HTTP_303_SEE_OTHER)
 
@@ -799,6 +842,36 @@ async def profile_page(request: Request, db: Session = Depends(get_db)):
         "user": user,
         "tracks": tracks
     })
+
+@app.post("/profile")
+async def update_profile(
+    request: Request,
+    full_name: Optional[str] = Form(None),
+    bio: Optional[str] = Form(None),
+    location: Optional[str] = Form(None),
+    club_affiliation: Optional[str] = Form(None),
+    strava_url: Optional[str] = Form(None),
+    website: Optional[str] = Form(None),
+    itra_score: Optional[int] = Form(None),
+    utmb_index: Optional[int] = Form(None),
+    betrail_score: Optional[float] = Form(None),
+    db: Session = Depends(get_db)
+):
+    user = await get_current_user(request, db)
+    
+    user.full_name = full_name
+    user.bio = bio
+    user.location = location
+    user.club_affiliation = club_affiliation
+    user.strava_url = strava_url
+    user.website = website
+    user.itra_score = itra_score
+    user.utmb_index = utmb_index
+    user.betrail_score = betrail_score
+    
+    db.commit()
+    
+    return RedirectResponse(url="/profile", status_code=status.HTTP_303_SEE_OTHER)
 
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request, db: Session = Depends(get_db)):
