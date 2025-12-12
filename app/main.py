@@ -131,9 +131,23 @@ async def get_current_user(request: Request, db: Session = Depends(get_db)):
         )
     return user
 
+async def get_current_active_user(current_user: models.User = Depends(get_current_user)):
+    return current_user
+
+async def get_current_admin(current_user: models.User = Depends(get_current_user)):
+    if current_user.role not in [models.Role.ADMIN, models.Role.SUPER_ADMIN] and not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+    return current_user
+
+async def get_current_super_admin(current_user: models.User = Depends(get_current_user)):
+    if current_user.role != models.Role.SUPER_ADMIN:
+         raise HTTPException(status_code=403, detail="Super Admin privileges required")
+    return current_user
+
 # Helpers (Geocoding etc)
 def calculate_file_hash(file_content: bytes) -> str:
     return hashlib.sha256(file_content).hexdigest()
+
 
 def get_location_info(lat: float, lon: float):
     geolocator = Nominatim(user_agent="kairn_trail_app_v1")
@@ -748,13 +762,22 @@ async def upload_track(
 
     return RedirectResponse(url=f"/track/{new_track.id}", status_code=status.HTTP_303_SEE_OTHER)
 
-@app.get("/track/{track_id}", response_class=HTMLResponse)
-async def track_detail(track_id: int, request: Request, db: Session = Depends(get_db)):
+@app.get("/track/{track_identifier}", response_class=HTMLResponse)
+async def track_detail(track_identifier: str, request: Request, db: Session = Depends(get_db)):
     user = await get_current_user_optional(request, db)
     has_beta = request.cookies.get("beta_access_v2") == "granted"
     if not user and not has_beta:
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
-    track = db.query(models.Track).filter(models.Track.id == track_id).first()
+    
+    # Try ID first, then Slug
+    track = None
+    if track_identifier.isdigit():
+        track = db.query(models.Track).filter(models.Track.id == int(track_identifier)).first()
+    
+    if not track:
+        # Try as slug
+        track = db.query(models.Track).filter(models.Track.slug == track_identifier).first()
+
     if not track:
         raise HTTPException(status_code=404, detail="Track not found")
     
@@ -828,28 +851,7 @@ async def track_detail(track_id: int, request: Request, db: Session = Depends(ge
         "track_geojson": json.dumps(track_geojson) if track_geojson else "null"
     })
 
-@app.get("/race/{slug}", response_class=HTMLResponse)
-async def race_detail(slug: str, request: Request, db: Session = Depends(get_db)):
-    user = await get_current_user_optional(request, db)
-    has_beta = request.cookies.get("beta_access_v2") == "granted"
-    if not user and not has_beta:
-        return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
-    
-    # 1. Fetch Event
-    race = db.query(models.RaceEvent).filter(models.RaceEvent.slug == slug).first()
-    if not race:
-        raise HTTPException(status_code=404, detail="Course non trouvée")
-    
-    # 2. Fetch Tracks via RaceRoute -> RaceEdition -> RaceEvent
-    # Join Track -> RaceRoute -> RaceEdition
-    tracks = db.query(models.Track).join(models.RaceRoute).join(models.RaceEdition).filter(models.RaceEdition.event_id == race.id).all()
-    
-    return templates.TemplateResponse("race_detail.html", {
-        "request": request, 
-        "race": race, 
-        "tracks": tracks,
-        "user": user
-    })
+
 
 @app.get("/raw_gpx/{track_id}")
 def get_raw_gpx(track_id: int, db: Session = Depends(get_db)):
@@ -1059,10 +1061,268 @@ async def delete_user_action(user_id: int, request: Request, db: Session = Depen
         
     return RedirectResponse(url="/admin", status_code=303)
 
-@app.get("/make_me_admin")
-async def make_me_admin(request: Request, db: Session = Depends(get_db)):
-    """Secret endpoint to become admin for testing purposes"""
-    user = await get_current_user(request, db)
-    user.is_admin = True
+
+
+@app.get("/race/{race_slug}", response_class=HTMLResponse)
+async def race_detail(request: Request, race_slug: str, db: Session = Depends(get_db)):
+    # Fetch Event with Editions and Routes
+    event = db.query(models.RaceEvent).filter(models.RaceEvent.slug == race_slug).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Race Event not found")
+        
+    return templates.TemplateResponse("race_detail.html", {
+        "request": request,
+        "event": event,
+        "user": await get_current_user_optional(request, db)
+    })
+
+@app.get("/superadmin", response_class=HTMLResponse)
+async def super_admin_dashboard(request: Request, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_super_admin)):
+    
+    events = db.query(models.RaceEvent).all()
+    users = db.query(models.User).all()
+    pending_count = db.query(models.Track).filter(models.Track.verification_status == models.VerificationStatus.PENDING).count()
+    
+    return templates.TemplateResponse("super_admin.html", {
+        "request": request, 
+        "user": current_user,
+        "events": events,
+        "users": users,
+        "pending_count": pending_count
+    })
+
+@app.post("/superadmin/events")
+async def create_event(
+    request: Request,
+    name: str = Form(...),
+    slug: str = Form(...),
+    website: str = Form(None),
+    description: str = Form(None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_super_admin)
+):
+    
+    if db.query(models.RaceEvent).filter(models.RaceEvent.slug == slug).first():
+        # Ideally return error to template, for now redirect with query param or just fail
+        raise HTTPException(status_code=400, detail="Slug already exists")
+        
+    new_event = models.RaceEvent(
+        name=name,
+        slug=slug,
+        website=website,
+        description=description
+    )
+    db.add(new_event)
     db.commit()
-    return RedirectResponse(url="/profile", status_code=303)
+    return RedirectResponse(url="/superadmin", status_code=303)
+
+@app.post("/superadmin/event/{event_id}/add_edition")
+async def create_edition(
+    event_id: int,
+    request: Request,
+    year: int = Form(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_super_admin)
+):
+    
+    event = db.query(models.RaceEvent).filter(models.RaceEvent.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    # Check if edition exists
+    existing = db.query(models.RaceEdition).filter(models.RaceEdition.event_id == event_id, models.RaceEdition.year == year).first()
+    if existing:
+         pass # Duplicate, ignore or error.
+    else:
+        new_edition = models.RaceEdition(event_id=event_id, year=year, status=models.RaceStatus.UPCOMING)
+        db.add(new_edition)
+        db.commit()
+        
+    return RedirectResponse(url="/superadmin", status_code=303)
+
+@app.post("/superadmin/user/{user_id}/role")
+async def update_user_role(
+    user_id: int,
+    request: Request,
+    role: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_super_admin)
+):
+    
+    user_to_edit = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user_to_edit:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    try:
+         new_role = models.Role(role)
+    except ValueError:
+         raise HTTPException(status_code=400, detail="Invalid role")
+         
+    user_to_edit.role = new_role
+    if new_role in [models.Role.ADMIN, models.Role.SUPER_ADMIN]:
+        user_to_edit.is_admin = True
+    else:
+        user_to_edit.is_admin = False
+        
+    db.commit()
+    return RedirectResponse(url="/superadmin", status_code=303)
+
+@app.get("/superadmin/edition/{edition_id}", response_class=HTMLResponse)
+async def edition_manager(edition_id: int, request: Request, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_super_admin)):
+    
+    edition = db.query(models.RaceEdition).filter(models.RaceEdition.id == edition_id).first()
+    if not edition:
+        raise HTTPException(status_code=404, detail="Edition not found")
+        
+    return templates.TemplateResponse("edition_manager.html", {
+        "request": request,
+        "edition": edition
+    })
+
+@app.post("/superadmin/edition/{edition_id}/routes")
+async def create_route(
+    edition_id: int,
+    request: Request,
+    name: str = Form(...),
+    distance_category: str = Form(None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_super_admin)
+):
+    
+    # Just create the route definition (track is pending/optional)
+    new_route = models.RaceRoute(
+        edition_id=edition_id,
+        name=name,
+        distance_category=distance_category
+    )
+    db.add(new_route)
+    db.commit()
+    return RedirectResponse(url=f"/superadmin/edition/{edition_id}", status_code=303)
+
+@app.post("/superadmin/route/{route_id}/link_track")
+async def link_track_to_route(
+    route_id: int,
+    request: Request,
+    track_slug: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_super_admin)
+):
+    
+    route = db.query(models.RaceRoute).filter(models.RaceRoute.id == route_id).first()
+    if not route:
+        raise HTTPException(status_code=404, detail="Route not found")
+        
+    # Find track by slug OR ID
+    track = None
+    if track_slug.isdigit():
+        track = db.query(models.Track).filter(models.Track.id == int(track_slug)).first()
+    if not track:
+        track = db.query(models.Track).filter(models.Track.slug == track_slug).first()
+        
+    if not track:
+        # For now, just error 404. Ideally show flash message.
+        raise HTTPException(status_code=404, detail="Track not found")
+        
+    route.official_track_id = track.id
+    track.is_official_route = True
+    track.verification_status = models.VerificationStatus.VERIFIED_HUMAN
+    
+    db.commit()
+    return RedirectResponse(url=f"/superadmin/edition/{route.edition_id}", status_code=303)
+
+@app.post("/superadmin/route/{route_id}/upload_track")
+async def upload_track_to_route(
+    route_id: int,
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_admin: models.User = Depends(get_current_super_admin)
+):
+    
+    route = db.query(models.RaceRoute).filter(models.RaceRoute.id == route_id).first()
+    if not route:
+        raise HTTPException(status_code=404, detail="Route not found")
+        
+    # 1. Read & Hash
+    content = await file.read()
+    file_hash = calculate_file_hash(content)
+    
+    # 2. Check Duplicates (If exists, just link it?)
+    existing_track = db.query(models.Track).filter(models.Track.file_hash == file_hash).first()
+    if existing_track:
+        # Link existing
+        route.official_track_id = existing_track.id
+        existing_track.is_official_route = True
+        existing_track.verification_status = models.VerificationStatus.VERIFIED_HUMAN
+        db.commit()
+        return RedirectResponse(url=f"/superadmin/edition/{route.edition_id}", status_code=303)
+        
+    # 3. Analyze
+    try:
+        analytics = GpxAnalytics(content)
+        metrics = analytics.calculate_metrics()
+        # Basic inference
+        start_lat, start_lon = metrics["start_coords"]
+        
+        # Save File
+        upload_dir = "app/uploads"
+        os.makedirs(upload_dir, exist_ok=True)
+        file_path = os.path.join(upload_dir, f"{file_hash}.gpx")
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(content.decode('utf-8')) # Save original or simplified? Original for official is safer.
+            
+        # Create Track
+        new_track = models.Track(
+            title=f"{route.name} - Official",
+            description=f"Trace officielle pour {route.name}",
+            user_id=current_admin.username, # Admin owns it
+            uploader_name=current_admin.username,
+            file_path=file_path,
+            file_hash=file_hash,
+            visibility=models.Visibility.PUBLIC,
+            verification_status=models.VerificationStatus.VERIFIED_HUMAN, # Auto-verified
+            is_official_route=True,
+            
+            distance_km=metrics["distance_km"],
+            elevation_gain=metrics["elevation_gain"],
+            elevation_loss=metrics["elevation_loss"],
+            start_lat=start_lat,
+            start_lon=start_lon
+            # We can skip complex attributes for now
+        )
+        db.add(new_track)
+        db.commit()
+        db.refresh(new_track)
+        
+        # Link
+        route.official_track_id = new_track.id
+        db.commit()
+        
+    except Exception as e:
+        print(f"Admin Upload Error: {e}")
+        raise HTTPException(status_code=400, detail=f"Error processing GPX: {e}")
+        
+    return RedirectResponse(url=f"/superadmin/edition/{route.edition_id}", status_code=303)
+
+from .services.race_importer import RaceImporter
+
+@app.post("/superadmin/import_races")
+async def import_races_endpoint(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_admin: models.User = Depends(get_current_super_admin)
+):
+    try:
+        content = await file.read()
+        json_data = json.loads(content.decode('utf-8'))
+        
+        stats = RaceImporter.import_from_json(json_data, db)
+        
+        print(f"Import Stats: {stats}")
+        # Optionally pass stats to template via flash message or query param
+        return RedirectResponse(url="/superadmin", status_code=303)
+        
+    except Exception as e:
+        print(f"Import Error: {e}")
+        raise HTTPException(status_code=400, detail=f"Invalid JSON or Import Error: {e}")

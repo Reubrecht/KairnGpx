@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 flex">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-slate-900 text-white flex-shrink-0 hidden md:flex flex-col">
+        <div class="p-6">
+            <h1 class="text-xl font-black tracking-tight flex items-center gap-2">
+                <span class="text-brand-500">⚡</span> Admin
+            </h1>
+        </div>
+
+        <nav class="flex-1 px-4 space-y-2">
+            <a href="#overview"
+                class="flex items-center gap-3 px-4 py-3 bg-slate-800 rounded-xl text-brand-400 font-bold">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+                Vue d'ensemble
+            </a>
+            <a href="#races"
+                class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl font-medium transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 21v-8a2 2 0 012-2h14a2 2 0 012 2v8M3 21h18M5 11l7-7 7 7M5 11V9a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                Courses & Événements
+            </a>
+            <a href="#users"
+                class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl font-medium transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                Utilisateurs
+            </a>
+            <a href="#moderation"
+                class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl font-medium transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Modération
+                {% if pending_count > 0 %}
+                <span class="ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{{
+                    pending_count }}</span>
+                {% endif %}
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-8 overflow-y-auto">
+
+        <!-- SECTION: Races -->
+        <section id="races" class="mb-12">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-slate-900">Gestion des Courses</h2>
+                <button onclick="document.getElementById('modal-create-event').showModal()"
+                    class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Nouvel Événement
+                </button>
+                <button onclick="document.getElementById('modal-import-races').showModal()"
+                    class="ml-2 bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    Importer JSON
+                </button>
+            </div>
+
+            <!-- List of existing events -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for event in events %}
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-900">{{ event.name }}</h3>
+                            <p class="text-sm text-slate-500">{{ event.slug }}</p>
+                        </div>
+                        <span class="px-2 py-1 bg-slate-100 rounded text-xs font-bold text-slate-600">{{
+                            event.editions|length }} éditions</span>
+                    </div>
+
+                    <!-- Editions List (Mini) -->
+                    <div class="space-y-2 mb-4">
+                        {% for edition in event.editions %}
+                        <div class="flex justify-between items-center text-sm border-b border-slate-50 pb-1">
+                            <span>{{ edition.year }}</span>
+                            <span class="text-slate-400 text-xs">{{ edition.routes|length }} parcours</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="flex gap-2 mt-4">
+                        <a href="/superadmin/edition/{{ edition.id }}"
+                            class="bg-slate-50 text-slate-600 hover:bg-slate-100 px-3 py-1.5 rounded text-xs font-bold w-full border border-slate-200 text-center block">Gérer</a>
+                        <form action="/superadmin/event/{{ event.id }}/add_edition" method="POST" class="w-full">
+                            <input type="hidden" name="year" value="2026">
+                            <!-- Simplification: Pre-fill next year or prompt -->
+                            <button type="submit"
+                                class="bg-brand-50 text-brand-600 hover:bg-brand-100 px-3 py-1.5 rounded text-xs font-bold w-full border border-brand-100">+
+                                Édition</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- SECTION: Users -->
+        <section id="users" class="mb-12">
+            <h2 class="text-2xl font-bold text-slate-900 mb-6">Utilisateurs & Rôles</h2>
+            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-xs">
+                        <tr>
+                            <th class="px-6 py-4">Utilisateur</th>
+                            <th class="px-6 py-4">Email</th>
+                            <th class="px-6 py-4">Rôle Actuel</th>
+                            <th class="px-6 py-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for u in users %}
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4 font-bold text-slate-700">{{ u.username }}</td>
+                            <td class="px-6 py-4 text-slate-500">{{ u.email }}</td>
+                            <td class="px-6 py-4">
+                                <span class="px-2 py-1 rounded-full text-xs font-bold 
+                                    {% if u.role.value == 'super_admin' %}bg-purple-100 text-purple-700
+                                    {% elif u.role.value == 'admin' %}bg-blue-100 text-blue-700
+                                    {% elif u.role.value == 'moderator' %}bg-yellow-100 text-yellow-700
+                                    {% else %}bg-slate-100 text-slate-600{% endif %}">
+                                    {{ u.role.value | upper }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                {% if u.role.value != 'super_admin' %}
+                                <div class="flex justify-end gap-2">
+                                    <form action="/superadmin/user/{{ u.id }}/role" method="POST">
+                                        <input type="hidden" name="role" value="moderator">
+                                        <button
+                                            class="text-xs text-slate-400 hover:text-brand-600 font-bold">Modérateur</button>
+                                    </form>
+                                    <span class="text-slate-300">|</span>
+                                    <form action="/superadmin/user/{{ u.id }}/role" method="POST">
+                                        <input type="hidden" name="role" value="admin">
+                                        <button
+                                            class="text-xs text-slate-400 hover:text-blue-600 font-bold">Admin</button>
+                                    </form>
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<!-- Modal: Create Event -->
+<dialog id="modal-create-event" class="rounded-2xl p-0 backdrop:bg-slate-900/50 open:animate-fade-in shadow-2xl">
+    <div class="w-full max-w-lg bg-white p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-bold text-slate-900">Créer un événement</h3>
+            <button onclick="document.getElementById('modal-create-event').close()"
+                class="p-2 hover:bg-slate-100 rounded-full">✕</button>
+        </div>
+        <form action="/superadmin/events" method="POST" class="space-y-4">
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">Nom de l'événement</label>
+                <input type="text" name="name" required
+                    class="w-full rounded-xl border-slate-200 focus:border-brand-500 focus:ring-brand-500">
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">Slug (URL)</label>
+                <input type="text" name="slug" placeholder="ex: utmb-mont-blanc" required
+                    class="w-full rounded-xl border-slate-200 focus:border-brand-500 focus:ring-brand-500">
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">Site Web</label>
+                <input type="url" name="website" placeholder="https://..."
+                    class="w-full rounded-xl border-slate-200 focus:border-brand-500 focus:ring-brand-500">
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">Description</label>
+                <textarea name="description" rows="3"
+                    class="w-full rounded-xl border-slate-200 focus:border-brand-500 focus:ring-brand-500"></textarea>
+            </div>
+            <div class="pt-4 flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('modal-create-event').close()"
+                    class="px-4 py-2 font-bold text-slate-500 hover:bg-slate-50 rounded-xl">Annuler</button>
+                <button type="submit"
+                    class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl">Créer</button>
+            </div>
+        </form>
+    </div>
+</dialog>
+
+<!-- Modal: Import Races -->
+<dialog id="modal-import-races" class="rounded-2xl p-0 backdrop:bg-slate-900/50 open:animate-fade-in shadow-2xl">
+    <div class="w-full max-w-lg bg-white p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-bold text-slate-900">Importer depuis JSON</h3>
+            <button onclick="document.getElementById('modal-import-races').close()"
+                class="p-2 hover:bg-slate-100 rounded-full">✕</button>
+        </div>
+        <form action="/superadmin/import_races" method="POST" enctype="multipart/form-data" class="space-y-4">
+            <div class="p-4 bg-yellow-50 text-yellow-800 rounded-xl text-sm mb-4">
+                <p>Le fichier JSON doit respecter le format standard (liste d'événements avec courses).</p>
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">Fichier JSON</label>
+                <input type="file" name="file" accept=".json" required
+                    class="w-full rounded-xl border-slate-200 focus:border-brand-500 focus:ring-brand-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100">
+            </div>
+            <div class="pt-4 flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('modal-import-races').close()"
+                    class="px-4 py-2 font-bold text-slate-500 hover:bg-slate-50 rounded-xl">Annuler</button>
+                <button type="submit"
+                    class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl">Importer</button>
+            </div>
+        </form>
+    </div>
+</dialog>
+{% endblock %}

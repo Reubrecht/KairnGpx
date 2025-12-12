@@ -1,78 +1,91 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="min-h-[calc(100vh-64px)] bg-slate-50 py-12 px-4">
-    <div class="max-w-5xl mx-auto">
+<div class="container mx-auto px-4 py-8 max-w-5xl">
 
-        <!-- Race Header -->
-        <div class="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 mb-8">
-            <div class="flex flex-col md:flex-row justify-between items-start gap-6">
-                <div>
-                    <span
-                        class="px-3 py-1 bg-yellow-100 text-yellow-800 border border-yellow-200 rounded-full text-xs font-bold uppercase tracking-wide">Course
-                        Officielle</span>
-                    <h1 class="text-4xl font-extrabold text-slate-900 mt-4 mb-2">{{ race.name }}</h1>
-                    {% if race.website %}
-                    <a href="{{ race.website }}" target="_blank"
-                        class="text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1 text-sm">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                        </svg>
-                        Site Officiel
-                    </a>
-                    {% endif %}
+    <!-- HEADER -->
+    <div class="mb-12 text-center">
+        <h1 class="text-4xl font-black text-slate-900 mb-4">{{ event.name }}</h1>
+        {% if event.description %}
+        <p class="text-lg text-slate-600 max-w-2xl mx-auto">{{ event.description }}</p>
+        {% endif %}
 
-                    {% if race.description %}
-                    <p class="text-slate-600 mt-4 max-w-2xl leading-relaxed">{{ race.description }}</p>
-                    {% endif %}
-                </div>
-
-                <!-- Stats / Date -->
-                <!-- Placeholder for future metadata like "Next Edition" -->
-            </div>
-        </div>
-
-        <!-- Editions / Tracks -->
-        <div class="space-y-6">
-            <h2 class="text-2xl font-bold text-slate-800">Tracés disponibles</h2>
-
-            {% if tracks %}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {% for track in tracks %}
-                <a href="/track/{{ track.id }}"
-                    class="group block bg-white rounded-2xl border border-slate-100 overflow-hidden hover:shadow-lg transition-all">
-                    <div class="p-6">
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <h3
-                                    class="text-lg font-bold text-slate-900 group-hover:text-brand-600 transition-colors">
-                                    {{ track.race_year }} - {{ track.race_category or 'Parcours' }}
-                                </h3>
-                                <p class="text-sm text-slate-500">{{ track.title }}</p>
-                            </div>
-                            <span class="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-bold">{{
-                                track.distance_km }}km</span>
-                        </div>
-
-                        <div class="flex items-center gap-4 text-xs font-bold text-slate-400">
-                            <span class="flex items-center">
-                                ⛰️ {{ track.elevation_gain }}d+
-                            </span>
-                            <span class="flex items-center">
-                                ⚡ {{ track.technicity.value }}
-                            </span>
-                        </div>
-                    </div>
-                </a>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="text-center py-12 bg-white rounded-2xl border border-slate-100 border-dashed">
-                <p class="text-slate-400 font-medium">Aucun tracé disponible pour le moment.</p>
-            </div>
+        <div class="mt-6 flex justify-center gap-4">
+            {% if event.website %}
+            <a href="{{ event.website }}" target="_blank"
+                class="inline-flex items-center text-brand-600 font-bold hover:underline">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                Site Officiel
+            </a>
             {% endif %}
         </div>
     </div>
+
+    <!-- EDITIONS LOOP -->
+    <div class="space-y-12">
+        {% for edition in event.editions | sort(attribute='year', reverse=True) %}
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+            <!-- Edition Header -->
+            <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                <h2 class="text-2xl font-black text-slate-800">{{ edition.year }}</h2>
+                <span class="px-3 py-1 rounded-full text-xs font-bold bg-white border border-slate-200 text-slate-500">
+                    {{ edition.status.value | default('upcoming') | upper }}
+                </span>
+            </div>
+
+            <!-- Routes Grid -->
+            <div class="p-6">
+                {% if edition.routes %}
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {% for route in edition.routes %}
+                    <a href="/track/{{ route.official_track.slug if route.official_track else '#' }}"
+                        class="group block bg-white rounded-2xl border border-slate-200 hover:border-brand-300 hover:shadow-md transition-all duration-300 relative overflow-hidden">
+
+                        <!-- Map Preview (If track exists) -->
+                        <div class="h-32 bg-slate-100 relative">
+                            <!-- Ideally we would show a static map image or simpler visual here -->
+                            <div class="absolute inset-0 flex items-center justify-center text-slate-300">
+                                <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                        d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3
+                                    class="font-bold text-lg text-slate-900 group-hover:text-brand-600 transition-colors">
+                                    {{ route.name }}</h3>
+                                {% if route.distance_category %}
+                                <span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded">{{
+                                    route.distance_category }}</span>
+                                {% endif %}
+                            </div>
+
+                            {% if route.official_track %}
+                            <div class="flex items-center gap-3 text-xs text-slate-500 font-medium">
+                                <span>{{ route.official_track.distance_km }} km</span>
+                                <span>•</span>
+                                <span>{{ route.official_track.elevation_gain }} m D+</span>
+                            </div>
+                            {% else %}
+                            <div class="text-xs text-slate-400 italic mt-2">Parcours non disponible</div>
+                            {% endif %}
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-slate-400 italic text-center py-4">Aucun parcours pour cette édition.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
 </div>
 {% endblock %}

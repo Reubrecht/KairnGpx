@@ -1,0 +1,499 @@
+[
+    {
+        "nom": "Trail du Böer",
+        "ville": "Moussan",
+        "code_postal": "11120",
+        "date_debut": "2025-12-14",
+        "statut_date": "confirmé",
+        "courses": [
+            {
+                "distance_km": 23,
+                "denivele_m": 650
+            },
+            {
+                "distance_km": 13,
+                "denivele_m": 360
+            }
+        ]
+    },
+    {
+        "nom": "Trail de Bize Minervois",
+        "ville": "Bize-Minervois",
+        "code_postal": "11120",
+        "date_debut": "2026-01-01",
+        "statut_date": "à confirmer",
+        "courses": []
+    },
+    {
+        "nom": "Ninaute by l'ACL",
+        "ville": "Limoux",
+        "code_postal": "11300",
+        "date_debut": "2026-02-01",
+        "statut_date": "à confirmer",
+        "courses": []
+    },
+    {
+        "nom": "Trail de Fontfroide",
+        "ville": "Narbonne",
+        "code_postal": "11100",
+        "date_debut": "2026-03-14",
+        "statut_date": "confirmé",
+        "courses": [
+            {
+                "distance_km": 16,
+                "denivele_m": 700
+            },
+            {
+                "distance_km": 9,
+                "denivele_m": 350
+            },
+            {
+                "distance_km": 55,
+                "denivele_m": 2000
+            },
+            {
+                "distance_km": 35,
+                "denivele_m": 1300
+            },
+            {
+                "distance_km": 10,
+                "denivele_m": 300
+            }
+        ]
+    },
+    {
+        "nom": "Trail de La Digne d'Aval",
+        "ville": "La Digne-D'Aval",
+        "code_postal": "11300",
+        "date_debut": "2026-03-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 16,
+                "denivele_m": 750
+            }
+        ]
+    },
+    {
+        "nom": "Trail Saint Roch",
+        "ville": "Montolieu",
+        "code_postal": "11170",
+        "date_debut": "2026-04-01",
+        "statut_date": "à confirmer",
+        "courses": []
+    },
+    {
+        "nom": "Trail de l'Argent Double",
+        "ville": "Caunes-Minervois",
+        "code_postal": "11160",
+        "date_debut": "2026-04-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 60,
+                "denivele_m": 3700
+            },
+            {
+                "distance_km": 32,
+                "denivele_m": 1900
+            },
+            {
+                "distance_km": 18,
+                "denivele_m": 1050
+            },
+            {
+                "distance_km": 11,
+                "denivele_m": 500
+            }
+        ]
+    },
+    {
+        "nom": "Trail Quillan",
+        "ville": "Quillan",
+        "code_postal": "11500",
+        "date_debut": "2026-04-25",
+        "statut_date": "confirmé",
+        "courses": [
+            {
+                "distance_km": 11,
+                "denivele_m": 350
+            },
+            {
+                "distance_km": 44,
+                "denivele_m": 2950
+            },
+            {
+                "distance_km": 28,
+                "denivele_m": 1600
+            },
+            {
+                "distance_km": 18,
+                "denivele_m": 700
+            },
+            {
+                "distance_km": 11,
+                "denivele_m": 350
+            }
+        ]
+    },
+    {
+        "nom": "Tra'zille",
+        "ville": "Azille",
+        "code_postal": "11700",
+        "date_debut": "2026-04-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 22,
+                "denivele_m": 400
+            },
+            {
+                "distance_km": 11,
+                "denivele_m": 230
+            }
+        ]
+    },
+    {
+        "nom": "Trail Saute Collines",
+        "ville": "Villeneuve-la-Comptal",
+        "code_postal": "11400",
+        "date_debut": "2026-05-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 19,
+                "denivele_m": 620
+            },
+            {
+                "distance_km": 10,
+                "denivele_m": 240
+            }
+        ]
+    },
+    {
+        "nom": "Trails Cathares",
+        "ville": "Cucugnan",
+        "code_postal": "11350",
+        "date_debut": "2026-05-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 33,
+                "denivele_m": 1945
+            },
+            {
+                "distance_km": 21,
+                "denivele_m": 1265
+            },
+            {
+                "distance_km": 13,
+                "denivele_m": 835
+            },
+            {
+                "distance_km": 12,
+                "denivele_m": 700
+            },
+            {
+                "distance_km": 12,
+                "denivele_m": 700
+            },
+            {
+                "distance_km": 14,
+                "denivele_m": 580
+            },
+            {
+                "distance_km": 10,
+                "denivele_m": 400
+            }
+        ]
+    },
+    {
+        "nom": "Trail du Pech de Bugarach",
+        "ville": "Bugarach",
+        "code_postal": "11190",
+        "date_debut": "2026-05-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 19,
+                "denivele_m": 1040
+            }
+        ]
+    },
+    {
+        "nom": "Trail du pays de Sault",
+        "ville": "Belcaire",
+        "code_postal": "11340",
+        "date_debut": "2026-06-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 25,
+                "denivele_m": 1600
+            },
+            {
+                "distance_km": 12,
+                "denivele_m": 500
+            }
+        ]
+    },
+    {
+        "nom": "Trail de l’Abbaye de Lagrasse",
+        "ville": "Lagrasse",
+        "code_postal": "11220",
+        "date_debut": "2026-06-01",
+        "statut_date": "à confirmer",
+        "courses": []
+    },
+    {
+        "nom": "Les Capitelles Solidaires",
+        "ville": "Laure Minervois",
+        "code_postal": "11800",
+        "date_debut": "2026-06-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 18,
+                "denivele_m": 420
+            },
+            {
+                "distance_km": 9,
+                "denivele_m": 220
+            }
+        ]
+    },
+    {
+        "nom": "Les Foulées de la Cavayère",
+        "ville": "Carcassonne",
+        "code_postal": "11000",
+        "date_debut": "2026-06-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 25,
+                "denivele_m": 1000
+            },
+            {
+                "distance_km": 10,
+                "denivele_m": 360
+            },
+            {
+                "distance_km": 10,
+                "denivele_m": 360
+            },
+            {
+                "distance_km": 5,
+                "denivele_m": 150
+            }
+        ]
+    },
+    {
+        "nom": "Les Foulées de la Montagne Noire",
+        "ville": "Cuxac Cabardes",
+        "code_postal": "11390",
+        "date_debut": "2026-08-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 25,
+                "denivele_m": 583
+            },
+            {
+                "distance_km": 10,
+                "denivele_m": 98
+            }
+        ]
+    },
+    {
+        "nom": "Trail du Kercorb",
+        "ville": "Chalabre",
+        "code_postal": "11230",
+        "date_debut": "2026-10-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 21,
+                "denivele_m": 900
+            },
+            {
+                "distance_km": 10,
+                "denivele_m": 400
+            },
+            {
+                "distance_km": 10,
+                "denivele_m": 400
+            }
+        ]
+    },
+    {
+        "nom": "Terra vinea",
+        "ville": "Portel les Corbières",
+        "code_postal": "11000",
+        "date_debut": "2026-10-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 28,
+                "denivele_m": 429
+            },
+            {
+                "distance_km": 15,
+                "denivele_m": 310
+            },
+            {
+                "distance_km": 6,
+                "denivele_m": 114
+            }
+        ]
+    },
+    {
+        "nom": "L'Ornaisonnaise",
+        "ville": "Ornaisons",
+        "code_postal": "11200",
+        "date_debut": "2026-10-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 34,
+                "denivele_m": 1100
+            },
+            {
+                "distance_km": 17,
+                "denivele_m": 550
+            },
+            {
+                "distance_km": 16,
+                "denivele_m": 550
+            },
+            {
+                "distance_km": 9,
+                "denivele_m": 280
+            }
+        ]
+    },
+    {
+        "nom": "Grand Raid des Cathares",
+        "ville": "Carcassonne",
+        "code_postal": "11000",
+        "date_debut": "2026-10-22",
+        "statut_date": "confirmé",
+        "courses": [
+            {
+                "distance_km": 161,
+                "denivele_m": 6650
+            },
+            {
+                "distance_km": 101,
+                "denivele_m": 4300
+            },
+            {
+                "distance_km": 64,
+                "denivele_m": 2550
+            },
+            {
+                "distance_km": 25,
+                "denivele_m": 850
+            },
+            {
+                "distance_km": 12,
+                "denivele_m": 250
+            },
+            {
+                "distance_km": 41,
+                "denivele_m": 1300
+            }
+        ]
+    },
+    {
+        "nom": "Téléth'Trail de Plavilla",
+        "ville": "Plavilla",
+        "code_postal": "11270",
+        "date_debut": "2026-10-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 18,
+                "denivele_m": 450
+            },
+            {
+                "distance_km": 11,
+                "denivele_m": 320
+            }
+        ]
+    },
+    {
+        "nom": "Trail du Pic de Brau",
+        "ville": "Cournanel",
+        "code_postal": "11300",
+        "date_debut": "2026-11-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 23,
+                "denivele_m": 1250
+            },
+            {
+                "distance_km": 18,
+                "denivele_m": 850
+            },
+            {
+                "distance_km": 11,
+                "denivele_m": 400
+            },
+            {
+                "distance_km": 7,
+                "denivele_m": 80
+            }
+        ]
+    },
+    {
+        "nom": "Gruissan Kinetik Trail",
+        "ville": "Gruissan",
+        "code_postal": "11430",
+        "date_debut": "2026-12-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 18,
+                "denivele_m": 520
+            },
+            {
+                "distance_km": 12,
+                "denivele_m": 300
+            },
+            {
+                "distance_km": 49,
+                "denivele_m": 1550
+            },
+            {
+                "distance_km": 31,
+                "denivele_m": 1000
+            },
+            {
+                "distance_km": 24,
+                "denivele_m": 700
+            },
+            {
+                "distance_km": 18,
+                "denivele_m": 500
+            }
+        ]
+    },
+    {
+        "nom": "Roc'n Trail Comigne",
+        "ville": "Comigne",
+        "code_postal": "11700",
+        "date_debut": "2026-12-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 14,
+                "denivele_m": 600
+            },
+            {
+                "distance_km": 10,
+                "denivele_m": 400
+            }
+        ]
+    }
+]

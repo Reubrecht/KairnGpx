@@ -4,7 +4,12 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold text-gray-900">Administration</h1>
-        <a href="/profile" class="text-brand-600 hover:text-brand-700">Retour au profil</a>
+        <div class="flex gap-4">
+            {% if user.role.value == 'super_admin' %}
+            <a href="/superadmin" class="text-brand-600 hover:text-brand-700 font-bold">⚡ Super Admin</a>
+            {% endif %}
+            <a href="/profile" class="text-slate-600 hover:text-slate-900">Retour au profil</a>
+        </div>
     </div>
 
     <!-- Users Management -->

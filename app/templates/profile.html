@@ -81,10 +81,18 @@
             {% if user.is_admin %}
             <div class="bg-slate-900 rounded-2xl p-6 text-white text-center">
                 <h3 class="font-bold mb-2">Administration</h3>
-                <a href="/admin"
-                    class="inline-block bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                    Accéder au panel Admin
-                </a>
+                <div class="flex flex-col gap-2">
+                    <a href="/admin"
+                        class="inline-block bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        Accéder au panel Admin
+                    </a>
+                    {% if user.role.value == 'super_admin' %}
+                    <a href="/superadmin"
+                        class="inline-block bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-brand-500/20">
+                        ⚡ Super Admin Dashboard
+                    </a>
+                    {% endif %}
+                </div>
             </div>
             {% endif %}
         </div>

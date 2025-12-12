@@ -49,6 +49,12 @@ class RaceStatus(str, enum.Enum):
     COMPLETED = "COMPLETED"
     CANCELLED = "CANCELLED"
 
+class Role(str, enum.Enum):
+    USER = "user"
+    MODERATOR = "moderator"
+    ADMIN = "admin"
+    SUPER_ADMIN = "super_admin"
+
 # --- Models ---
 
 class User(Base):
@@ -58,7 +64,8 @@ class User(Base):
     username = Column(String, unique=True, index=True)
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
-    is_admin = Column(Boolean, default=False)
+    is_admin = Column(Boolean, default=False) # Deprecated, use role
+    role = Column(Enum(Role), default=Role.USER)
 
     # Profile
     full_name = Column(String, nullable=True)

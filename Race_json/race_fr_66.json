@@ -1,0 +1,646 @@
+[
+    {
+        "nom": "Trail du Dénivelé de Noel",
+        "ville": "Bouleternère",
+        "code_postal": "66130",
+        "date_debut": "2025-12-14",
+        "statut_date": "confirmé",
+        "courses": [
+            {
+                "distance_km": 16,
+                "denivele_m": 1000
+            }
+        ]
+    },
+    {
+        "nom": "La Romeufontaine",
+        "ville": "Font Romeu",
+        "code_postal": "66120",
+        "date_debut": "2026-01-17",
+        "statut_date": "confirmé",
+        "courses": [
+            {
+                "distance_km": 5,
+                "denivele_m": 200
+            },
+            {
+                "distance_km": 25,
+                "denivele_m": 950
+            },
+            {
+                "distance_km": 15,
+                "denivele_m": 500
+            },
+            {
+                "distance_km": 9,
+                "denivele_m": 300
+            }
+        ]
+    },
+    {
+        "nom": "Défi des remparts",
+        "ville": "Salses-le-Château",
+        "code_postal": "66600",
+        "date_debut": "2026-02-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 24,
+                "denivele_m": 500
+            },
+            {
+                "distance_km": 12,
+                "denivele_m": 250
+            },
+            {
+                "distance_km": 12,
+                "denivele_m": 250
+            }
+        ]
+    },
+    {
+        "nom": "Ronda des Bojos",
+        "ville": "Vinça",
+        "code_postal": "66320",
+        "date_debut": "2026-02-21",
+        "statut_date": "confirmé",
+        "courses": [
+            {
+                "distance_km": 18,
+                "denivele_m": 800
+            },
+            {
+                "distance_km": 7,
+                "denivele_m": 200
+            }
+        ]
+    },
+    {
+        "nom": "La 66 GTA - Grand Trail de l'Aspre",
+        "ville": "Thuir",
+        "code_postal": "66300",
+        "date_debut": "2026-03-01",
+        "statut_date": "confirmé",
+        "courses": [
+            {
+                "distance_km": 66,
+                "denivele_m": 3000
+            },
+            {
+                "distance_km": 66,
+                "denivele_m": 3000
+            }
+        ]
+    },
+    {
+        "nom": "Trail de Serrabone",
+        "ville": "Boule-D'Amont",
+        "code_postal": "66130",
+        "date_debut": "2026-03-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 30,
+                "denivele_m": 1880
+            },
+            {
+                "distance_km": 30,
+                "denivele_m": 1880
+            },
+            {
+                "distance_km": 22,
+                "denivele_m": 1300
+            }
+        ]
+    },
+    {
+        "nom": "Trail du Mont Hélène",
+        "ville": "Caixas",
+        "code_postal": "66300",
+        "date_debut": "2026-03-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 14,
+                "denivele_m": 780
+            }
+        ]
+    },
+    {
+        "nom": "Argelès Nature Trail",
+        "ville": "Argelès-sur-Mer",
+        "code_postal": "66700",
+        "date_debut": "2026-04-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 23,
+                "denivele_m": 1290
+            },
+            {
+                "distance_km": 15,
+                "denivele_m": 780
+            },
+            {
+                "distance_km": 10,
+                "denivele_m": 270
+            },
+            {
+                "distance_km": 10,
+                "denivele_m": 270
+            }
+        ]
+    },
+    {
+        "nom": "La Salte Rocs Trail",
+        "ville": "Rodès",
+        "code_postal": "66320",
+        "date_debut": "2026-05-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 16,
+                "denivele_m": 880
+            }
+        ]
+    },
+    {
+        "nom": "Les Sentiers Prehistoriques",
+        "ville": "Tautavel",
+        "code_postal": "66202",
+        "date_debut": "2026-05-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 12,
+                "denivele_m": 850
+            }
+        ]
+    },
+    {
+        "nom": "Vallespir Skyrace",
+        "ville": "Amélie les Bains",
+        "code_postal": "66120",
+        "date_debut": "2026-05-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 1,
+                "denivele_m": 250
+            },
+            {
+                "distance_km": 22,
+                "denivele_m": 1700
+            },
+            {
+                "distance_km": 10,
+                "denivele_m": 630
+            }
+        ]
+    },
+    {
+        "nom": "Trail Lamanère 66",
+        "ville": "Lamanère",
+        "code_postal": "66230",
+        "date_debut": "2026-06-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 17,
+                "denivele_m": 950
+            },
+            {
+                "distance_km": 8,
+                "denivele_m": 300
+            }
+        ]
+    },
+    {
+        "nom": "Les Lucioles",
+        "ville": "Castelnou",
+        "code_postal": "66040",
+        "date_debut": "2026-06-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 18,
+                "denivele_m": 850
+            }
+        ]
+    },
+    {
+        "nom": "Font Romeu Nature Trail",
+        "ville": "Font-Romeu",
+        "code_postal": "66120",
+        "date_debut": "2026-06-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 7,
+                "denivele_m": 300
+            },
+            {
+                "distance_km": 40,
+                "denivele_m": 1600
+            },
+            {
+                "distance_km": 26,
+                "denivele_m": 1000
+            },
+            {
+                "distance_km": 15,
+                "denivele_m": 600
+            }
+        ]
+    },
+    {
+        "nom": "Grand Trail du Canigó",
+        "ville": "La Bastide",
+        "code_postal": "66110",
+        "date_debut": "2026-07-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 58,
+                "denivele_m": 3930
+            }
+        ]
+    },
+    {
+        "nom": "Ultra Sud Canigou Montagne",
+        "ville": "Arles-sur-Tech",
+        "code_postal": "66150",
+        "date_debut": "2026-07-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 70,
+                "denivele_m": 3500
+            },
+            {
+                "distance_km": 70,
+                "denivele_m": 3500
+            }
+        ]
+    },
+    {
+        "nom": "Trail Coma d'Or",
+        "ville": "Porté-Puymorens",
+        "code_postal": "66760",
+        "date_debut": "2026-07-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 2,
+                "denivele_m": 425
+            },
+            {
+                "distance_km": 17,
+                "denivele_m": 1000
+            }
+        ]
+    },
+    {
+        "nom": "Le Tour de Cabrenc",
+        "ville": "Serralongue",
+        "code_postal": "66230",
+        "date_debut": "2026-07-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 16,
+                "denivele_m": 1050
+            }
+        ]
+    },
+    {
+        "nom": "Championnat du Canigó",
+        "ville": "Vernet-les-Bains",
+        "code_postal": "66820",
+        "date_debut": "2026-08-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 52,
+                "denivele_m": 4700
+            },
+            {
+                "distance_km": 11,
+                "denivele_m": 2035
+            },
+            {
+                "distance_km": 9,
+                "denivele_m": 600
+            },
+            {
+                "distance_km": 6,
+                "denivele_m": 1000
+            },
+            {
+                "distance_km": 44,
+                "denivele_m": 2700
+            },
+            {
+                "distance_km": 32,
+                "denivele_m": 2100
+            },
+            {
+                "distance_km": 32,
+                "denivele_m": 2100
+            },
+            {
+                "distance_km": 20,
+                "denivele_m": 1250
+            },
+            {
+                "distance_km": 10,
+                "denivele_m": 560
+            }
+        ]
+    },
+    {
+        "nom": "El 1258",
+        "ville": "Salses-le-Château",
+        "code_postal": "66600",
+        "date_debut": "2026-08-26",
+        "statut_date": "confirmé",
+        "courses": [
+            {
+                "distance_km": 226,
+                "denivele_m": 8000
+            },
+            {
+                "distance_km": 226,
+                "denivele_m": 8000
+            },
+            {
+                "distance_km": 226,
+                "denivele_m": 8000
+            },
+            {
+                "distance_km": 42,
+                "denivele_m": 2700
+            }
+        ]
+    },
+    {
+        "nom": "Trail des Pérics",
+        "ville": "Les Angles",
+        "code_postal": "66210",
+        "date_debut": "2026-08-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 23,
+                "denivele_m": 1350
+            },
+            {
+                "distance_km": 9,
+                "denivele_m": 370
+            }
+        ]
+    },
+    {
+        "nom": "Défi Charcot Côte Vermeille",
+        "ville": "Port-Vendres",
+        "code_postal": "66660",
+        "date_debut": "2026-09-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 17,
+                "denivele_m": 500
+            },
+            {
+                "distance_km": 11,
+                "denivele_m": 330
+            }
+        ]
+    },
+    {
+        "nom": "Trail du Cambre d'Aze",
+        "ville": "Eyne",
+        "code_postal": "66800",
+        "date_debut": "2026-09-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 27,
+                "denivele_m": 1700
+            },
+            {
+                "distance_km": 4,
+                "denivele_m": 1000
+            }
+        ]
+    },
+    {
+        "nom": "Trail de Collioure",
+        "ville": "Collioure",
+        "code_postal": "66190",
+        "date_debut": "2026-09-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 17,
+                "denivele_m": 825
+            },
+            {
+                "distance_km": 8,
+                "denivele_m": 230
+            }
+        ]
+    },
+    {
+        "nom": "100 Miles Sud de France",
+        "ville": "Font-Romeu",
+        "code_postal": "66120",
+        "date_debut": "2026-10-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 173,
+                "denivele_m": 7700
+            },
+            {
+                "distance_km": 116,
+                "denivele_m": 5700
+            },
+            {
+                "distance_km": 63,
+                "denivele_m": 3810
+            },
+            {
+                "distance_km": 56,
+                "denivele_m": 3060
+            },
+            {
+                "distance_km": 49,
+                "denivele_m": 2700
+            },
+            {
+                "distance_km": 41,
+                "denivele_m": 2000
+            },
+            {
+                "distance_km": 39,
+                "denivele_m": 2000
+            },
+            {
+                "distance_km": 38,
+                "denivele_m": 1885
+            },
+            {
+                "distance_km": 37,
+                "denivele_m": 2020
+            },
+            {
+                "distance_km": 34,
+                "denivele_m": 1590
+            },
+            {
+                "distance_km": 75,
+                "denivele_m": 3600
+            }
+        ]
+    },
+    {
+        "nom": "Trail des Salines",
+        "ville": "Céret",
+        "code_postal": "66400",
+        "date_debut": "2026-10-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 24,
+                "denivele_m": 1550
+            },
+            {
+                "distance_km": 16,
+                "denivele_m": 1000
+            },
+            {
+                "distance_km": 8,
+                "denivele_m": 400
+            }
+        ]
+    },
+    {
+        "nom": "KV Belmaig",
+        "ville": "Arles-sur-Tech",
+        "code_postal": "66150",
+        "date_debut": "2026-11-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 3,
+                "denivele_m": 1000
+            }
+        ]
+    },
+    {
+        "nom": "Trails de Sorède",
+        "ville": "Sorède",
+        "code_postal": "66690",
+        "date_debut": "2026-11-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 27,
+                "denivele_m": 1650
+            },
+            {
+                "distance_km": 13,
+                "denivele_m": 500
+            }
+        ]
+    },
+    {
+        "nom": "Course des Lézards",
+        "ville": "Eus",
+        "code_postal": "66500",
+        "date_debut": "2026-11-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 14,
+                "denivele_m": 700
+            }
+        ]
+    },
+    {
+        "nom": "Forca Real Trail",
+        "ville": "Corneilla de la Rivière",
+        "code_postal": "66550",
+        "date_debut": "2026-11-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 23,
+                "denivele_m": 1000
+            },
+            {
+                "distance_km": 14,
+                "denivele_m": 300
+            },
+            {
+                "distance_km": 6,
+                "denivele_m": 50
+            }
+        ]
+    },
+    {
+        "nom": "Madeloc SkyTrail",
+        "ville": "Banluys-sur-Mer",
+        "code_postal": "66650",
+        "date_debut": "2026-11-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 58,
+                "denivele_m": 3400
+            },
+            {
+                "distance_km": 44,
+                "denivele_m": 2500
+            },
+            {
+                "distance_km": 27,
+                "denivele_m": 1350
+            },
+            {
+                "distance_km": 12,
+                "denivele_m": 360
+            }
+        ]
+    },
+    {
+        "nom": "Trail Nocturne de l'Ecoparc Catalan",
+        "ville": "Baixas",
+        "code_postal": "66370",
+        "date_debut": "2026-12-01",
+        "statut_date": "à confirmer",
+        "courses": [
+            {
+                "distance_km": 47,
+                "denivele_m": 830
+            },
+            {
+                "distance_km": 35,
+                "denivele_m": 490
+            },
+            {
+                "distance_km": 21,
+                "denivele_m": 170
+            },
+            {
+                "distance_km": 13,
+                "denivele_m": 130
+            },
+            {
+                "distance_km": 7,
+                "denivele_m": 140
+            }
+        ]
+    }
+]

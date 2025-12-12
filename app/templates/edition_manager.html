@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+    <div class="mb-8 flex items-center gap-4">
+        <a href="/superadmin" class="p-2 hover:bg-slate-100 rounded-full text-slate-500">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+        </a>
+        <div>
+            <h1 class="text-3xl font-black text-slate-900">{{ edition.event.name }} {{ edition.year }}</h1>
+            <p class="text-slate-500">Gestion des formats de course</p>
+        </div>
+    </div>
+
+    <!-- Routes List -->
+    <div class="space-y-6 mb-12">
+        {% for route in edition.routes %}
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex justify-between items-center">
+            <div>
+                <h3 class="text-xl font-bold text-slate-900">{{ route.name }}</h3>
+                <div class="flex gap-2 mt-1">
+                    <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-bold">{{
+                        route.distance_category or 'N/A' }}</span>
+                    {% if route.official_track %}
+                    <a href="/track/{{ route.official_track.slug }}"
+                        class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Trace liée
+                    </a>
+                    {% else %}
+                    <span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs font-bold">Trace en
+                        attente</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Link Track Forms -->
+            <div class="flex flex-col gap-2 items-end">
+                <!-- Link by Slug -->
+                <form action="/superadmin/route/{{ route.id }}/link_track" method="POST"
+                    class="flex items-center gap-2">
+                    <input type="text" name="track_slug" placeholder="Slug/ID de la trace..."
+                        class="text-sm rounded-lg border-slate-200 w-40">
+                    <button type="submit"
+                        class="bg-slate-100 text-slate-600 px-3 py-2 rounded-lg text-sm font-bold hover:bg-slate-200">Lier
+                        ID</button>
+                </form>
+
+                <!-- Upload GPX -->
+                <form action="/superadmin/route/{{ route.id }}/upload_track" method="POST" enctype="multipart/form-data"
+                    class="flex items-center gap-2">
+                    <input type="file" name="file" accept=".gpx"
+                        class="text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100"
+                        required>
+                    <button type="submit"
+                        class="bg-slate-800 text-white px-3 py-2 rounded-lg text-sm font-bold hover:bg-slate-700">Uploader</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Create Route Form -->
+    <div class="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+        <h2 class="text-xl font-bold text-slate-900 mb-4">Ajouter un format de course</h2>
+        <form action="/superadmin/edition/{{ edition.id }}/routes" method="POST"
+            class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">Nom (ex: CCC)</label>
+                <input type="text" name="name" required class="w-full rounded-xl border-slate-200">
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">Catégorie Distance (ex: 100K)</label>
+                <input type="text" name="distance_category" class="w-full rounded-xl border-slate-200">
+            </div>
+            <div class="md:col-span-2">
+                <button type="submit"
+                    class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-xl transition-colors">
+                    Ajouter ce format
+                </button>
+                <p class="text-center text-xs text-slate-400 mt-2">La trace pourra être liée plus tard.</p>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}
