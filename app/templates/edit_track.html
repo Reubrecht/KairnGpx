@@ -87,7 +87,52 @@
                     </div>
                 </div>
 
-                <!-- Technical fields removed for now -->
+                <!-- 2. Environment -->
+                <div class="p-8 space-y-6 bg-slate-50/30">
+                    <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                        <span
+                            class="flex items-center justify-center w-8 h-8 rounded-full bg-brand-100 text-brand-700 text-sm font-bold">2</span>
+                        Environnement (Choix Multiples)
+                    </h2>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                        {% for env_val, env_label, color_classes in [
+                        ('high_mountain', 'Haute Montagne', 'peer-checked:bg-purple-50 peer-checked:border-purple-500
+                        peer-checked:text-purple-700'),
+                        ('mid_mountain', 'Moyenne Montagne', 'peer-checked:bg-indigo-50 peer-checked:border-indigo-500
+                        peer-checked:text-indigo-700'),
+                        ('forest', 'Forêt', 'peer-checked:bg-green-50 peer-checked:border-green-500
+                        peer-checked:text-green-700'),
+                        ('pasture', 'Pâturage', 'peer-checked:bg-lime-50 peer-checked:border-lime-500
+                        peer-checked:text-lime-700'),
+                        ('coastal', 'Côtier', 'peer-checked:bg-cyan-50 peer-checked:border-cyan-500
+                        peer-checked:text-cyan-700'),
+                        ('lake_river', 'Lac / Rivière', 'peer-checked:bg-sky-50 peer-checked:border-sky-500
+                        peer-checked:text-sky-700'),
+                        ('rural', 'Campagne', 'peer-checked:bg-orange-50 peer-checked:border-orange-500
+                        peer-checked:text-orange-700'),
+                        ('desert', 'Aride', 'peer-checked:bg-amber-50 peer-checked:border-amber-500
+                        peer-checked:text-amber-700'),
+                        ('mineral', 'Rocheux', 'peer-checked:bg-slate-50 peer-checked:border-slate-500
+                        peer-checked:text-slate-700'),
+                        ('ice', 'Neige / Glace', 'peer-checked:bg-blue-50 peer-checked:border-blue-500
+                        peer-checked:text-blue-700'),
+                        ('urban', 'Urbain', 'peer-checked:bg-gray-50 peer-checked:border-gray-500
+                        peer-checked:text-gray-700'),
+                        ('volcanic', 'Volcanique', 'peer-checked:bg-rose-50 peer-checked:border-rose-500
+                        peer-checked:text-rose-700')
+                        ] %}
+                        <label class="cursor-pointer group">
+                            <input type="checkbox" name="environment" value="{{ env_val }}" class="peer sr-only" {% if
+                                track.environment and env_val in track.environment %}checked{% endif %}>
+                            <div
+                                class="h-14 w-full bg-white border border-slate-200 rounded-xl flex items-center justify-center text-center hover:shadow-md transition-all {{ color_classes }}">
+                                <span class="text-sm font-semibold">{{ env_label }}</span>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
 
                 <!-- 3. Logistics & Extras -->
                 <div class="p-8 space-y-8">
@@ -119,6 +164,20 @@
                             </div>
                         </div>
 
+                        <!-- Technicity -->
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-4">Technicité (0-10)</label>
+                            <div class="flex items-center w-full max-w-[200px]">
+                                <button type="button" onclick="adjustTech(-0.5)"
+                                    class="w-12 h-12 rounded-l-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xl border-r border-slate-200 transition-colors">-</button>
+                                <input type="number" name="technicity_score" id="tech-input" step="0.1" max="10" min="0"
+                                    value="{{ track.technicity_score or 0 }}"
+                                    class="w-full h-12 text-center border-0 bg-slate-50 font-bold text-lg text-slate-700 focus:ring-0">
+                                <button type="button" onclick="adjustTech(0.5)"
+                                    class="w-12 h-12 rounded-r-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xl border-l border-slate-200 transition-colors">+</button>
+                            </div>
+                        </div>
+
                         <!-- Water Points Stepper -->
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-4">Points d'Eau</label>
@@ -134,7 +193,83 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Tags -->
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Tags</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-slate-400">#</span>
+                            </div>
+                            <input type="text" name="tags" placeholder="Sommet, Lac, Technique, ..."
+                                value="{{ track.tags | join(', ') if track.tags else '' }}"
+                                class="w-full pl-8 pr-4 py-3 rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:border-brand-500 focus:ring-brand-500 shadow-sm transition-all text-sm">
+                        </div>
+                        <p class="mt-2 text-xs text-slate-500">Ajoutez des mots-clés séparés par des virgules pour
+                            faciliter la recherche.</p>
+                    </div>
                 </div>
+
+                <!-- ZONE SUPER ADMIN -->
+                {% if user.is_admin %}
+                <div class="p-8 space-y-6 bg-slate-900 text-white border-t border-slate-800">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold flex items-center gap-2 text-brand-400">
+                            <i class="ph-fill ph-shield-check text-2xl"></i>
+                            Zone Super Admin
+                        </h2>
+                        <button type="submit" formaction="/track/{{ track.id }}/analyze" formmethod="post"
+                            class="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-bold transition-colors shadow-lg shadow-indigo-500/20">
+                            <i class="ph-bold ph-magic-wand"></i> Relancer IA
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Owner Transfer -->
+                        <div>
+                            <label class="block text-sm font-bold text-slate-400 mb-1">Propriétaire (Username)</label>
+                            <input type="text" name="owner_id" value="{{ track.user_id }}"
+                                class="w-full rounded-lg border-slate-700 bg-slate-800 text-white focus:border-brand-500 focus:ring-brand-500">
+                            <p class="text-xs text-slate-500 mt-1">Attention: Transfère la propriété.</p>
+                        </div>
+
+                        <!-- Verification Status -->
+                        <div>
+                            <label class="block text-sm font-bold text-slate-400 mb-1">Statut Vérification</label>
+                            <select name="verification_status"
+                                class="w-full rounded-lg border-slate-700 bg-slate-800 text-white focus:border-brand-500">
+                                {% for status in ['pending', 'verified', 'verified_human', 'rejected'] %}
+                                <option value="{{ status }}" {% if track.verification_status.value==status %}selected{%
+                                    endif %}>
+                                    {{ status|upper }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Official Route Toggle -->
+                        <div class="flex items-center gap-3 p-4 bg-slate-800 rounded-xl border border-slate-700">
+                            <input type="checkbox" name="is_official" id="is_official" value="true"
+                                class="w-5 h-5 rounded text-brand-600 focus:ring-brand-600 bg-slate-700 border-slate-600"
+                                {% if track.is_official_route %}checked{% endif %}>
+                            <label for="is_official" class="cursor-pointer">
+                                <span class="block font-bold text-white">Route Officielle</span>
+                                <span class="block text-xs text-slate-400">Si coché, cette trace est considérée comme
+                                    une
+                                    référence.</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Destructive Actions -->
+                    <div class="pt-4 border-t border-slate-800 flex justify-end">
+                        <button type="submit" name="action" value="delete_force"
+                            onclick="return confirm('SUPPRESSION DÉFINITIVE IMMEDIATE ?')"
+                            class="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/50 rounded-lg text-sm font-bold transition-colors">
+                            <i class="ph-bold ph-trash mr-1"></i> Force Delete
+                        </button>
+                    </div>
+                </div>
+                {% endif %}
 
                 <!-- Footer Action -->
                 <div class="p-8 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-4">
@@ -156,6 +291,15 @@
         let val = parseInt(input.value) || 0;
         val += amount;
         if (val < 0) val = 0;
+        input.value = val;
+    }
+
+    function adjustTech(amount) {
+        const input = document.getElementById('tech-input');
+        let val = parseFloat(input.value) || 0;
+        val = Math.round((val + amount) * 10) / 10;
+        if (val < 0) val = 0;
+        if (val > 10) val = 10;
         input.value = val;
     }
 </script>

@@ -75,6 +75,17 @@ class User(Base):
     strava_url = Column(String, nullable=True)
     social_links = Column(JSON, nullable=True) # { "instagram": "handle", "twitter": "handle" }
     profile_picture_url = Column(String, nullable=True)
+    
+    # Physio & Metrics (For Athlete Profiling)
+    age = Column(Integer, nullable=True)
+    height = Column(Integer, nullable=True) # cm
+    weight = Column(Float, nullable=True) # kg
+    gender = Column(String, nullable=True) # Enum or string
+    max_heart_rate = Column(Integer, nullable=True)
+    resting_heart_rate = Column(Integer, nullable=True)
+    vo2_max = Column(Float, nullable=True)
+
+    # Community & Professional
 
     # Community & Professional
     club_affiliation = Column(String, nullable=True) # "Team Hoka", etc.
@@ -139,6 +150,7 @@ class Track(Base):
     # 5. Terrain & Environment
     surface_composition = Column(JSON, nullable=True) # { "asphalt": 10, "trail": 90 }
     path_type = Column(JSON, nullable=True) # { "single_track": 80 }
+    environment = Column(JSON, default=[]) # ["high_mountain", "forest", ...]
     
     # 6. Logistics & Conditions
     route_type = Column(Enum(RouteType), default=RouteType.LOOP)
@@ -149,7 +161,10 @@ class Track(Base):
     
     location_city = Column(String, nullable=True)
     location_region = Column(String, nullable=True)
+    location_country = Column(String, nullable=True)
     cities_crossed = Column(JSON, nullable=True)
+    
+    technicity_score = Column(Float, nullable=True) # Global rating
     
     water_points_count = Column(Integer, default=0)
     estimated_times = Column(JSON, nullable=True)

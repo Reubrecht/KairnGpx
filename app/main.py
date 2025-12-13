@@ -159,10 +159,11 @@ def get_location_info(lat: float, lon: float):
             address = location.raw['address']
             city = address.get('city') or address.get('town') or address.get('village') or address.get('hamlet') or "Unknown"
             region = address.get('state') or address.get('region') or address.get('county') or "Unknown"
-            return city, region
+            country = address.get('country') or "Unknown"
+            return city, region, country
     except Exception as e:
         print(f"Geocoding error: {e}")
-    return "Unknown", "Unknown"
+    return "Unknown", "Unknown", "Unknown"
 
 def slugify(text: str) -> str:
     # Normalized + remove accents
@@ -793,7 +794,7 @@ async def upload_track(
 
     # 4. Geocoding (Renumbered logic flow, but code remains same)
     start_lat, start_lon = metrics["start_coords"]
-    city, region = get_location_info(start_lat, start_lon)
+    city, region, country = get_location_info(start_lat, start_lon)
     
     # 5. Simplify and Save
     simplified_xml = analytics.simplify_track(epsilon=0.00005) # ~5m precision
@@ -877,6 +878,7 @@ async def upload_track(
         end_lon=metrics["end_coords"][1],
         location_city=city,
         location_region=region,
+        location_country=country,
         estimated_times=metrics["estimated_times"],
 
         # Categorization - Removed deprecated fields
@@ -890,7 +892,12 @@ async def upload_track(
         # New Fields
         visibility=models.Visibility(visibility),
         water_points_count=water_points_count,
-        scenery_rating=scenery_rating
+        scenery_rating=scenery_rating,
+        technicity_score=None, # Placeholder
+        
+        # Tags & Env
+        environment=environment,
+        tags=[t.strip() for t in tags.split(',')] if tags else []
     )
     
     db.add(new_track)
@@ -1109,6 +1116,10 @@ async def edit_track_action(
     # terrain: str = Form(...),    # Removed
     scenery_rating: int = Form(None),
     water_points_count: int = Form(0),
+    technicity_score: float = Form(None),
+    activity_types: List[str] = Form([]),
+    environment: List[str] = Form([]),
+    tags: str = Form(None),
     db: Session = Depends(get_db)
 ):
     user = await get_current_user(request, db)
@@ -1129,6 +1140,11 @@ async def edit_track_action(
     # track.terrain = models.TerrainEnum(terrain) # Removed
     track.scenery_rating = scenery_rating
     track.water_points_count = water_points_count
+    track.technicity_score = technicity_score
+    
+    # Tags & Env
+    track.environment = environment
+    track.tags = [t.strip() for t in tags.split(',')] if tags else []
     
     db.commit()
     
@@ -1425,7 +1441,7 @@ async def create_event(
     current_user: models.User = Depends(get_current_super_admin)
 ):
     try:
-        new_event = models.Event(
+        new_event = models.RaceEvent(
             name=name, slug=slug, website=website, description=description
         )
         db.add(new_event)
@@ -1445,7 +1461,7 @@ async def update_event(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_super_admin)
 ):
-    event = db.query(models.Event).filter(models.Event.id == event_id).first()
+    event = db.query(models.RaceEvent).filter(models.RaceEvent.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
     
@@ -1462,7 +1478,7 @@ async def delete_event(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_super_admin)
 ):
-    event = db.query(models.Event).filter(models.Event.id == event_id).first()
+    event = db.query(models.RaceEvent).filter(models.RaceEvent.id == event_id).first()
     if event:
         db.delete(event) # Cascade should handle children
         db.commit()
