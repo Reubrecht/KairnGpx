@@ -116,6 +116,24 @@
 
                 <form action="/explore" method="get" class="space-y-8" id="filter-form">
 
+                    <!-- Text Search (Predictive) -->
+                    <div class="relative">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1">
+                            <i class="ph ph-magnifying-glass text-lg text-slate-400"></i>
+                            Recherche
+                        </label>
+                        <input type="text" name="q" list="track-titles" value="{{ request.query_params.get('q', '') }}"
+                            placeholder="Nom de la trace..."
+                            class="w-full px-4 py-2 rounded-xl border-slate-200 bg-slate-50 text-sm focus:bg-white focus:border-brand-500 transition-colors">
+
+                        <!-- Datalist for Autocomplete (Predictive) -->
+                        <datalist id="track-titles">
+                            {% for track in tracks %}
+                            <option value="{{ track.title }}"></option>
+                            {% endfor %}
+                        </datalist>
+                    </div>
+
                     <!-- Location -->
                     <div class="relative">
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1">
