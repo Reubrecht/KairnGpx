@@ -31,6 +31,7 @@ from datetime import datetime, timedelta
 
 from . import models, database
 import json
+from .version import __version__ as app_version # Import version
 
 def slugify(value, allow_unicode=False):
     """
@@ -50,7 +51,7 @@ def slugify(value, allow_unicode=False):
 # Create tables
 models.Base.metadata.create_all(bind=database.engine)
 
-app = FastAPI(title="Kairn Trail Platform")
+app = FastAPI(title="Kairn Trail Platform", version=app_version)
 
 # SECURITY CONFIG
 SECRET_KEY = "supersecretkeychangeinproduction" 
@@ -67,6 +68,7 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Templates
 templates = Jinja2Templates(directory="app/templates")
+templates.env.globals['version'] = app_version # Inject version globally
 
 # Custom Filters
 def markdown_filter(text):
