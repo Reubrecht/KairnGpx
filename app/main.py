@@ -296,7 +296,9 @@ async def explore(
     radius: Optional[int] = 50,
     search_lat: Optional[str] = None,
     search_lon: Optional[str] = None,
-    tag: Optional[str] = None
+    tag: Optional[str] = None,
+    # Text Search (Title/Description)
+    q: Optional[str] = None
 ):
     try:
         user = await get_current_user_optional(request, db)
@@ -306,6 +308,14 @@ async def explore(
         
         query = db.query(models.Track)
         
+        # 0. Text Search (Title / Desc)
+        if q:
+            search_term = f"%{q}%"
+            query = query.filter(or_(
+                models.Track.title.ilike(search_term),
+                models.Track.description.ilike(search_term)
+            ))
+
         # 1. Activity Type
         if activity_type:
             query = query.filter(models.Track.activity_type == activity_type)
