@@ -56,7 +56,7 @@ app = FastAPI(title="Kairn Trail Platform", version=app_version)
 # SECURITY CONFIG
 SECRET_KEY = "supersecretkeychangeinproduction" 
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # 1 week
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 # 1 hour
 
 # Changed to pbkdf2_sha256 to avoid bcrypt version conflicts
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
