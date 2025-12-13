@@ -60,7 +60,7 @@
 
 1.  **Clone the repository**
     ```bash
-    git clone https://github.com/yourusername/Kairn.git
+    git clone https://github.com/Reubrecht/KairnGpx.git
     cd Kairn
     ```
 
