@@ -35,6 +35,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     {% block head %}{% endblock %}
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        /* Phosphor Icons Helper */
+        .ph {
+            vertical-align: middle;
+        }
+    </style>
 </head>
 
 <body class="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen flex flex-col">
@@ -90,10 +97,7 @@
                     <!-- Mobile Menu Button -->
                     <button id="mobile-menu-btn"
                         class="md:hidden p-2 rounded-md text-slate-600 hover:text-brand-600 hover:bg-slate-100 focus:outline-none">
-                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
+                        <i class="ph ph-list text-2xl"></i>
                     </button>
 
                 </div>

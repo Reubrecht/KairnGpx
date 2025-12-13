@@ -38,13 +38,19 @@
                         <!-- Activity Badge -->
                         <span
                             class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-50 text-brand-700 border border-brand-100">
-                            {% if track.activity_type.value == 'TRAIL_RUNNING' %}🏃 Trail
-                            {% elif track.activity_type.value == 'RUNNING' %}👟 Course
-                            {% elif track.activity_type.value == 'HIKING' %}🥾 Rando
-                            {% elif track.activity_type.value == 'MTB_CROSS_COUNTRY' %}🚴 VTT
-                            {% elif track.activity_type.value == 'ROAD_CYCLING' %}🚴 Route
-                            {% elif track.activity_type.value == 'GRAVEL' %}🚲 Gravel
-                            {% else %}📍 {{ track.activity_type.value | replace('_', ' ') | title }}{% endif %}
+                            {% if track.activity_type.value == 'TRAIL_RUNNING' %}<i
+                                class="ph ph-person-simple-run mr-1"></i> Trail
+                            {% elif track.activity_type.value == 'RUNNING' %}<i class="ph ph-sneaker-move mr-1"></i>
+                            Course
+                            {% elif track.activity_type.value == 'HIKING' %}<i
+                                class="ph ph-person-simple-walk mr-1"></i> Rando
+                            {% elif track.activity_type.value == 'MTB_CROSS_COUNTRY' %}<i
+                                class="ph ph-bicycle mr-1"></i> VTT
+                            {% elif track.activity_type.value == 'ROAD_CYCLING' %}<i class="ph ph-bicycle mr-1"></i>
+                            Route
+                            {% elif track.activity_type.value == 'GRAVEL' %}<i class="ph ph-bicycle mr-1"></i> Gravel
+                            {% else %}<i class="ph ph-map-pin mr-1"></i> {{ track.activity_type.value | replace('_', '
+                            ') | title }}{% endif %}
                         </span>
 
                         <!-- Status / Race Link -->
@@ -82,13 +88,7 @@
 
                     <div class="flex flex-wrap justify-between items-end gap-4">
                         <div class="flex items-center text-sm text-gray-500 font-medium">
-                            <svg class="h-4 w-4 mr-1 text-slate-400" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
+                            <i class="ph ph-map-pin text-slate-400 mr-1 text-lg"></i>
                             {{ track.location_city or 'Lieu inconnu' }}
                             {% if track.location_region %}<span class="mx-1">•</span>{{ track.location_region }}{% endif
                             %}
@@ -98,30 +98,20 @@
                         <div class="flex items-center gap-2 w-full md:w-auto mt-2 md:mt-0">
                             <button onclick="copyLink()"
                                 class="flex-1 md:flex-none justify-center inline-flex items-center px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
-                                <svg class="w-4 h-4 mr-2 text-slate-400" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                                </svg>
+                                <i class="ph ph-share-network mr-2 text-slate-400 text-lg"></i>
                                 Partager
                             </button>
 
                             <a href="/raw_gpx/{{ track.id }}"
                                 class="flex-1 md:flex-none justify-center inline-flex items-center px-4 py-2 bg-brand-600 border border-transparent rounded-xl text-sm font-bold text-white hover:bg-brand-700 transition-colors shadow-sm shadow-brand-200">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                </svg>
+                                <i class="ph ph-download-simple mr-2 text-lg"></i>
                                 GPX
                             </a>
 
                             {% if user and (user.username == track.user_id or user.is_admin) %}
                             <a href="/track/{{ track.id }}/edit"
                                 class="p-2 text-slate-400 hover:text-brand-600 hover:bg-slate-50 rounded-lg transition-colors">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                </svg>
+                                <i class="ph ph-pencil-simple text-lg"></i>
                             </a>
                             {% endif %}
                         </div>
