@@ -563,8 +563,14 @@
             noUiSlider.create(sliderDist, {
                 start: [minD, maxD],
                 connect: true,
-                range: { 'min': 0, 'max': 170 },
-                step: 1,
+                range: {
+                    'min': 0,
+                    '25%': 20,
+                    '50%': 50,
+                    '75%': 100,
+                    'max': 170
+                },
+                step: 1, // Will apply to the smallest interval, but noUiSlider handles variable steps between ranges automatically if not set broadly
                 tooltips: [{
                     to: function (value) { return Math.round(value) + 'km'; }
                 }, {
@@ -576,6 +582,10 @@
                 format: {
                     to: v => Math.round(v),
                     from: v => Number(v)
+                },
+                pips: { // Optional: Add pips to visualize the scale
+                    mode: 'range',
+                    density: 3
                 }
             });
 
@@ -592,8 +602,14 @@
             noUiSlider.create(sliderElev, {
                 start: [minE, maxE],
                 connect: true,
-                range: { 'min': 0, 'max': 10000 },
-                step: 50,
+                range: {
+                    'min': 0,
+                    '25%': 1000,
+                    '50%': 2500,
+                    '75%': 5000,
+                    'max': 10000
+                },
+                step: 10,
                 tooltips: [{
                     to: function (value) { return Math.round(value) + 'm'; }
                 }, {
@@ -605,6 +621,16 @@
                 format: {
                     to: v => Math.round(v),
                     from: v => Number(v)
+                },
+                pips: {
+                    mode: 'range',
+                    density: 3,
+                    format: {
+                        to: function (value) {
+                            if (value >= 1000) return (value / 1000) + 'k';
+                            return value;
+                        }
+                    }
                 }
             });
 
