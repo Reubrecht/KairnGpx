@@ -895,14 +895,15 @@ async def upload_track(
             print(f"Linking Track {new_track.id} to Official Route {race_route.name}")
             race_route.official_track_id = new_track.id
             
-            # Enforce Official Status
+            # Enforce Official Status but PENDING validation
             new_track.is_official_route = True
             new_track.status = models.StatusEnum.RACE
-            new_track.user_id = "Official" # Or keep uploader? Usually Official tracks are owned by admin/system, but Moderator upload is fine.
-                                          # Let's keep the uploader so we know who did it, but mark as is_official_route=True.
+            new_track.verification_status = models.VerificationStatus.PENDING
             
-            # Auto-fill metadata from Race if missing?
-            # Already handled by form inputs usually.
+            # Note: We keep the original user_id (uploader) so we know who submitted it.
+            # The Super Admin will validate it.
+            
+            db.commit()
             
             db.commit()
 
@@ -1246,14 +1247,16 @@ async def super_admin_dashboard(request: Request, db: Session = Depends(get_db),
     
     events = db.query(models.RaceEvent).all()
     users = db.query(models.User).all()
-    pending_count = db.query(models.Track).filter(models.Track.verification_status == models.VerificationStatus.PENDING).count()
+    pending_tracks = db.query(models.Track).filter(models.Track.verification_status == models.VerificationStatus.PENDING).all()
+    pending_count = len(pending_tracks)
     
     return templates.TemplateResponse("super_admin.html", {
         "request": request, 
         "user": current_user,
         "events": events,
         "users": users,
-        "pending_count": pending_count
+        "pending_count": pending_count,
+        "pending_tracks": pending_tracks
     })
 
 @app.post("/superadmin/events")
