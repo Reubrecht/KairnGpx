@@ -49,8 +49,7 @@
                             {% elif track.activity_type.value == 'ROAD_CYCLING' %}<i class="ph ph-bicycle mr-1"></i>
                             Route
                             {% elif track.activity_type.value == 'GRAVEL' %}<i class="ph ph-bicycle mr-1"></i> Gravel
-                            {% else %}<i class="ph ph-map-pin mr-1"></i> {{ track.activity_type.value | replace('_', '
-                            ') | title }}{% endif %}
+                            {% else %}<i class="ph ph-map-pin mr-1"></i> {{ track.activity_type.value | replace('_', ' ') | title }}{% endif %}
                         </span>
 
                         <!-- Status / Race Link -->
@@ -305,8 +304,7 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const trackGeoJSON = {{ track_geojson | safe
-    }};
+        const trackGeoJSON = {{ track_geojson | safe }};
     if (!trackGeoJSON) {
         console.error("No GeoJSON data available");
         return;
