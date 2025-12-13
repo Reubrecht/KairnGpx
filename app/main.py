@@ -300,7 +300,7 @@ async def explore(
     # Text Search (Title/Description)
     q: Optional[str] = None,
     # Scenery
-    scenery_min: Optional[int] = None
+    scenery_min: Optional[str] = None
 ):
     try:
         user = await get_current_user_optional(request, db)
@@ -314,8 +314,8 @@ async def explore(
         # ...
 
         # 0.5 Scenery Filter
-        if scenery_min:
-             query = query.filter(models.Track.scenery_rating >= scenery_min)
+        if scenery_min and scenery_min.strip().isdigit():
+             query = query.filter(models.Track.scenery_rating >= int(scenery_min))
              
         # 1. Activity Type
         # We process 'q' filtering in Python after fetching results
