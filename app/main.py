@@ -308,13 +308,10 @@ async def explore(
         
         query = db.query(models.Track)
         
-        # 0. Text Search (Title / Desc)
-        if q:
-            search_term = f"%{q}%"
-            query = query.filter(or_(
-                models.Track.title.ilike(search_term),
-                models.Track.description.ilike(search_term)
-            ))
+        # 0. Text Search (Moved to post-processing for accent-insensitivity)
+        # We process 'q' filtering in Python after fetching results
+        # to handle "Mont-Blanc" == "mont blanc" matches easily via slugify.
+
 
         # 1. Activity Type
         if activity_type:
@@ -394,6 +391,19 @@ async def explore(
 
         tracks = query.order_by(models.Track.created_at.desc()).all()
         
+        # 7.5. Text Search (Python Side - Accent/Case Insensitive)
+        if q:
+            q_norm = slugify(q)
+            text_filtered = []
+            for t in tracks:
+                # Check title
+                t_title_norm = slugify(t.title) if t.title else ""
+                # Check description (optional, maybe too noisy? keeping it for now)
+                t_desc_norm = slugify(t.description) if t.description else ""
+                
+                if q_norm in t_title_norm or q_norm in t_desc_norm:
+                    text_filtered.append(t)
+            tracks = text_filtered
         
         # 8. Post-Processing for Ratio D+
         if ratio_category:
