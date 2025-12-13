@@ -19,7 +19,7 @@ class AiAnalyzer:
             self.model = None
             print("WARNING: GEMINI_API_KEY not found. AI features disabled.")
 
-    def analyze_track(self, metrics: Dict[str, Any], metadata: Dict[str, Any] = None, user_title: str = None, user_description: str = None, is_race: bool = False) -> Dict[str, Any]:
+    def analyze_track(self, metrics: Dict[str, Any], metadata: Dict[str, Any] = None, user_title: str = None, user_description: str = None, is_race: bool = False, scenery_rating: int = None, water_count: int = None, user_tags: list = None) -> Dict[str, Any]:
         """
         Generates a title, description, and tags based on GPX metrics, metadata, and user input.
         Returns a dictionary with keys: 'ai_title', 'ai_description', 'ai_tags'.
@@ -57,6 +57,16 @@ class AiAnalyzer:
         
         if user_description:
              context_str += f"\n        - Description fournie par l'utilisateur : {user_description}"
+             
+        if scenery_rating:
+             context_str += f"\n        - Note Paysage (donnée utilisateur) : {scenery_rating}/5"
+             
+        if water_count is not None:
+             context_str += f"\n        - Points d'eau (donnée utilisateur) : {water_count}"
+             
+        if user_tags:
+             tags_str = ", ".join(user_tags)
+             context_str += f"\n        - Tags/Ambiance (cochés par l'utilisateur) : {tags_str}"
         
         if is_race:
              context_str += f"\n        - CONTEXTE : C'est une COURSE OFFICIELLE (Compétition)."
@@ -79,11 +89,13 @@ class AiAnalyzer:
            - Ton ton doit être professionnel, technique mais inspirant.
            - Si c'est une COURSE OFFICIELLE : Mentionne que c'est un parcours de compétition, parle de l'exigence et de l'ambiance typique de cette course.
            - **IMPORTANT** : Si une "Description fournie par l'utilisateur" est présente, UTILISE-LA COMME SOURCE PRINCIPALE. Reformule-la pour qu'elle soit plus pro, corrige les fautes, mais conserve le sens et les détails donnés par l'utilisateur.
+           - Intègre les informations fournies (Note Paysage, Points d'eau, Tags utilisateur) dans le récit si pertinent (ex: "Très beau parcours panoramique avec 2 points d'eau...").
            - Si pas de description utilisateur, base-toi sur la description originale GPX ou génère-en une standard.
-           - Mentionne le type de terrain (ex: technique, roulant) et les points d'intérêts (sommets, lacs).
+           - Mentionne le type de terrain (ex: technique, roulant) et les points d'intérêts.
 
-        3. **TAGS (Catégorisation)** : Sélectionne STRICTEMENT 3 à 5 tags parmi cette liste fermée (et UNIQUEMENT cette liste) :
+        3. **TAGS (Catégorisation)** : Sélectionne STRICTEMENT 3 à 5 tags parmi cette liste fermée :
            ["Roulant", "Technique", "Vertical", "Aérien", "Boucle", "Aller-Retour", "Sommet", "Lac", "Forêt", "Crête", "Skyrunning", "Ultra", "Off-Road", "Sentier", "Piste"]
+           - **IMPORTANT** : Si l'utilisateur a déjà coché des tags ("Tags/Ambiance"), essaie de sélectionner les équivalents dans la liste fermée ci-dessus s'ils sont pertinents.
 
         Réponds UNIQUEMENT au format JSON strict (sans markdown autour si possible, juste le json) :
         {{
