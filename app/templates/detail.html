@@ -205,6 +205,39 @@
                         </div>
                         {% endif %}
 
+                        <!-- User Ratings & Info -->
+                        {% if track.scenery_rating or track.water_points_count > 0 %}
+                        <div>
+                            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Conditions &
+                                Infos</h3>
+                            <div class="space-y-3">
+                                {% if track.scenery_rating %}
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-slate-600 font-medium">Paysage</span>
+                                    <div class="flex text-yellow-400">
+                                        {% for i in range(track.scenery_rating) %}
+                                        <i class="ph-fill ph-star"></i>
+                                        {% endfor %}
+                                        {% for i in range(5 - track.scenery_rating) %}
+                                        <i class="ph ph-star text-slate-200"></i>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                {% if track.water_points_count > 0 %}
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-slate-600 font-medium">Points d'eau</span>
+                                    <span
+                                        class="font-bold text-slate-800 bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                        <i class="ph-fill ph-drop"></i> {{ track.water_points_count }}
+                                    </span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+
                         <!-- Surfaces -->
                         {% if track.surface_composition %}
                         <div>
