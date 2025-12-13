@@ -1032,12 +1032,22 @@ async def track_detail(track_identifier: str, request: Request, db: Session = De
     if track.tags:
         tags_list = track.tags if isinstance(track.tags, list) else json.loads(track.tags)
     
+    # --- Race Time Prediction ---
+    user_prediction = None
+    if user:
+        try:
+            from .services.prediction import RaceTimePredictor
+            user_prediction = RaceTimePredictor.predict(track, user)
+        except Exception as e:
+            print(f"Prediction Error: {e}")
+            
     return templates.TemplateResponse("detail.html", {
         "request": request,
         "track": track,
         "tags_list": tags_list,
         "user": user,
-        "track_geojson": json.dumps(track_geojson) if track_geojson else "null"
+        "track_geojson": json.dumps(track_geojson) if track_geojson else "null",
+        "user_prediction": user_prediction
     })
 
 

@@ -49,7 +49,8 @@
                             {% elif track.activity_type.value == 'ROAD_CYCLING' %}<i class="ph ph-bicycle mr-1"></i>
                             Route
                             {% elif track.activity_type.value == 'GRAVEL' %}<i class="ph ph-bicycle mr-1"></i> Gravel
-                            {% else %}<i class="ph ph-map-pin mr-1"></i> {{ track.activity_type.value | replace('_', ' ') | title }}{% endif %}
+                            {% else %}<i class="ph ph-map-pin mr-1"></i> {{ track.activity_type.value | replace('_', '
+                            ') | title }}{% endif %}
                         </span>
 
                         <!-- Status / Race Link -->
@@ -167,6 +168,89 @@
                     </div>
                 </div>
 
+                <!-- PERFORMANCE & PREDICTION -->
+                {% if user_prediction and user_prediction.prediction_available %}
+                <div class="mb-8 bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 text-white shadow-xl">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <h3 class="text-lg font-bold">Performance & Prédictions</h3>
+                                <span
+                                    class="bg-emerald-500/20 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">Scientific
+                                    Method</span>
+                            </div>
+                            <p class="text-sm text-slate-400">
+                                Estimations basées sur votre index de {{ user_prediction.user_index }} (VO₂max est. ~{{
+                                user_prediction.vo2max_est }}) et l'effort km de {{ user_prediction.km_effort }}.
+                            </p>
+                        </div>
+                        <div class="text-right hidden md:block">
+                            <div class="text-3xl font-black text-emerald-400">{{ user_prediction.times.race }}</div>
+                            <div class="text-xs text-slate-500 font-bold uppercase">Temps Estimé</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                        <!-- Endurance -->
+                        <div
+                            class="bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-colors">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="p-2 bg-green-500/20 rounded-lg text-green-400">
+                                    <i class="ph-fill ph-plant text-xl"></i>
+                                </div>
+                                <span class="text-xs font-bold text-slate-400">ENDURANCE</span>
+                            </div>
+                            <div class="text-2xl font-bold mb-1">{{ user_prediction.times.endurance }}</div>
+                            <p class="text-[10px] text-slate-400 leading-tight">Allure "Cool", pour l'entraînement long
+                                ou la gestion prudente.</p>
+                        </div>
+
+                        <!-- Race (Highlight) -->
+                        <div
+                            class="bg-gradient-to-br from-brand-600/20 to-brand-900/40 rounded-xl p-4 border border-brand-500/30 relative overflow-hidden group">
+                            <div class="absolute inset-0 bg-brand-500/5 group-hover:bg-brand-500/10 transition-colors">
+                            </div>
+                            <div class="relative z-10">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="p-2 bg-brand-500 rounded-lg text-white shadow-lg shadow-brand-500/30">
+                                        <i class="ph-fill ph-flag-checkered text-xl"></i>
+                                    </div>
+                                    <span class="text-xs font-bold text-brand-200">OBJECTIF COURSE</span>
+                                </div>
+                                <div class="text-3xl font-black mb-1 text-white">{{ user_prediction.times.race }}</div>
+                                <p class="text-[10px] text-brand-100/70 leading-tight">Allure de course optimale pour
+                                    votre index actuel.</p>
+                            </div>
+                        </div>
+
+                        <!-- Max / Push -->
+                        <div
+                            class="bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-colors">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="p-2 bg-orange-500/20 rounded-lg text-orange-400">
+                                    <i class="ph-fill ph-rocket-launch text-xl"></i>
+                                </div>
+                                <span class="text-xs font-bold text-slate-400">INTENSIF</span>
+                            </div>
+                            <div class="text-2xl font-bold mb-1">{{ user_prediction.times.push }}</div>
+                            <p class="text-[10px] text-slate-400 leading-tight">Allure "Challenge" ou segments courts.
+                                Risque d'explosion sur long.</p>
+                        </div>
+
+                    </div>
+
+                    <div
+                        class="mt-4 pt-4 border-t border-white/5 flex items-center justify-between text-[10px] text-slate-500">
+                        <span><i class="ph-bold ph-info mr-1"></i>Prend en compte la technicité et la distance.</span>
+                        {% if user_prediction.user_index < 420 %} <span class="text-orange-400"><i
+                                class="ph-bold ph-warning mr-1"></i>Indice faible, estimation approx.</span>
+                            {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+
                 <!-- CHART -->
                 <div class="mb-8">
                     <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Profil</h3>
@@ -246,7 +330,7 @@
                                 <div class="flex items-center text-xs">
                                     <div class="w-12 font-bold text-slate-700 text-right mr-2">{{ v }}%</div>
                                     <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                                        <div class="h-full bg-slate-400" style="width: {{ v }}%"></div>
+                                        <div class="h-full bg-slate-400" style="width: {{ v }}%;"></div>
                                     </div>
                                     <div class="ml-2 text-slate-500 capitalize">{{ k }}</div>
                                 </div>
@@ -304,7 +388,8 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const trackGeoJSON = {{ track_geojson | safe }};
+        const trackGeoJSON = {{ track_geojson | safe
+    }};
     if (!trackGeoJSON) {
         console.error("No GeoJSON data available");
         return;
