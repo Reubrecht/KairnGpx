@@ -19,7 +19,7 @@ class AiAnalyzer:
             self.model = None
             print("WARNING: GEMINI_API_KEY not found. AI features disabled.")
 
-    def analyze_track(self, metrics: Dict[str, Any], metadata: Dict[str, Any] = None, user_title: str = None, is_race: bool = False) -> Dict[str, Any]:
+    def analyze_track(self, metrics: Dict[str, Any], metadata: Dict[str, Any] = None, user_title: str = None, user_description: str = None, is_race: bool = False) -> Dict[str, Any]:
         """
         Generates a title, description, and tags based on GPX metrics, metadata, and user input.
         Returns a dictionary with keys: 'ai_title', 'ai_description', 'ai_tags'.
@@ -55,6 +55,9 @@ class AiAnalyzer:
         if user_title:
              context_str += f"\n        - Titre fourni par l'utilisateur : {user_title}"
         
+        if user_description:
+             context_str += f"\n        - Description fournie par l'utilisateur : {user_description}"
+        
         if is_race:
              context_str += f"\n        - CONTEXTE : C'est une COURSE OFFICIELLE (Compétition)."
 
@@ -75,7 +78,8 @@ class AiAnalyzer:
         2. **DESCRIPTION (Contenu)** : Rédige une description de 2 à 4 phrases.
            - Ton ton doit être professionnel, technique mais inspirant.
            - Si c'est une COURSE OFFICIELLE : Mentionne que c'est un parcours de compétition, parle de l'exigence et de l'ambiance typique de cette course.
-           - Si une description originale existe, utilise-la comme base pour l'enrichir et corriger les fautes éventuelles.
+           - **IMPORTANT** : Si une "Description fournie par l'utilisateur" est présente, UTILISE-LA COMME SOURCE PRINCIPALE. Reformule-la pour qu'elle soit plus pro, corrige les fautes, mais conserve le sens et les détails donnés par l'utilisateur.
+           - Si pas de description utilisateur, base-toi sur la description originale GPX ou génère-en une standard.
            - Mentionne le type de terrain (ex: technique, roulant) et les points d'intérêts (sommets, lacs).
 
         3. **TAGS (Catégorisation)** : Sélectionne STRICTEMENT 3 à 5 tags parmi cette liste fermée (et UNIQUEMENT cette liste) :

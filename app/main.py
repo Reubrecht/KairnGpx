@@ -745,15 +745,13 @@ async def upload_track(
         # Only call if API key is present to save time/errors, handled in class but good to be explicit
         if ai_analyzer.model:
             print("Calling Gemini for analysis...")
-            ai_data = ai_analyzer.analyze_track(metrics, metadata=gpx_meta, user_title=title, is_race=is_official_bot)
+            ai_data = ai_analyzer.analyze_track(metrics, metadata=gpx_meta, user_title=title, user_description=description, is_race=is_official_bot)
             
-            # Auto-fill description if empty OR if we only have generic GPX desc?
-            # AI description is usually better structured.
+            # AI Description Strategy:
+            # The AI has been instructed to "reformat/enrich" the user description if provided.
+            # So we accept the AI version as the final description.
             if ai_data.get("ai_description"):
-                if description:
-                     description += "\n\n" + ai_data["ai_description"] # Append if existing
-                else:
-                     description = ai_data["ai_description"]
+                description = ai_data["ai_description"]
             
             # Use AI Title if generated (Override if title seems generic)
             if ai_data.get("ai_title"):
