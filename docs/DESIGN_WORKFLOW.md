@@ -18,9 +18,11 @@ Nous recommandons **Penpot** pour ce projet car :
 
 ### Étape 1 : Import & Calque de Référence
 Ne tentez pas de "convertir" automatiquement le PNG. Pour un résultat "propre", il faut redessiner.
-1.  Créez un file sur Penpot/Figma.
-2.  Importez votre PNG (ex: `logo.png`) et verrouillez le calque avec une opacité de 50%.
-3.  C'est votre guide visuel.
+1.  **Importer l'image (2 méthodes)** :
+    *   **Glisser-Déposer** : Prenez votre fichier (ex: `favicon.png`) depuis votre dossier Windows et lâchez-le direct sur la plan de travail (Canvas) Penpot.
+    *   **Menu** : Cliquez sur le menu hamburger (☰) > *Import* > *Images...*
+2.  Verrouillez le calque (cadenas 🔒) et baissez son opacité à 50%.
+3.  C'est votre modèle pour décalquer.
 
 ### Étape 2 : Redessiner (Vectorisation Manuelle)
 Utilisez les outils vectoriels (Plume, Formes géométriques simples) pour reconstruire l'image par dessus.
