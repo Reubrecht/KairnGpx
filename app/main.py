@@ -298,7 +298,9 @@ async def explore(
     search_lon: Optional[str] = None,
     tag: Optional[str] = None,
     # Text Search (Title/Description)
-    q: Optional[str] = None
+    q: Optional[str] = None,
+    # Scenery
+    scenery_min: Optional[int] = None
 ):
     try:
         user = await get_current_user_optional(request, db)
@@ -309,6 +311,13 @@ async def explore(
         query = db.query(models.Track)
         
         # 0. Text Search (Moved to post-processing for accent-insensitivity)
+        # ...
+
+        # 0.5 Scenery Filter
+        if scenery_min:
+             query = query.filter(models.Track.scenery_rating >= scenery_min)
+             
+        # 1. Activity Type
         # We process 'q' filtering in Python after fetching results
         # to handle "Mont-Blanc" == "mont blanc" matches easily via slugify.
 
@@ -745,7 +754,22 @@ async def upload_track(
         # Only call if API key is present to save time/errors, handled in class but good to be explicit
         if ai_analyzer.model:
             print("Calling Gemini for analysis...")
-            ai_data = ai_analyzer.analyze_track(metrics, metadata=gpx_meta, user_title=title, user_description=description, is_race=is_official_bot)
+            
+            # Parse user tags to list
+            user_tags_list = []
+            if tags:
+                user_tags_list = [t.strip() for t in tags.split(",") if t.strip()]
+
+            ai_data = ai_analyzer.analyze_track(
+                metrics, 
+                metadata=gpx_meta, 
+                user_title=title, 
+                user_description=description, 
+                is_race=is_official_bot,
+                scenery_rating=scenery_rating,
+                water_count=water_points_count,
+                user_tags=user_tags_list
+            )
             
             # AI Description Strategy:
             # The AI has been instructed to "reformat/enrich" the user description if provided.

@@ -255,7 +255,42 @@
                         </label>
                     </div>
 
-                    <!-- Tags Filter -->
+                    <!-- Scenery Rating -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-slate-500 uppercase flex items-center gap-1">
+                            <i class="ph-fill ph-star text-lg text-yellow-500"></i>
+                            Beauté du Paysage (Min)
+                        </label>
+                        <div class="flex gap-1 bg-slate-50 p-2 rounded-xl border border-slate-200 justify-between">
+                            {% for i in range(1, 6) %}
+                            <label class="cursor-pointer group relative">
+                                <input type="radio" name="scenery_min" value="{{ i }}" class="peer sr-only" {% if
+                                    request.query_params.get('scenery_min')|int==i %}checked{% endif %}
+                                    onchange="this.form.submit()">
+                                <div class="w-8 h-8 flex items-center justify-center rounded-lg border border-transparent 
+                                            peer-checked:bg-yellow-50 peer-checked:border-yellow-400 peer-checked:text-yellow-500
+                                            hover:bg-white transition-all text-slate-300">
+                                    <span class="font-bold text-sm">{{ i }}</span>
+                                    <i class="ph-fill ph-star text-[10px] ml-0.5"></i>
+                                </div>
+                            </label>
+                            {% endfor %}
+
+                            <!-- Clear Button -->
+                            <label class="cursor-pointer group relative" title="Tout afficher">
+                                <input type="radio" name="scenery_min" value="" class="peer sr-only" {% if not
+                                    request.query_params.get('scenery_min') %}checked{% endif %}
+                                    onchange="this.form.submit()">
+                                <div
+                                    class="w-8 h-8 flex items-center justify-center rounded-lg border border-transparent 
+                                            text-slate-400 peer-checked:bg-slate-200 peer-checked:text-slate-600 hover:bg-slate-100">
+                                    <i class="ph ph-x"></i>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Ambiance & Tags -->
                     {% if all_tags %}
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1">
