@@ -1472,6 +1472,24 @@ async def upload_track_to_route(
         
     return RedirectResponse(url=f"/superadmin/edition/{route.edition_id}", status_code=303)
 
+@app.post("/superadmin/track/{track_id}/verify")
+async def verify_track_admin(
+    track_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_admin: models.User = Depends(get_current_super_admin)
+):
+    track = db.query(models.Track).filter(models.Track.id == track_id).first()
+    if not track:
+        raise HTTPException(status_code=404, detail="Track not found")
+        
+    track.status = models.StatusEnum.RACE
+    track.verification_status = models.VerificationStatus.VERIFIED_HUMAN
+    db.commit()
+    
+    # Redirect back to superadmin
+    return RedirectResponse(url="/superadmin#moderation", status_code=303)
+
 from .services.race_importer import RaceImporter
 
 @app.post("/superadmin/import_races")

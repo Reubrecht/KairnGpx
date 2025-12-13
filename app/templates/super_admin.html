@@ -170,9 +170,76 @@
                     </tbody>
                 </table>
             </div>
-        </section>
+</div>
+</section>
 
-    </main>
+<!-- SECTION: Moderation -->
+<section id="moderation" class="mb-12">
+    <h2 class="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+        Modération
+        {% if pending_count > 0 %}
+        <span class="bg-red-500 text-white text-sm font-bold px-2 py-1 rounded-full">{{ pending_count }}</span>
+        {% endif %}
+    </h2>
+
+    {% if pending_tracks %}
+    <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-xs">
+                <tr>
+                    <th class="px-6 py-4">Trace</th>
+                    <th class="px-6 py-4">Utilisateur</th>
+                    <th class="px-6 py-4">Contexte</th>
+                    <th class="px-6 py-4 text-right">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for t in pending_tracks %}
+                <tr class="hover:bg-slate-50">
+                    <td class="px-6 py-4">
+                        <a href="/track/{{ t.id }}" target="_blank" class="font-bold text-brand-600 hover:underline">
+                            {{ t.title }}
+                        </a>
+                        <div class="text-xs text-slate-400">{{ t.created_at.strftime('%d/%m/%Y') }}</div>
+                    </td>
+                    <td class="px-6 py-4 font-medium text-slate-700">
+                        {{ t.user_obj.username if t.user_obj else t.uploader_name }}
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if t.is_official_route %}
+                        <span class="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-bold">Oficielle
+                            (Pending)</span>
+                        {% if t.race_route %}
+                        <div class="text-xs text-slate-500 mt-1">
+                            {{ t.race_route.edition.event.name }} {{ t.race_route.edition.year }} - {{ t.race_route.name
+                            }}
+                        </div>
+                        {% endif %}
+                        {% else %}
+                        <span class="bg-slate-100 text-slate-500 px-2 py-1 rounded text-xs">Upload Standard</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <form action="/superadmin/track/{{ t.id }}/verify" method="POST">
+                            <button
+                                class="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg font-bold text-xs shadow-sm transition-colors">
+                                Valider
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="bg-white rounded-2xl p-8 text-center border border-slate-200 border-dashed">
+        <p class="text-slate-400">Aucune trace en attente de validation.</p>
+    </div>
+    {% endif %}
+</section>
+
+</main>
 </div>
 
 <!-- Modal: Create Event -->
