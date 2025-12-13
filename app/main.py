@@ -1491,9 +1491,9 @@ async def add_edition(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_super_admin)
 ):
-    existing = db.query(models.Edition).filter_by(event_id=event_id, year=year).first()
+    existing = db.query(models.RaceEdition).filter_by(event_id=event_id, year=year).first()
     if not existing:
-        new_edition = models.Edition(event_id=event_id, year=year)
+        new_edition = models.RaceEdition(event_id=event_id, year=year)
         db.add(new_edition)
         db.commit()
     return RedirectResponse(url="/superadmin#events", status_code=303)
@@ -1623,53 +1623,11 @@ async def link_track_to_route(
         
     return RedirectResponse(url="/superadmin#moderation", status_code=303)
 
+from app.services.import_service import process_race_import
+
 @app.post("/superadmin/import_races")
 async def import_races_json(file: UploadFile, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_super_admin)):
-    # ... existing import logic ...
     content = await file.read()
-    try:
-        data = json.loads(content)
-        # Expect list of events
-        count = 0
-        for item in data:
-            # Upsert Event
-            event = db.query(models.Event).filter_by(slug=item['slug']).first()
-            if not event:
-                event = models.Event(
-                    name=item['name'],
-                    slug=item['slug'],
-                    website=item.get('website'),
-                    description=item.get('description')
-                )
-                db.add(event)
-                db.commit()
-                db.refresh(event)
-            
-            # Editions
-            for ed in item.get('editions', []):
-                edition = db.query(models.Edition).filter_by(event_id=event.id, year=ed['year']).first()
-                if not edition:
-                    edition = models.Edition(event_id=event.id, year=ed['year'])
-                    db.add(edition)
-                    db.commit()
-                    db.refresh(edition)
-                
-                # Routes
-                for r in ed.get('routes', []):
-                    route = db.query(models.RaceRoute).filter_by(edition_id=edition.id, name=r['name']).first()
-                    if not route:
-                        route = models.RaceRoute(
-                            edition_id=edition.id,
-                            name=r['name'],
-                            distance_km=r.get('distance_km', 0),
-                            elevation_gain=r.get('elevation_gain', 0),
-                            itra_points=r.get('itra_points')
-                        )
-                        db.add(route)
-                        count += 1
-        db.commit()
-        print(f"Imported {count} routes.")
-    except Exception as e:
-        print(f"JSON Import Error: {e}")
-            
+    count = process_race_import(db, content)
+    print(f"Imported {count} routes via API.")
     return RedirectResponse(url="/superadmin#events", status_code=303)

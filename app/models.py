@@ -232,6 +232,9 @@ class RaceRoute(Base):
     # Link to the GPX track that represents this route
     official_track_id = Column(Integer, ForeignKey("tracks.id"), nullable=True)
     
+    distance_km = Column(Float, nullable=True)
+    elevation_gain = Column(Integer, nullable=True)
+
     results_url = Column(String, nullable=True)
 
     edition = relationship("RaceEdition", back_populates="routes")
