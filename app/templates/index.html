@@ -658,8 +658,8 @@
         new L.GPX(`/raw_gpx/${t.id}`, {
             async: true,
             marker_options: {
-                startIconUrl: "{{ url_for('static', path='/img/pin-icon-start.svg') }}",
-                endIconUrl: "{{ url_for('static', path='/img/pin-icon-end.svg') }}",
+                startIconUrl: "",
+                endIconUrl: "",
                 shadowUrl: "",
                 wptIconUrls: ""
             },
@@ -672,8 +672,35 @@
         }).on('loaded', function (e) {
             const gpx = e.target;
             map.fitBounds(gpx.getBounds(), { padding: [20, 20] });
+
             // Draw gradient track
             drawGradientTrack(map, gpx);
+
+            // Custom Phosphor Markers
+            const elevData = gpx.get_elevation_data();
+            if (elevData && elevData.length > 0) {
+                // START Marker (Green Map Pin)
+                const startPt = elevData[0][2];
+                L.marker(startPt, {
+                    icon: L.divIcon({
+                        className: 'bg-transparent',
+                        html: '<i class="ph-fill ph-map-pin text-emerald-500 text-3xl drop-shadow-md" style="filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));"></i>',
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 30] // Tip of the pin
+                    })
+                }).addTo(map);
+
+                // END Marker (Red Flag)
+                const endPt = elevData[elevData.length - 1][2];
+                L.marker(endPt, {
+                    icon: L.divIcon({
+                        className: 'bg-transparent',
+                        html: '<i class="ph-fill ph-flag text-red-500 text-3xl drop-shadow-md" style="filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));"></i>',
+                        iconSize: [30, 30],
+                        iconAnchor: [4, 30] // Bottom-left of flag pole
+                    })
+                }).addTo(map);
+            }
         }).addTo(map);
     });
     });
