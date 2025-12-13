@@ -78,6 +78,47 @@
                 </form>
             </div>
 
+            <!-- Premium Status -->
+            <div
+                class="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+                <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+
+                {% if user.is_premium %}
+                <div class="flex items-center gap-3 mb-2 relative z-10">
+                    <div class="bg-amber-400 text-amber-900 p-2 rounded-lg shadow-lg shadow-amber-500/20">
+                        <i class="ph-fill ph-crown text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg leading-tight">Membre Premium</h3>
+                        <p class="text-indigo-200 text-xs">Accès illimité actif</p>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-white/10 text-xs text-indigo-200">
+                    Vous avez accès aux outils de calibration avancée et aux statistiques détaillées.
+                </div>
+                {% else %}
+                <div class="relative z-10">
+                    <h3 class="font-bold text-lg mb-2 flex items-center gap-2">
+                        <i class="ph-duotone ph-star text-amber-400"></i> Passer Premium
+                    </h3>
+                    <p class="text-indigo-200 text-xs mb-4">
+                        Activez le mode calibration et débloquez toutes les fonctionnalités.
+                    </p>
+                    <form action="/profile/upgrade" method="POST" class="flex gap-2">
+                        <input type="text" name="code" placeholder="Code d'activation"
+                            class="w-full rounded-lg bg-white/10 border-white/20 text-white placeholder-indigo-300 text-sm focus:ring-amber-500 focus:border-amber-500">
+                        <button type="submit"
+                            class="bg-amber-500 hover:bg-amber-400 text-amber-950 font-bold px-3 py-2 rounded-lg transition-colors">
+                            <i class="ph-bold ph-check"></i>
+                        </button>
+                    </form>
+                    {% if request.query_params.get('error') %}
+                    <p class="text-red-400 text-[10px] mt-2 font-bold">{{ request.query_params.get('error') }}</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
             {% if user.is_admin %}
             <div class="bg-slate-900 rounded-2xl p-6 text-white text-center">
                 <h3 class="font-bold mb-2">Administration</h3>

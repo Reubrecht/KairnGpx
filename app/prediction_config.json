@@ -1,0 +1,17 @@
+{
+    "base_speed_slope": 0.024,
+    "base_speed_intercept": 4.0,
+    "min_speed_kmeh": 3.0,
+    "tech_factor_1_threshold": 40.0,
+    "tech_factor_1_hilly": 0.95,
+    "tech_factor_2_threshold": 60.0,
+    "tech_factor_2_mountain": 0.85,
+    "tech_factor_3_threshold": 90.0,
+    "tech_factor_3_alpine": 0.7,
+    "decay_start_km": 40.0,
+    "decay_step_km": 20.0,
+    "decay_rate_per_step": 0.05,
+    "decay_max_total": 0.4,
+    "endurance_multiplier": 0.85,
+    "push_multiplier": 1.15
+}

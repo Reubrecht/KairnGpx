@@ -14,13 +14,16 @@
 
                 <!-- 1. Core Info -->
                 <div class="p-8 space-y-6">
+                    <!-- ... Header ... -->
                     <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
                         <span
                             class="flex items-center justify-center w-8 h-8 rounded-full bg-brand-100 text-brand-700 text-sm font-bold">1</span>
                         Informations Générales
                     </h2>
 
+                    <!-- Title/Desc/Vis -->
                     <div class="grid grid-cols-1 gap-6">
+                        <!-- ... Existing Inputs ... -->
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">Titre de la sortie</label>
                             <input type="text" name="title" value="{{ track.title }}" required
@@ -33,7 +36,9 @@
                                 class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 transition-colors">{{ track.description or '' }}</textarea>
                         </div>
 
+                        <!-- NEW SPLIT FOR VISIBILITY & TYPE -->
                         <div class="grid grid-cols-1 gap-6">
+                            <!-- Visibility -->
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-3">Visibilité</label>
                                 <div class="grid grid-cols-3 gap-3">
@@ -41,7 +46,7 @@
                                         <input type="radio" name="visibility" value="public" class="peer sr-only" {% if
                                             track.visibility.value=='public' %}checked{% endif %}>
                                         <div
-                                            class="h-14 w-full bg-white border border-slate-200 rounded-xl flex items-center justify-center text-center hover:shadow-md peer-checked:bg-emerald-50 peer-checked:border-emerald-500 peer-checked:text-emerald-700 transition-all">
+                                            class="h-10 w-full bg-white border border-slate-200 rounded-lg flex items-center justify-center text-center hover:shadow-md peer-checked:bg-emerald-50 peer-checked:border-emerald-500 peer-checked:text-emerald-700 transition-all">
                                             <span class="text-sm font-semibold">Publique</span>
                                         </div>
                                     </label>
@@ -49,7 +54,7 @@
                                         <input type="radio" name="visibility" value="unlisted" class="peer sr-only" {%
                                             if track.visibility.value=='unlisted' %}checked{% endif %}>
                                         <div
-                                            class="h-14 w-full bg-white border border-slate-200 rounded-xl flex items-center justify-center text-center hover:shadow-md peer-checked:bg-amber-50 peer-checked:border-amber-500 peer-checked:text-amber-700 transition-all">
+                                            class="h-10 w-full bg-white border border-slate-200 rounded-lg flex items-center justify-center text-center hover:shadow-md peer-checked:bg-amber-50 peer-checked:border-amber-500 peer-checked:text-amber-700 transition-all">
                                             <span class="text-sm font-semibold">Non répertoriée</span>
                                         </div>
                                     </label>
@@ -57,33 +62,78 @@
                                         <input type="radio" name="visibility" value="private" class="peer sr-only" {% if
                                             track.visibility.value=='private' %}checked{% endif %}>
                                         <div
-                                            class="h-14 w-full bg-white border border-slate-200 rounded-xl flex items-center justify-center text-center hover:shadow-md peer-checked:bg-slate-100 peer-checked:border-slate-500 peer-checked:text-slate-700 transition-all">
+                                            class="h-10 w-full bg-white border border-slate-200 rounded-lg flex items-center justify-center text-center hover:shadow-md peer-checked:bg-slate-100 peer-checked:border-slate-500 peer-checked:text-slate-700 transition-all">
                                             <span class="text-sm font-semibold">Privée</span>
                                         </div>
                                     </label>
                                 </div>
                             </div>
 
+                            <!-- Activity Type Checkbox -->
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-3">Type d'activité</label>
-                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                    {% for status in status_options %}
-                                    {% set status_label = status %}
-                                    {% if status == 'OFFICIAL_RACE' %}{% set status_label = 'Course Officielle' %}
-                                    {% elif status == 'TRAINING' %}{% set status_label = 'Entraînement' %}
-                                    {% endif %}
+                                <div class="flex flex-wrap gap-2">
+                                    {% for activity in activity_options %}
                                     <label class="cursor-pointer group">
-                                        <input type="radio" name="status_val" value="{{ status }}" class="peer sr-only"
-                                            {% if track.status.value==status %}checked{% endif %}>
+                                        <input type="radio" name="activity_type" value="{{ activity }}"
+                                            class="peer sr-only" {% if track.activity_type.value==activity %}checked{%
+                                            endif %}>
                                         <div
-                                            class="h-14 w-full bg-white border border-slate-200 rounded-xl flex items-center justify-center text-center hover:shadow-md peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-700 transition-all">
-                                            <span class="text-sm font-semibold">{{ status_label }}</span>
+                                            class="px-4 py-2 bg-white border border-slate-200 rounded-full flex items-center justify-center text-center hover:shadow-md peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-700 transition-all">
+                                            <span class="text-sm font-semibold">{{ activity }}</span>
                                         </div>
                                     </label>
                                     {% endfor %}
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- 1.5 COMPETITION CONTEXT -->
+                <div class="p-8 space-y-6 bg-amber-50/30 border-y border-amber-100/50">
+                    <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                        <span
+                            class="flex items-center justify-center w-8 h-8 rounded-full bg-amber-100 text-amber-700 text-sm font-bold">★</span>
+                        Contexte Compétition
+                    </h2>
+                    <p class="text-sm text-slate-500 mb-4">Liez cette trace à une course officielle existante.</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Event Select -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">Événement</label>
+                            <select id="race-select"
+                                class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
+                                <option value="">-- Sélectionner --</option>
+                            </select>
+                        </div>
+                        <!-- Edition Select -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">Édition / Année</label>
+                            <select id="edition-select"
+                                class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500"
+                                disabled>
+                                <option value="">-- Année --</option>
+                            </select>
+                        </div>
+                        <!-- Route Select -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">Parcours</label>
+                            <select id="route-select" name="race_route_id"
+                                class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500"
+                                disabled>
+                                <option value="">-- Parcours --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Missing Event Button -->
+                    <div class="flex justify-end mt-2">
+                        <button type="button" onclick="openRequestModal()"
+                            class="text-xs font-bold text-amber-600 hover:text-amber-800 underline">
+                            L'événement n'existe pas ?
+                        </button>
                     </div>
                 </div>
 
@@ -237,7 +287,7 @@
                             <label class="block text-sm font-bold text-slate-400 mb-1">Statut Vérification</label>
                             <select name="verification_status"
                                 class="w-full rounded-lg border-slate-700 bg-slate-800 text-white focus:border-brand-500">
-                                {% for status in ['pending', 'verified', 'verified_human', 'rejected'] %}
+                                {% for status in ['pending', 'verified_by_algo', 'verified_by_human', 'rejected'] %}
                                 <option value="{{ status }}" {% if track.verification_status.value==status %}selected{%
                                     endif %}>
                                     {{ status|upper }}
@@ -285,7 +335,151 @@
     </div>
 </div>
 
+<!-- Event Request Modal -->
+<div id="request-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"></div>
+    <div class="fixed inset-0 z-10 overflow-y-auto">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div
+                class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                <form action="/request_event" method="post" class="p-6">
+                    <h3 class="text-xl font-bold text-slate-900 mb-4">Demander un Événement</h3>
+                    <p class="text-sm text-slate-500 mb-6">L'événement que vous cherchez n'est pas dans la liste ?
+                        Remplissez ce formulaire pour qu'un administrateur l'ajoute.</p>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1">Nom de l'événement</label>
+                            <input type="text" name="event_name" required
+                                class="w-full rounded-lg border-slate-300 focus:ring-brand-500 focus:border-brand-500">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Année (Optionnel)</label>
+                                <input type="number" name="year" placeholder="2024"
+                                    class="w-full rounded-lg border-slate-300 focus:ring-brand-500 focus:border-brand-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Site Web (Optionnel)</label>
+                                <input type="url" name="website" placeholder="https://..."
+                                    class="w-full rounded-lg border-slate-300 focus:ring-brand-500 focus:border-brand-500">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1">Commentaire</label>
+                            <textarea name="comment" rows="2"
+                                class="w-full rounded-lg border-slate-300 focus:ring-brand-500 focus:border-brand-500"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex justify-end gap-3">
+                        <button type="button" onclick="closeRequestModal()"
+                            class="px-4 py-2 text-slate-600 font-bold hover:bg-slate-50 rounded-lg">Annuler</button>
+                        <button type="submit"
+                            class="px-4 py-2 bg-brand-600 text-white font-bold rounded-lg hover:bg-brand-700">Envoyer la
+                            demande</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+    // --- Race Data Serialization ---
+    const racesData = {{ races_json | safe }};
+    /*
+        {% for r in races %}
+    {
+        id: { { r.id } },
+        name: "{{ r.name|replace('"', '\\"') }}",
+            editions: [
+                {% for e in r.editions %}
+    {
+        id: { { e.id } },
+        year: { { e.year } },
+        routes: [
+            {% for route in e.routes %}
+    { id: { { route.id } }, name: "{{ route.name|replace('"', '\\"') }}" },
+    {% endfor %}
+                    ]
+                },
+    {% endfor %}
+            ]
+        },
+    {% endfor %}
+    ]; */
+
+    // --- Dropdown Logic ---
+    const raceSelect = document.getElementById('race-select');
+    const editionSelect = document.getElementById('edition-select');
+    const routeSelect = document.getElementById('route-select');
+
+    // Init Race Select
+    racesData.sort((a, b) => a.name.localeCompare(b.name)).forEach(r => {
+        const op = document.createElement('option');
+        op.value = r.id;
+        op.textContent = r.name;
+        raceSelect.appendChild(op);
+    });
+
+    raceSelect.addEventListener('change', () => {
+        const rId = parseInt(raceSelect.value);
+        editionSelect.innerHTML = '<option value="">-- Année --</option>';
+        routeSelect.innerHTML = '<option value="">-- Parcours --</option>';
+        routeSelect.disabled = true;
+
+        if (!rId) {
+            editionSelect.disabled = true;
+            return;
+        }
+
+        const race = racesData.find(r => r.id === rId);
+        if (race && race.editions) {
+            race.editions.sort((a, b) => b.year - a.year).forEach(e => {
+                const op = document.createElement('option');
+                op.value = e.id;
+                op.textContent = e.year;
+                editionSelect.appendChild(op);
+            });
+            editionSelect.disabled = false;
+        }
+    });
+
+    editionSelect.addEventListener('change', () => {
+        const rId = parseInt(raceSelect.value);
+        const eId = parseInt(editionSelect.value);
+        routeSelect.innerHTML = '<option value="">-- Parcours --</option>';
+
+        if (!eId) {
+            routeSelect.disabled = true;
+            return;
+        }
+
+        const race = racesData.find(r => r.id === rId);
+        const edition = race.editions.find(e => e.id === eId);
+
+        if (edition && edition.routes) {
+            edition.routes.forEach(ro => {
+                const op = document.createElement('option');
+                op.value = ro.id;
+                op.textContent = ro.name;
+                routeSelect.appendChild(op);
+            });
+            routeSelect.disabled = false;
+        }
+    });
+
+    // --- Modal Logic ---
+    const modal = document.getElementById('request-modal');
+    function openRequestModal() {
+        modal.classList.remove('hidden');
+    }
+    function closeRequestModal() {
+        modal.classList.add('hidden');
+    }
+
+    // --- Existing Utilities ---
     function adjustWater(amount) {
         const input = document.getElementById('water-input');
         let val = parseInt(input.value) || 0;

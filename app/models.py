@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
 import uuid
+from datetime import datetime
 from .database import Base
 
 # --- Enums ---
@@ -38,6 +39,7 @@ class VerificationStatus(str, enum.Enum):
     PENDING = "pending"
     VERIFIED_ALGO = "verified_by_algo"
     VERIFIED_HUMAN = "verified_by_human"
+    REJECTED = "rejected"
 
 class RouteType(str, enum.Enum):
     LOOP = "loop"
@@ -66,6 +68,8 @@ class User(Base):
     hashed_password = Column(String)
     is_admin = Column(Boolean, default=False) # Deprecated, use role
     role = Column(Enum(Role), default=Role.USER)
+    
+    is_premium = Column(Boolean, default=False)
 
     # Profile
     full_name = Column(String, nullable=True)
@@ -239,3 +243,19 @@ class RaceRoute(Base):
 
     edition = relationship("RaceEdition", back_populates="routes")
     official_track = relationship("Track", back_populates="race_route")
+
+
+class EventRequest(Base):
+    """User request for a missing event"""
+    __tablename__ = "event_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, ForeignKey("users.username"))
+    event_name = Column(String, nullable=False)
+    year = Column(Integer, nullable=True)
+    website = Column(String, nullable=True)
+    comment = Column(Text, nullable=True)
+    status = Column(String, default="PENDING") # PENDING, APPROVED, REJECTED
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")

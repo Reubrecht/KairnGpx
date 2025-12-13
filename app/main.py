@@ -1,4 +1,5 @@
 import hashlib
+import json
 import os
 import shutil
 from typing import List, Optional
@@ -677,6 +678,7 @@ async def upload_form(request: Request, db: Session = Depends(get_db), race_rout
 
 from .services.analytics import GpxAnalytics
 from .services.ai_analyzer import AiAnalyzer
+from .services.prediction_config_manager import PredictionConfigManager
 
 @app.post("/upload")
 async def upload_track(
@@ -1095,13 +1097,29 @@ async def edit_track_form(track_id: int, request: Request, db: Session = Depends
     if track.user_id != user.username and not user.is_admin:
         raise HTTPException(status_code=403, detail="Not authorized")
         
+    # Fetch Race Tree for Linking
+    # Optimization: using joinedload strategy would be better but simple query works for now
+    races_raw = db.query(models.RaceEvent).all()
+    # Serialize for JSON usage in template to avoid Jinja/JS lint issues
+    races_data = []
+    for r in races_raw:
+        editions_data = []
+        for e in sorted(r.editions, key=lambda x: x.year, reverse=True):
+            routes_data = [{"id": ro.id, "name": ro.name} for ro in e.routes]
+            editions_data.append({"id": e.id, "year": e.year, "routes": routes_data})
+        races_data.append({"id": r.id, "name": r.name, "editions": editions_data})
+    
+    races_json = json.dumps(races_data)
+    
     return templates.TemplateResponse("edit_track.html", {
         "request": request,
         "track": track,
         "user": user,
-        "status_options": [], # [e.value for e in models.StatusEnum],
-        "technicity_options": [], # [e.value for e in models.TechnicityEnum],
-        "terrain_options": [] # [e.value for e in models.TerrainEnum]
+        "races": races_raw, # Keep for potential pure-jinja usage if valid
+        "races_json": races_json, # For JS
+        "activity_options": [e.value for e in models.ActivityType],
+        "technicity_options": [], 
+        "terrain_options": [] 
     })
 
 @app.post("/track/{track_id}/edit")
@@ -1117,7 +1135,8 @@ async def edit_track_action(
     scenery_rating: int = Form(None),
     water_points_count: int = Form(0),
     technicity_score: float = Form(None),
-    activity_types: List[str] = Form([]),
+    race_route_id: int = Form(None),
+    activity_type: str = Form(...),
     environment: List[str] = Form([]),
     tags: str = Form(None),
     db: Session = Depends(get_db)
@@ -1135,12 +1154,28 @@ async def edit_track_action(
     track.title = title
     track.description = description
     track.visibility = models.Visibility(visibility)
-    # track.status = models.StatusEnum(status_val) # Removed
-    # track.technicity = models.TechnicityEnum(technicity) # Removed
-    # track.terrain = models.TerrainEnum(terrain) # Removed
+    
+    # Update Activity Type
+    try:
+        track.activity_type = models.ActivityType(activity_type)
+    except ValueError:
+        pass # Keep old if invalid or separate error handling
+
     track.scenery_rating = scenery_rating
     track.water_points_count = water_points_count
     track.technicity_score = technicity_score
+
+    # Handle Link to Race Route
+    if race_route_id:
+        route = db.query(models.RaceRoute).filter(models.RaceRoute.id == race_route_id).first()
+        if route:
+            # Link route to track
+            route.official_track_id = track.id
+            # Also mark track as official?
+            track.is_official_route = True
+            # Maybe update track title to match route? No, verify first.
+            if not track.title:
+                 track.title = f"{route.edition.event.name} - {route.name}"
     
     # Tags & Env
     track.environment = environment
@@ -1149,6 +1184,30 @@ async def edit_track_action(
     db.commit()
     
     return RedirectResponse(url=f"/track/{track_id}", status_code=303)
+
+
+@app.post("/request_event")
+async def request_event(
+    request: Request,
+    event_name: str = Form(...),
+    year: int = Form(None),
+    website: str = Form(None),
+    comment: str = Form(None),
+    db: Session = Depends(get_db)
+):
+    user = await get_current_user(request, db)
+    
+    new_req = models.EventRequest(
+        user_id=user.username,
+        event_name=event_name,
+        year=year,
+        website=website,
+        comment=comment
+    )
+    db.add(new_req)
+    db.commit()
+    
+    return RedirectResponse(request.headers.get("referer") or "/", status_code=303)
 
 
 
@@ -1330,7 +1389,8 @@ async def super_admin_dashboard(request: Request, db: Session = Depends(get_db),
     events = db.query(models.RaceEvent).all()
     users = db.query(models.User).all()
     pending_tracks = db.query(models.Track).filter(models.Track.verification_status == models.VerificationStatus.PENDING).all()
-    pending_count = len(pending_tracks)
+    event_requests = db.query(models.EventRequest).filter(models.EventRequest.status == "PENDING").all()
+    pending_count = len(pending_tracks) + len(event_requests)
     
     return templates.TemplateResponse("super_admin.html", {
         "request": request, 
@@ -1338,7 +1398,10 @@ async def super_admin_dashboard(request: Request, db: Session = Depends(get_db),
         "events": events,
         "users": users,
         "pending_count": pending_count,
-        "pending_tracks": pending_tracks
+        "pending_tracks": pending_tracks,
+        "event_requests": event_requests,
+        "prediction_config": PredictionConfigManager.get_config(),
+        "prediction_config_json": json.dumps(PredictionConfigManager.get_config())
     })
 
 @app.post("/superadmin/events")
@@ -1437,14 +1500,29 @@ async def create_event(
     slug: str = Form(...),
     website: str = Form(None),
     description: str = Form(None),
+    region: str = Form(None),
+    circuit: str = Form(None),
+    request_id: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_super_admin)
 ):
     try:
         new_event = models.RaceEvent(
-            name=name, slug=slug, website=website, description=description
+            name=name, slug=slug, website=website, description=description,
+            region=region, circuit=circuit
         )
         db.add(new_event)
+        
+        # If created from a request, mark it as approved
+        if request_id and request_id.strip():
+            try:
+                rid = int(request_id)
+                req = db.query(models.EventRequest).filter(models.EventRequest.id == rid).first()
+                if req:
+                    req.status = "APPROVED"
+            except ValueError:
+                pass
+                
         db.commit()
     except Exception as e:
         print(f"Error creating event: {e}")
@@ -1517,6 +1595,78 @@ async def add_route(
     db.commit()
     return RedirectResponse(url="/superadmin#events", status_code=303)
 
+@app.post("/superadmin/routes/{route_id}/link_track")
+async def link_route_track(
+    route_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_super_admin)
+):
+    route = db.query(models.RaceRoute).filter(models.RaceRoute.id == route_id).first()
+    if not route:
+        raise HTTPException(status_code=404, detail="Route not found")
+
+    content = await file.read()
+    file_hash = calculate_file_hash(content)
+    
+    # Check if exists
+    track = db.query(models.Track).filter(models.Track.file_hash == file_hash).first()
+    
+    if not track:
+        # Create new track
+        analytics = GpxAnalytics(content)
+        metrics = analytics.calculate_metrics()
+        
+        if not metrics:
+             raise HTTPException(status_code=400, detail="Invalid GPX")
+
+        # Save File
+        filename = f"{file_hash}.gpx"
+        file_path = os.path.join(UPLOAD_DIR, filename)
+        with open(file_path, "wb") as f:
+            f.write(content)
+            
+        # Geocode start
+        start_lat, start_lon = metrics["start_coords"]
+        city, region, country = get_location_info(start_lat, start_lon)
+            
+        track = models.Track(
+            title=f"{route.edition.event.name} - {route.name}", 
+            description=f"Trace officielle pour {route.name}",
+            uploader_name=current_user.username,
+            user_id=current_user.username,
+            file_hash=file_hash,
+            file_path=file_path,
+            distance_km=metrics["distance_km"],
+            elevation_gain=metrics["elevation_gain"],
+            elevation_loss=metrics["elevation_loss"],
+            max_altitude=metrics["max_altitude"],
+            min_altitude=metrics["min_altitude"],
+            start_lat=start_lat,
+            start_lon=start_lon,
+            city=city,
+            region=region,
+            country=country,
+            is_official_route=True,
+            visibility=models.Visibility.PUBLIC,
+            activity_type=models.ActivityType.TRAIL_RUNNING, # Default
+            verification_status=models.VerificationStatus.VERIFIED_HUMAN
+        )
+        db.add(track)
+        db.flush()
+        
+    # Link
+    route.official_track_id = track.id
+    track.is_official_route = True # Ensure set
+    
+    # Sync stats
+    route.distance_km = track.distance_km
+    route.elevation_gain = track.elevation_gain
+    
+    db.commit()
+    
+    return RedirectResponse(url=f"/track/{track.id}/edit", status_code=303)
+
 
 # --- SUPER ADMIN : USERS ---
 
@@ -1560,6 +1710,36 @@ async def update_user_details(
         db.commit()
     return RedirectResponse(url="/superadmin#users", status_code=303)
 
+@app.post("/superadmin/user/{user_id}/toggle_premium")
+async def toggle_premium_status(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_super_admin)
+):
+    u = db.query(models.User).filter(models.User.id == user_id).first()
+    if u:
+        u.is_premium = not u.is_premium
+        db.commit()
+    return RedirectResponse(url="/superadmin#users", status_code=303)
+
+@app.post("/profile/upgrade")
+async def upgrade_premium(
+    request: Request,
+    code: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    user = await get_current_user(request, db)
+    required_code = os.getenv("INVITATION_CODE")
+    if not required_code:
+        required_code = "Kairn2025!"
+        
+    if code.strip() == required_code.strip():
+        user.is_premium = True
+        db.commit()
+        return RedirectResponse(url="/profile?success=Premium Activated", status_code=303)
+    else:
+        return RedirectResponse(url="/profile?error=Invalid Code", status_code=303)
+
 @app.post("/superadmin/user/{user_id}/delete")
 async def delete_user(
     user_id: int,
@@ -1582,7 +1762,7 @@ async def delete_user(
 async def verify_track_admin(track_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_super_admin)):
     track = db.query(models.Track).filter(models.Track.id == track_id).first()
     if track:
-        track.verification_status = models.VerificationStatus.VERIFIED
+        track.verification_status = models.VerificationStatus.VERIFIED_HUMAN
         track.visibility = models.Visibility.PUBLIC
         db.commit()
     return RedirectResponse(url="/superadmin#moderation", status_code=303)
@@ -1623,6 +1803,22 @@ async def link_track_to_route(
         
     return RedirectResponse(url="/superadmin#moderation", status_code=303)
 
+# --- PREDICTION CONFIG ---
+
+@app.get("/api/admin/prediction_config")
+async def get_prediction_config(current_user: models.User = Depends(get_current_super_admin)):
+    return PredictionConfigManager.get_config()
+
+@app.post("/api/admin/prediction_config")
+async def update_prediction_config(
+    request: Request,
+    current_user: models.User = Depends(get_current_super_admin)
+):
+    form_data = await request.form()
+    config = {k: float(v) for k, v in form_data.items() if v}
+    PredictionConfigManager.save_config(config)
+    return RedirectResponse(url="/superadmin#prediction", status_code=303)
+
 from app.services.import_service import process_race_import
 
 @app.post("/superadmin/import_races")
@@ -1631,3 +1827,10 @@ async def import_races_json(file: UploadFile, db: Session = Depends(get_db), cur
     count = process_race_import(db, content)
     print(f"Imported {count} routes via API.")
     return RedirectResponse(url="/superadmin#events", status_code=303)
+
+
+@app.get("/api/admin/pending_count")
+async def get_pending_count(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_admin)):
+    req_count = db.query(models.EventRequest).filter(models.EventRequest.status == "PENDING").count()
+    track_count = db.query(models.Track).filter(models.Track.verification_status == models.VerificationStatus.PENDING).count()
+    return {"count": req_count + track_count, "requests": req_count, "tracks": track_count}

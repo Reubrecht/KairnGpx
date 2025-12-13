@@ -79,6 +79,15 @@
                     <!-- Auth Links (Always Visible) -->
                     <div class="flex items-center gap-2 md:gap-4">
                         {% if user %}
+                        {% if user.is_admin %}
+                        <a href="/superadmin"
+                            class="relative text-sm font-bold text-slate-700 mr-2 hover:text-brand-600 flex items-center gap-1">
+                            <i class="ph-bold ph-shield-check text-lg"></i>
+                            <span class="hidden md:inline">Admin</span>
+                            <span id="admin-badge"
+                                class="hidden absolute -top-1 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">0</span>
+                        </a>
+                        {% endif %}
                         <a href="/profile"
                             class="text-sm font-bold text-slate-700 mr-1 hover:text-brand-600 truncate max-w-[100px] md:max-w-none">{{
                             user.username }}</a>
@@ -148,6 +157,26 @@
     </footer>
 
     <!-- Scripts -->
+    <script>
+        // Admin Notifications Check
+        document.addEventListener('DOMContentLoaded', () => {
+            const badge = document.getElementById('admin-badge');
+            if (badge) {
+                fetch('/api/admin/pending_count')
+                    .then(response => {
+                        if (response.ok) return response.json();
+                        throw new Error('Not admin');
+                    })
+                    .then(data => {
+                        if (data.count > 0) {
+                            badge.textContent = data.count;
+                            badge.classList.remove('hidden');
+                        }
+                    })
+                    .catch(() => { });
+            }
+        });
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 

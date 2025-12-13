@@ -33,6 +33,12 @@
                 <i class="ph-fill ph-users text-lg"></i>
                 Utilisateurs
             </button>
+            <button @click="currentTab = 'prediction'; window.location.hash = 'prediction'"
+                :class="{ 'bg-slate-800 text-white': currentTab === 'prediction', 'text-slate-400 hover:bg-slate-800/50 hover:text-white': currentTab !== 'prediction' }"
+                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200">
+                <i class="ph-fill ph-chart-line-up text-lg"></i>
+                Calibration Prédictions
+            </button>
             <button @click="currentTab = 'moderation'; window.location.hash = 'moderation'"
                 :class="{ 'bg-slate-800 text-white': currentTab === 'moderation', 'text-slate-400 hover:bg-slate-800/50 hover:text-white': currentTab !== 'moderation' }"
                 class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200">
@@ -97,7 +103,8 @@
                         class="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-4 py-2 rounded-xl font-bold text-sm flex items-center transition-all">
                         <i class="ph-bold ph-upload-simple mr-2"></i> Import JSON
                     </button>
-                    <button onclick="document.getElementById('modal-create-event').showModal()"
+                    <button
+                        onclick="document.getElementById('event-creation-request-id').value = ''; document.getElementById('modal-create-event').showModal()"
                         class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-brand-500/30 transition-all">
                         <i class="ph-bold ph-plus mr-2"></i> Nouvel Événement
                     </button>
@@ -203,10 +210,24 @@
                                                         <div
                                                             class="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase bg-slate-50">
                                                             Gestion Trace</div>
-                                                        <!-- Upload Form (Hidden, triggered by label) -->
-                                                        <!-- Simplifying: direct form submission forms might be bulky here. -->
-                                                        <!-- Ideally use a Modal for linking. Let's just have a Link Button that opens global modal? -->
-                                                        <!-- For MVP: Simple Upload input -->
+                                                        <form action="/superadmin/routes/{{ route.id }}/link_track"
+                                                            method="POST" enctype="multipart/form-data">
+                                                            <label
+                                                                class="block px-3 py-2 text-xs text-slate-600 hover:bg-slate-50 hover:text-brand-600 cursor-pointer rounded flex items-center gap-2 transition-colors">
+                                                                <i class="ph-bold ph-upload-simple text-sm"></i>
+                                                                Importer GPX
+                                                                <input type="file" name="file" class="hidden"
+                                                                    accept=".gpx"
+                                                                    onchange="if(confirm('Importer cette trace pour {{ route.name }} ?')) this.form.submit()">
+                                                            </label>
+                                                        </form>
+                                                        {% if route.official_track %}
+                                                        <a href="/track/{{ route.official_track.id }}/edit"
+                                                            class="block px-3 py-2 text-xs text-slate-600 hover:bg-slate-50 hover:text-brand-600 rounded flex items-center gap-2 transition-colors">
+                                                            <i class="ph-bold ph-pencil-simple text-sm"></i> Éditer
+                                                            Trace
+                                                        </a>
+                                                        {% endif %}
                                                     </div>
                                                 </td>
                                             </tr>
@@ -267,6 +288,7 @@
                         <tr>
                             <th class="px-6 py-4">Utilisateur</th>
                             <th class="px-6 py-4">Performance</th>
+                            <th class="px-6 py-4">Premium</th>
                             <th class="px-6 py-4">Rôle</th>
                             <th class="px-6 py-4 text-right">Actions</th>
                         </tr>
@@ -296,6 +318,16 @@
                                 {% endif %}
                             </td>
                             <td class="px-6 py-4">
+                                {% if u.is_premium %}
+                                <span
+                                    class="bg-amber-50 text-amber-600 px-2 py-1 rounded text-[10px] font-bold border border-amber-100 uppercase tracking-wide flex w-fit items-center">
+                                    <i class="ph-fill ph-crown mr-1"></i> Premium
+                                </span>
+                                {% else %}
+                                <span class="text-slate-300 text-xs">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4">
                                 <form action="/superadmin/user/{{ u.id }}/role" method="POST" class="inline-block">
                                     <select name="role" onchange="this.form.submit()"
                                         class="text-xs font-bold bg-transparent border-none focus:ring-0 cursor-pointer 
@@ -312,6 +344,14 @@
                                 </form>
                             </td>
                             <td class="px-6 py-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                                <form action="/superadmin/user/{{ u.id }}/toggle_premium" method="POST"
+                                    class="inline-block mr-1">
+                                    <button title="Activer/Désactiver Premium"
+                                        class="text-amber-400 hover:text-amber-600 p-1 rounded hover:bg-amber-50 transition-colors">
+                                        <i
+                                            class="ph-bold {% if u.is_premium %}ph-crown-slash{% else %}ph-crown{% endif %}"></i>
+                                    </button>
+                                </form>
                                 <form action="/superadmin/user/{{ u.id }}/delete" method="POST"
                                     onsubmit="return confirm('Êtes-vous sûr ? Cette action est irréversible.');"
                                     class="inline-block">
@@ -330,11 +370,75 @@
 
         <!-- MODERATION -->
         <div x-show="currentTab === 'moderation'" class="animate-fade-in-up">
-            <h2 class="text-3xl font-black text-slate-900 mb-8">Modération des Traces</h2>
+            <!-- EVENT REQUESTS SECTION -->
+            <div class="mb-12">
+                <h3 class="text-xl font-bold text-slate-700 mb-4 flex items-center gap-2">
+                    <span
+                        class="bg-indigo-100 text-indigo-700 w-8 h-8 rounded-full flex items-center justify-center text-sm">📍</span>
+                    Demandes d'Événements
+                    {% if event_requests %}
+                    <span class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full ml-2">{{
+                        event_requests|length }}</span>
+                    {% endif %}
+                </h3>
+
+                {% if event_requests %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {% for req in event_requests %}
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                        <div class="flex justify-between items-start mb-3">
+                            <h4 class="font-bold text-slate-900">{{ req.event_name }} {% if req.year %}<span
+                                    class="text-slate-500 text-sm">({{ req.year }})</span>{% endif %}</h4>
+                            <span
+                                class="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-1 rounded border border-blue-100 uppercase">Demande</span>
+                        </div>
+                        <p class="text-sm text-slate-500 mb-2 italic">"{{ req.comment }}"</p>
+                        {% if req.website %}
+                        <a href="{{ req.website }}" target="_blank"
+                            class="text-xs text-brand-600 hover:underline mb-3 block flex items-center gap-1"><i
+                                class="ph-bold ph-link"></i> {{ req.website }}</a>
+                        {% endif %}
+                        <div class="text-xs text-slate-400 mb-4">Demandé par <strong>{{ req.user_id }}</strong></div>
+
+                        <div class="flex gap-2">
+                            <button onclick="
+                                document.getElementById('modal-create-event').showModal();
+                                document.getElementById('event-creation-request-id').value = '{{ req.id }}';
+                                const evtName = `{{ req.event_name }}`;
+                                document.querySelector('#modal-create-event input[name=\'name\']').value = evtName;
+                                document.querySelector('#modal-create-event input[name=\'slug\']').value = slugify(evtName);
+                                document.querySelector('#modal-create-event input[name=\'website\']').value = '{{ req.website or '' }}';
+                                "
+                                class="flex-1 bg-slate-900 text-white py-2 rounded-lg text-xs font-bold hover:bg-slate-800 transition-colors">
+                                <i class="ph-bold ph-plus"></i> Créer
+                            </button>
+                            <!-- Add Approve/Reject endpoints? For now manual creation is fine -->
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div
+                    class="p-6 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center text-slate-400 text-sm">
+                    Aucune demande d'événement en attente.
+                </div>
+                {% endif %}
+            </div>
+
+            <h3 class="text-xl font-bold text-slate-700 mb-4 flex items-center gap-2">
+                <span
+                    class="bg-amber-100 text-amber-700 w-8 h-8 rounded-full flex items-center justify-center text-sm">⛰️</span>
+                Traces en Attente
+                {% if pending_tracks %}
+                <span class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full ml-2">{{
+                    pending_tracks|length }}</span>
+                {% endif %}
+            </h3>
 
             {% if pending_tracks %}
             <div class="grid grid-cols-1 gap-6">
                 {% for t in pending_tracks %}
+                <!-- ... Track Cards ... -->
                 <div
                     class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col md:flex-row">
                     <!-- Map Preview (Left) - Placeholder for simplicity or mini static map -->
@@ -424,6 +528,197 @@
             {% endif %}
         </div>
 
+        <!-- PREDICTION CALIBRATION -->
+        <div x-show="currentTab === 'prediction'" class="animate-fade-in-up"
+            x-data='predictionEditor({{ prediction_config_json | safe }})'>
+            <form action="/api/admin/prediction_config" method="POST" class="max-w-4xl mx-auto">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 class="text-3xl font-black text-slate-900">Calibration des Prédictions</h2>
+                        <p class="text-slate-500 mt-1">Ajustez les facteurs de l'algorithme de prédiction de temps.</p>
+                    </div>
+                    <button type="submit"
+                        class="bg-brand-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-brand-700 transition shadow-lg shadow-brand-500/30">
+                        Enregistrer
+                    </button>
+                </div>
+
+                <!-- SIMULATOR -->
+                <div class="bg-slate-900 text-white p-6 rounded-2xl shadow-lg mb-8 border border-slate-800">
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                        <h3 class="font-bold text-lg flex items-center gap-2 text-indigo-100">
+                            <span class="text-2xl">⚡</span>
+                            Simulateur Live
+                        </h3>
+                        <div class="flex items-center gap-3 bg-slate-800 p-2 rounded-xl border border-slate-700">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Index Coureur</span>
+                            <input type="range"
+                                class="w-48 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-brand-500"
+                                min="300" max="900" step="10" x-model="userIndex">
+                            <span class="font-mono font-bold text-lg min-w-[3ch] text-brand-400"
+                                x-text="userIndex"></span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <template x-for="ex in examples">
+                            <div
+                                class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 relative overflow-hidden group hover:bg-slate-800 transition-colors">
+                                <div class="relative z-10">
+                                    <div class="text-xs text-slate-400 font-bold uppercase mb-2 tracking-widest"
+                                        x-text="ex.name"></div>
+                                    <div class="text-4xl font-black font-mono tracking-tight text-white mb-2"
+                                        x-text="predict(ex)"></div>
+                                    <div
+                                        class="text-[10px] text-slate-500 font-medium flex justify-between border-t border-slate-700 pt-2 mt-2">
+                                        <span class="flex items-center gap-1">📏 <span
+                                                x-text="ex.dist + 'km'"></span></span>
+                                        <span class="flex items-center gap-1">⛰️ <span
+                                                x-text="ex.elev + 'm'"></span></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
+
+                    <!-- Base Speed -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                            <i class="ph-fill ph-speedometer text-brand-500"></i> Vitesse de Base
+                        </h3>
+                        <p class="text-xs text-slate-400 mb-4">Formule : Vitesse (km-effort/h) = (Pente * Index) -
+                            Intercept.
+                            <br>Ex: Pour Index 500 : (0.024 * 500) - 4 = 8 km/h.
+                        </p>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Pente (Slope)</label>
+                                <input type="number" step="0.001" name="base_speed_slope"
+                                    x-model="config.base_speed_slope"
+                                    class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Intercept</label>
+                                <input type="number" step="0.1" name="base_speed_intercept"
+                                    x-model="config.base_speed_intercept"
+                                    class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Vitesse Min (km/h)</label>
+                                <input type="number" step="0.1" name="min_speed_kmeh" x-model="config.min_speed_kmeh"
+                                    class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Technicality -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                            <i class="ph-fill ph-mountains text-brand-500"></i> Technicité (Pente Moyenne)
+                        </h3>
+                        <p class="text-xs text-slate-400 mb-4">Pénalités appliquées si le ratio D+/Distance dépasse les
+                            seuils.</p>
+                        <div class="space-y-4">
+                            <div
+                                class="grid grid-cols-2 gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                <span>Seuil (m/km)</span>
+                                <span>Facteur Mult.</span>
+                            </div>
+                            <!-- Level 1 -->
+                            <div class="grid grid-cols-2 gap-2 items-center">
+                                <input type="number" name="tech_factor_1_threshold"
+                                    x-model="config.tech_factor_1_threshold"
+                                    class="rounded-xl border-slate-200 focus:border-brand-500 text-sm font-bold">
+                                <input type="number" step="0.01" name="tech_factor_1_hilly"
+                                    x-model="config.tech_factor_1_hilly"
+                                    class="rounded-xl border-slate-200 focus:border-brand-500 text-sm font-bold">
+                            </div>
+                            <!-- Level 2 -->
+                            <div class="grid grid-cols-2 gap-2 items-center">
+                                <input type="number" name="tech_factor_2_threshold"
+                                    x-model="config.tech_factor_2_threshold"
+                                    class="rounded-xl border-slate-200 focus:border-brand-500 text-sm font-bold">
+                                <input type="number" step="0.01" name="tech_factor_2_mountain"
+                                    x-model="config.tech_factor_2_mountain"
+                                    class="rounded-xl border-slate-200 focus:border-brand-500 text-sm font-bold">
+                            </div>
+                            <!-- Level 3 -->
+                            <div class="grid grid-cols-2 gap-2 items-center">
+                                <input type="number" name="tech_factor_3_threshold"
+                                    x-model="config.tech_factor_3_threshold"
+                                    class="rounded-xl border-slate-200 focus:border-brand-500 text-sm font-bold">
+                                <input type="number" step="0.01" name="tech_factor_3_alpine"
+                                    x-model="config.tech_factor_3_alpine"
+                                    class="rounded-xl border-slate-200 focus:border-brand-500 text-sm font-bold">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Distance Decay -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                            <i class="ph-fill ph-battery-warning text-brand-500"></i> Fatigue & Distance
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Début Fatigue
+                                    (km-effort)</label>
+                                <input type="number" name="decay_start_km" x-model="config.decay_start_km"
+                                    class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-1">Palier (km)</label>
+                                    <input type="number" name="decay_step_km" x-model="config.decay_step_km"
+                                        class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-1">Taux / Palier</label>
+                                    <input type="number" step="0.01" name="decay_rate_per_step"
+                                        x-model="config.decay_rate_per_step"
+                                        class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Max Déclin Total</label>
+                                <input type="number" step="0.01" name="decay_max_total" x-model="config.decay_max_total"
+                                    class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Intensities -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                            <i class="ph-fill ph-gauge text-brand-500"></i> Intensités
+                        </h3>
+                        <p class="text-xs text-slate-400 mb-4">Multiplicateurs de vitesse pour les allures alternatives.
+                        </p>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Endurance
+                                    (Multiplicateur)</label>
+                                <input type="number" step="0.01" name="endurance_multiplier"
+                                    x-model="config.endurance_multiplier"
+                                    class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
+                                <p class="text-[10px] text-slate-400 mt-1">Ex: 0.85 = 85% de la vitesse course.</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Intensif / Push
+                                    (Multiplicateur)</label>
+                                <input type="number" step="0.01" name="push_multiplier" x-model="config.push_multiplier"
+                                    class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
+                                <p class="text-[10px] text-slate-400 mt-1">Ex: 1.15 = 115% de la vitesse course.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </form>
+        </div>
+
     </main>
 </div>
 
@@ -439,6 +734,7 @@
         class="modal-box bg-white rounded-2xl p-6 max-w-lg fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 shadow-2xl border border-slate-100 z-50">
         <h3 class="font-bold text-lg mb-4 text-slate-900">Nouvel Événement</h3>
         <form action="/superadmin/events" method="POST" class="space-y-4">
+            <input type="hidden" name="request_id" id="event-creation-request-id" value="">
             <div>
                 <label class="block text-sm font-bold text-slate-700 mb-1">Nom de l'événement</label>
                 <input type="text" name="name" required
@@ -453,6 +749,18 @@
                 <label class="block text-sm font-bold text-slate-700 mb-1">Site Web</label>
                 <input type="url" name="website" placeholder="https://"
                     class="w-full rounded-xl border-slate-200 focus:border-brand-500">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Région / Pays</label>
+                    <input type="text" name="region" placeholder="ex: Alpes, France"
+                        class="w-full rounded-xl border-slate-200 focus:border-brand-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Circuit</label>
+                    <input type="text" name="circuit" placeholder="ex: UTMB World Series"
+                        class="w-full rounded-xl border-slate-200 focus:border-brand-500">
+                </div>
             </div>
             <div>
                 <label class="block text-sm font-bold text-slate-700 mb-1">Description</label>
@@ -473,6 +781,90 @@
         <button class="cursor-default w-full h-full">close</button>
     </form>
 </dialog>
+
+<script>
+    function slugify(text) {
+        return text.toString().toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Remove accents
+            .replace(/\s+/g, '-')           // Replace spaces with -
+            .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
+            .replace(/\-\-+/g, '-')         // Replace multiple - with single -
+            .replace(/^-+/, '')             // Trim - from start
+            .replace(/-+$/, '');            // Trim - from end
+    }
+
+    // Auto-slug on typing
+    const nameInput = document.querySelector('#modal-create-event input[name="name"]');
+    const slugInput = document.querySelector('#modal-create-event input[name="slug"]');
+
+    if (nameInput && slugInput) {
+        nameInput.addEventListener('input', function (e) {
+            if (!slugInput.dataset.manual || slugInput.value === '') {
+                slugInput.value = slugify(e.target.value);
+            }
+        });
+
+        slugInput.addEventListener('input', function () {
+            slugInput.dataset.manual = 'true';
+        });
+    }
+
+    // Prediction Simulator
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('predictionEditor', (initialConfig) => ({
+            config: initialConfig,
+            userIndex: 500,
+            examples: [
+                { name: 'Court (20km 1000d+)', dist: 20, elev: 1000 },
+                { name: 'Moyen (50km 2500d+)', dist: 50, elev: 2500 },
+                { name: 'Ultra (100km 6000d+)', dist: 100, elev: 6000 }
+            ],
+
+            predict(ex) {
+                const dist = ex.dist;
+                const elev = ex.elev;
+
+                // Formulas match python app/services/prediction.py
+                const kmEffort = dist + (elev / 100.0);
+                const ratio = dist > 0 ? elev / dist : 0;
+
+                // Base Speed
+                let speed = (parseFloat(this.config.base_speed_slope) * this.userIndex) - parseFloat(this.config.base_speed_intercept);
+                speed = Math.max(speed, parseFloat(this.config.min_speed_kmeh));
+
+                // Tech
+                let techFactor = 1.0;
+                // Note: Check order (highest threshold first)
+                if (ratio > parseFloat(this.config.tech_factor_3_threshold)) techFactor = parseFloat(this.config.tech_factor_3_alpine);
+                else if (ratio > parseFloat(this.config.tech_factor_2_threshold)) techFactor = parseFloat(this.config.tech_factor_2_mountain);
+                else if (ratio > parseFloat(this.config.tech_factor_1_threshold)) techFactor = parseFloat(this.config.tech_factor_1_hilly);
+
+                // Decay
+                let distFactor = 1.0;
+                const startKm = parseFloat(this.config.decay_start_km);
+                if (kmEffort > startKm) {
+                    const over = kmEffort - startKm;
+                    let pct = (over / parseFloat(this.config.decay_step_km)) * parseFloat(this.config.decay_rate_per_step);
+                    pct = Math.min(pct, parseFloat(this.config.decay_max_total));
+                    distFactor = 1.0 - pct;
+                }
+
+                let adjSpeed = speed * techFactor * distFactor;
+                adjSpeed = Math.max(adjSpeed, 2.5); // Floor
+
+                const hours = kmEffort / adjSpeed;
+                return this.formatTime(hours);
+            },
+
+            formatTime(h) {
+                if (!isFinite(h)) return "--";
+                const hours = Math.floor(h);
+                const mins = Math.round((h - hours) * 60);
+                return `${hours}h${mins.toString().padStart(2, '0')}`;
+            }
+        }));
+    });
+</script>
 
 <dialog id="modal-import-races" class="modal">
     <div
