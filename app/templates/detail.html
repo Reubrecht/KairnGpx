@@ -168,14 +168,6 @@
                     </div>
                 </div>
 
-                <!-- CHART -->
-                <div class="mb-8">
-                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Profil</h3>
-                    <div class="h-40 md:h-64 w-full bg-slate-50 rounded-xl border border-slate-100 p-2">
-                        <canvas id="elevationChart"></canvas>
-                    </div>
-                </div>
-
                 <!-- PERFORMANCE & PREDICTION -->
                 {% if user_prediction and user_prediction.prediction_available %}
                 <div class="mb-8 bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 text-white shadow-xl">
@@ -257,6 +249,15 @@
                     </div>
                 </div>
                 {% endif %}
+
+
+                <!-- CHART -->
+                <div class="mb-8">
+                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Profil</h3>
+                    <div class="h-40 md:h-64 w-full bg-slate-50 rounded-xl border border-slate-100 p-2">
+                        <canvas id="elevationChart"></canvas>
+                    </div>
+                </div>
 
                 <!-- TAGS & DESC -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">

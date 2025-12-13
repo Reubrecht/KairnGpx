@@ -1560,40 +1560,6 @@ async def delete_user(
     return RedirectResponse(url="/superadmin#users", status_code=303)
 
 
-@app.post("/superadmin/users/create")
-async def create_user_admin(
-    username: str = Form(...),
-    email: str = Form(...),
-    password: str = Form(...),
-    role: str = Form(...),
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_super_admin)
-):
-    try:
-        # Check if username or email exists
-        existing = db.query(models.User).filter(
-            or_(models.User.username == username, models.User.email == email)
-        ).first()
-        if existing:
-            # flash("User already exists", "error")
-            return RedirectResponse(url="/superadmin#users", status_code=303)
-
-        hashed_password = get_password_hash(password)
-        new_user = models.User(
-            username=username,
-            email=email,
-            hashed_password=hashed_password,
-            role=models.Role(role) if role else models.Role.USER
-        )
-        db.add(new_user)
-        db.commit()
-    except Exception as e:
-        print(f"Error creating user: {e}")
-        db.rollback()
-    
-    return RedirectResponse(url="/superadmin#users", status_code=303)
-
-
 # --- SUPER ADMIN : MODERATION ---
 
 @app.post("/superadmin/track/{track_id}/verify")
