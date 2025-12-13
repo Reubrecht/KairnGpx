@@ -565,9 +565,8 @@
                 connect: true,
                 range: {
                     'min': 0,
-                    '25%': 20,
-                    '50%': 50,
-                    '75%': 100,
+                    '40%': 20,
+                    '70%': 50,  // 0-50km takes 70% of the slider
                     'max': 170
                 },
                 step: 1, // Will apply to the smallest interval, but noUiSlider handles variable steps between ranges automatically if not set broadly
@@ -582,10 +581,6 @@
                 format: {
                     to: v => Math.round(v),
                     from: v => Number(v)
-                },
-                pips: { // Optional: Add pips to visualize the scale
-                    mode: 'range',
-                    density: 3
                 }
             });
 
@@ -604,9 +599,8 @@
                 connect: true,
                 range: {
                     'min': 0,
-                    '25%': 1000,
-                    '50%': 2500,
-                    '75%': 5000,
+                    '40%': 1000,
+                    '70%': 2000, // 0-2000m takes 70% of the slider
                     'max': 10000
                 },
                 step: 10,
@@ -621,16 +615,6 @@
                 format: {
                     to: v => Math.round(v),
                     from: v => Number(v)
-                },
-                pips: {
-                    mode: 'range',
-                    density: 3,
-                    format: {
-                        to: function (value) {
-                            if (value >= 1000) return (value / 1000) + 'k';
-                            return value;
-                        }
-                    }
                 }
             });
 
