@@ -302,7 +302,9 @@
                                     <p class="text-xs text-slate-500">{{ route.distance_km }}km • {{
                                         route.elevation_gain }}m+</p>
                                 </div>
-                                {% if user and user.role.value in ['moderator', 'admin', 'super_admin'] %}
+                                {% if user and user.role and ((user.role.value in ['moderator', 'admin', 'super_admin'])
+                                if user.role.value is defined else (user.role in ['moderator', 'admin', 'super_admin']))
+                                %}
                                 <a href="/upload?race_route_id={{ route.id }}" onclick="event.stopPropagation()"
                                     class="flex items-center gap-1 px-2 py-1 bg-brand-50 text-brand-700 rounded text-xs font-bold hover:bg-brand-100 transition-colors"
                                     title="Uploader la trace pour ce parcours">

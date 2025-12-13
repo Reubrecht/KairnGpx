@@ -105,7 +105,8 @@
                         <span class="text-xs text-orange-600 font-bold bg-orange-100 px-2 py-0.5 rounded-full">En
                             attente</span>
 
-                        {% if user and user.role.value in ['moderator', 'admin', 'super_admin'] %}
+                        {% if user and user.role and ((user.role.value in ['moderator', 'admin', 'super_admin']) if
+                        user.role.value is defined else (user.role in ['moderator', 'admin', 'super_admin'])) %}
                         <a href="/upload?race_route_id={{ route.id }}"
                             class="text-xs font-bold text-brand-600 hover:text-brand-700 underline">
                             Ajouter la trace
