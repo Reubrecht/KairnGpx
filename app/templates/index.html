@@ -262,14 +262,18 @@
                             Beauté du Paysage (Min)
                         </label>
                         <div class="flex gap-1 bg-slate-50 p-2 rounded-xl border border-slate-200 justify-between">
+                            {% set current_min = request.query_params.get('scenery_min')|int if
+                            request.query_params.get('scenery_min') else 0 %}
+
                             {% for i in range(1, 6) %}
                             <label class="cursor-pointer group relative">
                                 <input type="radio" name="scenery_min" value="{{ i }}" class="peer sr-only" {% if
-                                    request.query_params.get('scenery_min')|int==i %}checked{% endif %}
-                                    onchange="this.form.submit()">
-                                <div class="w-8 h-8 flex items-center justify-center rounded-lg border border-transparent 
-                                            peer-checked:bg-yellow-50 peer-checked:border-yellow-400 peer-checked:text-yellow-500
-                                            hover:bg-white transition-all text-slate-300">
+                                    current_min==i %}checked{% endif %} onchange="this.form.submit()">
+
+                                {% set is_active = current_min > 0 and i >= current_min %}
+                                <div
+                                    class="w-8 h-8 flex items-center justify-center rounded-lg border transition-all
+                                            {{ 'bg-yellow-50 border-yellow-400 text-yellow-500' if is_active else 'border-transparent hover:bg-white text-slate-300' }}">
                                     <span class="font-bold text-sm">{{ i }}</span>
                                     <i class="ph-fill ph-star text-[10px] ml-0.5"></i>
                                 </div>
@@ -278,12 +282,11 @@
 
                             <!-- Clear Button -->
                             <label class="cursor-pointer group relative" title="Tout afficher">
-                                <input type="radio" name="scenery_min" value="" class="peer sr-only" {% if not
-                                    request.query_params.get('scenery_min') %}checked{% endif %}
-                                    onchange="this.form.submit()">
+                                <input type="radio" name="scenery_min" value="" class="peer sr-only" {% if
+                                    current_min==0 %}checked{% endif %} onchange="this.form.submit()">
                                 <div
                                     class="w-8 h-8 flex items-center justify-center rounded-lg border border-transparent 
-                                            text-slate-400 peer-checked:bg-slate-200 peer-checked:text-slate-600 hover:bg-slate-100">
+                                            text-slate-400 {{ 'bg-slate-200 text-slate-600' if current_min == 0 else 'hover:bg-slate-100' }}">
                                     <i class="ph ph-x"></i>
                                 </div>
                             </label>
