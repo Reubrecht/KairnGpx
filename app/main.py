@@ -458,6 +458,7 @@ async def explore(
                 if event.id not in grouped_events:
                     grouped_events[event.id] = {
                         "id": f"event_{event.id}",
+                        "slug": event.slug, # Added slug for linking
                         "title": f"{event.name} {edition.year}", # Assume one active edition for now? Or group by edition too? 
                                                                   # Usually filtering by upcoming vs past. For now simplest is Event Name.
                         "location_city": event.region,
