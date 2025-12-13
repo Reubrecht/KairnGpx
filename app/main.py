@@ -1413,168 +1413,281 @@ async def edition_manager(edition_id: int, request: Request, db: Session = Depen
         "edition": edition
     })
 
-@app.post("/superadmin/edition/{edition_id}/routes")
-async def create_route(
-    edition_id: int,
-    request: Request,
+# --- SUPER ADMIN : EVENTS ---
+
+@app.post("/superadmin/events")
+async def create_event(
     name: str = Form(...),
-    distance_category: str = Form(None),
+    slug: str = Form(...),
+    website: str = Form(None),
+    description: str = Form(None),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_super_admin)
 ):
+    try:
+        new_event = models.Event(
+            name=name, slug=slug, website=website, description=description
+        )
+        db.add(new_event)
+        db.commit()
+    except Exception as e:
+        print(f"Error creating event: {e}")
+        db.rollback()
+    return RedirectResponse(url="/superadmin#events", status_code=303)
+
+@app.post("/superadmin/events/{event_id}/update")
+async def update_event(
+    event_id: int,
+    name: str = Form(...),
+    slug: str = Form(...),
+    website: str = Form(None),
+    description: str = Form(None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_super_admin)
+):
+    event = db.query(models.Event).filter(models.Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
     
-    # Just create the route definition (track is pending/optional)
+    event.name = name
+    event.slug = slug
+    event.website = website
+    event.description = description
+    db.commit()
+    return RedirectResponse(url="/superadmin#events", status_code=303)
+
+@app.post("/superadmin/events/{event_id}/delete")
+async def delete_event(
+    event_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_super_admin)
+):
+    event = db.query(models.Event).filter(models.Event.id == event_id).first()
+    if event:
+        db.delete(event) # Cascade should handle children
+        db.commit()
+    return RedirectResponse(url="/superadmin#events", status_code=303)
+
+@app.post("/superadmin/event/{event_id}/add_edition")
+async def add_edition(
+    event_id: int,
+    year: int = Form(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_super_admin)
+):
+    existing = db.query(models.Edition).filter_by(event_id=event_id, year=year).first()
+    if not existing:
+        new_edition = models.Edition(event_id=event_id, year=year)
+        db.add(new_edition)
+        db.commit()
+    return RedirectResponse(url="/superadmin#events", status_code=303)
+
+@app.post("/superadmin/edition/{edition_id}/add_route")
+async def add_route(
+    edition_id: int,
+    name: str = Form(...),
+    distance_km: float = Form(0),
+    elevation_gain: int = Form(0),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_super_admin)
+):
     new_route = models.RaceRoute(
         edition_id=edition_id,
         name=name,
-        distance_category=distance_category
+        distance_km=distance_km,
+        elevation_gain=elevation_gain
     )
     db.add(new_route)
     db.commit()
-    return RedirectResponse(url=f"/superadmin/edition/{edition_id}", status_code=303)
+    return RedirectResponse(url="/superadmin#events", status_code=303)
 
-@app.post("/superadmin/route/{route_id}/link_track")
-async def link_track_to_route(
-    route_id: int,
-    request: Request,
-    track_slug: str = Form(...),
+
+# --- SUPER ADMIN : USERS ---
+
+@app.post("/superadmin/user/{user_id}/role")
+async def update_user_role(
+    user_id: int,
+    role: str = Form(...),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_super_admin)
 ):
-    
-    route = db.query(models.RaceRoute).filter(models.RaceRoute.id == route_id).first()
-    if not route:
-        raise HTTPException(status_code=404, detail="Route not found")
-        
-    # Find track by slug OR ID
-    track = None
-    if track_slug.isdigit():
-        track = db.query(models.Track).filter(models.Track.id == int(track_slug)).first()
-    if not track:
-        track = db.query(models.Track).filter(models.Track.slug == track_slug).first()
-        
-    if not track:
-        # For now, just error 404. Ideally show flash message.
-        raise HTTPException(status_code=404, detail="Track not found")
-        
-    route.official_track_id = track.id
-    track.is_official_route = True
-    track.verification_status = models.VerificationStatus.VERIFIED_HUMAN
-    
-    db.commit()
-    return RedirectResponse(url=f"/superadmin/edition/{route.edition_id}", status_code=303)
+    u = db.query(models.User).filter(models.User.id == user_id).first()
+    if u:
+        try:
+            # Check if attempting to modify another super admin
+            # (Optional security: prevent non-root superadmin from modifying others)
+            
+            # Map string to enum
+            role_enum = models.Role(role)
+            u.role = role_enum
+            db.commit()
+        except ValueError:
+            pass # Invalid role
+    return RedirectResponse(url="/superadmin#users", status_code=303) 
 
-@app.post("/superadmin/route/{route_id}/upload_track")
-async def upload_track_to_route(
-    route_id: int,
-    request: Request,
-    file: UploadFile = File(...),
+@app.post("/superadmin/user/{user_id}/update")
+async def update_user_details(
+    user_id: int,
+    username: str = Form(...),
+    email: str = Form(...),
+    full_name: str = Form(None),
+    utmb_index: int = Form(None),
     db: Session = Depends(get_db),
-    current_admin: models.User = Depends(get_current_super_admin)
+    current_user: models.User = Depends(get_current_super_admin)
 ):
-    
-    route = db.query(models.RaceRoute).filter(models.RaceRoute.id == route_id).first()
-    if not route:
-        raise HTTPException(status_code=404, detail="Route not found")
-        
-    # 1. Read & Hash
-    content = await file.read()
-    file_hash = calculate_file_hash(content)
-    
-    # 2. Check Duplicates (If exists, just link it?)
-    existing_track = db.query(models.Track).filter(models.Track.file_hash == file_hash).first()
-    if existing_track:
-        # Link existing
-        route.official_track_id = existing_track.id
-        existing_track.is_official_route = True
-        existing_track.verification_status = models.VerificationStatus.VERIFIED_HUMAN
+    u = db.query(models.User).filter(models.User.id == user_id).first()
+    if u:
+        u.username = username
+        u.email = email
+        u.full_name = full_name
+        u.utmb_index = utmb_index
         db.commit()
-        return RedirectResponse(url=f"/superadmin/edition/{route.edition_id}", status_code=303)
-        
-    # 3. Analyze
+    return RedirectResponse(url="/superadmin#users", status_code=303)
+
+@app.post("/superadmin/user/{user_id}/delete")
+async def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_super_admin)
+):
+    u = db.query(models.User).filter(models.User.id == user_id).first()
+    if u:
+        if u.id == current_user.id:
+             pass # Prevent suicide
+        else:
+            db.delete(u)
+            db.commit()
+    return RedirectResponse(url="/superadmin#users", status_code=303)
+
+
+@app.post("/superadmin/users/create")
+async def create_user_admin(
+    username: str = Form(...),
+    email: str = Form(...),
+    password: str = Form(...),
+    role: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_super_admin)
+):
     try:
-        analytics = GpxAnalytics(content)
-        metrics = analytics.calculate_metrics()
-        # Basic inference
-        start_lat, start_lon = metrics["start_coords"]
-        
-        # Save File
-        upload_dir = "app/uploads"
-        os.makedirs(upload_dir, exist_ok=True)
-        file_path = os.path.join(upload_dir, f"{file_hash}.gpx")
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write(content.decode('utf-8')) # Save original or simplified? Original for official is safer.
-            
-        # Create Track
-        new_track = models.Track(
-            title=f"{route.name} - Official",
-            description=f"Trace officielle pour {route.name}",
-            user_id=current_admin.username, # Admin owns it
-            uploader_name=current_admin.username,
-            file_path=file_path,
-            file_hash=file_hash,
-            visibility=models.Visibility.PUBLIC,
-            verification_status=models.VerificationStatus.VERIFIED_HUMAN, # Auto-verified
-            is_official_route=True,
-            
-            distance_km=metrics["distance_km"],
-            elevation_gain=metrics["elevation_gain"],
-            elevation_loss=metrics["elevation_loss"],
-            start_lat=start_lat,
-            start_lon=start_lon
-            # We can skip complex attributes for now
+        # Check if username or email exists
+        existing = db.query(models.User).filter(
+            or_(models.User.username == username, models.User.email == email)
+        ).first()
+        if existing:
+            # flash("User already exists", "error")
+            return RedirectResponse(url="/superadmin#users", status_code=303)
+
+        hashed_password = get_password_hash(password)
+        new_user = models.User(
+            username=username,
+            email=email,
+            hashed_password=hashed_password,
+            role=models.Role(role) if role else models.Role.USER
         )
-        db.add(new_track)
+        db.add(new_user)
         db.commit()
-        db.refresh(new_track)
-        
-        # Link
-        route.official_track_id = new_track.id
-        db.commit()
-        
     except Exception as e:
-        print(f"Admin Upload Error: {e}")
-        raise HTTPException(status_code=400, detail=f"Error processing GPX: {e}")
-        
-    return RedirectResponse(url=f"/superadmin/edition/{route.edition_id}", status_code=303)
+        print(f"Error creating user: {e}")
+        db.rollback()
+    
+    return RedirectResponse(url="/superadmin#users", status_code=303)
+
+
+# --- SUPER ADMIN : MODERATION ---
 
 @app.post("/superadmin/track/{track_id}/verify")
-async def verify_track_admin(
-    track_id: int,
-    request: Request,
-    db: Session = Depends(get_db),
-    current_admin: models.User = Depends(get_current_super_admin)
-):
+async def verify_track_admin(track_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_super_admin)):
     track = db.query(models.Track).filter(models.Track.id == track_id).first()
-    if not track:
-        raise HTTPException(status_code=404, detail="Track not found")
-        
-    track.status = models.StatusEnum.RACE
-    track.verification_status = models.VerificationStatus.VERIFIED_HUMAN
-    db.commit()
-    
-    # Redirect back to superadmin
+    if track:
+        track.verification_status = models.VerificationStatus.VERIFIED
+        track.visibility = models.Visibility.PUBLIC
+        db.commit()
     return RedirectResponse(url="/superadmin#moderation", status_code=303)
 
-from .services.race_importer import RaceImporter
+@app.post("/superadmin/track/{track_id}/reject")
+async def reject_track_admin(
+    track_id: int, 
+    reason: str = Form(None), # reason not stored yet effectively
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_super_admin)
+):
+    track = db.query(models.Track).filter(models.Track.id == track_id).first()
+    if track:
+        # Delete for now, or use REJECTED status if added
+        db.delete(track)
+        db.commit()
+    return RedirectResponse(url="/superadmin#moderation", status_code=303)
+
+@app.post("/superadmin/track/{track_id}/link_route")
+async def link_track_to_route(
+    track_id: int,
+    route_id: int = Form(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_super_admin)
+):
+    track = db.query(models.Track).filter(models.Track.id == track_id).first()
+    route = db.query(models.RaceRoute).filter(models.RaceRoute.id == route_id).first()
+    
+    if track and route:
+        track.is_official_route = True
+        track.verification_status = models.VerificationStatus.VERIFIED
+        track.visibility = models.Visibility.PUBLIC
+        track.title = f"{route.name} - Official" # Normalize title
+        
+        # Link logic
+        route.official_track_id = track.id
+        db.commit()
+        
+    return RedirectResponse(url="/superadmin#moderation", status_code=303)
 
 @app.post("/superadmin/import_races")
-async def import_races_endpoint(
-    request: Request,
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    current_admin: models.User = Depends(get_current_super_admin)
-):
+async def import_races_json(file: UploadFile, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_super_admin)):
+    # ... existing import logic ...
+    content = await file.read()
     try:
-        content = await file.read()
-        json_data = json.loads(content.decode('utf-8'))
-        
-        stats = RaceImporter.import_from_json(json_data, db)
-        
-        print(f"Import Stats: {stats}")
-        # Optionally pass stats to template via flash message or query param
-        return RedirectResponse(url="/superadmin", status_code=303)
-        
+        data = json.loads(content)
+        # Expect list of events
+        count = 0
+        for item in data:
+            # Upsert Event
+            event = db.query(models.Event).filter_by(slug=item['slug']).first()
+            if not event:
+                event = models.Event(
+                    name=item['name'],
+                    slug=item['slug'],
+                    website=item.get('website'),
+                    description=item.get('description')
+                )
+                db.add(event)
+                db.commit()
+                db.refresh(event)
+            
+            # Editions
+            for ed in item.get('editions', []):
+                edition = db.query(models.Edition).filter_by(event_id=event.id, year=ed['year']).first()
+                if not edition:
+                    edition = models.Edition(event_id=event.id, year=ed['year'])
+                    db.add(edition)
+                    db.commit()
+                    db.refresh(edition)
+                
+                # Routes
+                for r in ed.get('routes', []):
+                    route = db.query(models.RaceRoute).filter_by(edition_id=edition.id, name=r['name']).first()
+                    if not route:
+                        route = models.RaceRoute(
+                            edition_id=edition.id,
+                            name=r['name'],
+                            distance_km=r.get('distance_km', 0),
+                            elevation_gain=r.get('elevation_gain', 0),
+                            itra_points=r.get('itra_points')
+                        )
+                        db.add(route)
+                        count += 1
+        db.commit()
+        print(f"Imported {count} routes.")
     except Exception as e:
-        print(f"Import Error: {e}")
-        raise HTTPException(status_code=400, detail=f"Invalid JSON or Import Error: {e}")
+        print(f"JSON Import Error: {e}")
+            
+    return RedirectResponse(url="/superadmin#events", status_code=303)
