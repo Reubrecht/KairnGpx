@@ -1,8 +1,29 @@
 # 🏔️ Kairn - Trail Running Community Platform
 
+![License](https://img.shields.io/github/license/jreub/Kairn?style=for-the-badge&color=blue)
+![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-07405E?style=for-the-badge&logo=sqlite&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Leaflet](https://img.shields.io/badge/Leaflet-199900?style=for-the-badge&logo=leaflet&logoColor=white)
+
 **Kairn** is a modern web application designed for the trail running community to share, analyze, and discover GPX tracks. It goes beyond simple segments by offering semantic analysis of tracks (technicity, environment, terrain) and a community-driven catalog.
 
-![Kairn Dashboard](https://via.placeholder.com/800x400?text=Kairn+Dashboard+Preview)
+---
+
+## 📸 Screenshots
+
+### Dashboard & Activity Feed
+![Dashboard](docs/screenshots/dashboard.webp)
+
+### Explore & Discover Tracks
+![Explore Page](docs/screenshots/explore.webp)
+
+### Detailed Track Analysis
+![Track Detail](docs/screenshots/track_detail.webp)
+
+---
 
 ## ✨ Key Features
 
