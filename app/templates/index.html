@@ -77,6 +77,24 @@
         font-size: 10px;
         color: #94a3b8;
     }
+
+    /* Custom Scrollbar for Sidebar */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1;
+        border-radius: 20px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background-color: #94a3b8;
+    }
 </style>
 {% endblock %}
 
@@ -86,7 +104,8 @@
 
         <!-- Filters Sidebar -->
         <div class="w-full md:w-80 flex-shrink-0">
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sticky top-24">
+            <div
+                class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto custom-scrollbar">
                 <div class="flex items-center justify-between mb-8">
                     <h3 class="text-xl font-bold flex items-center gap-2">
                         <i class="ph ph-faders text-2xl text-slate-700"></i>
