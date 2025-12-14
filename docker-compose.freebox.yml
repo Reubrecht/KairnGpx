@@ -19,9 +19,8 @@ services:
       - db
 
   db:
-    # Switching to Debian-based image for better ARM64 compatibility on Freebox
-    image: postgis/postgis:16-3.4
-    platform: linux/arm64
+    # Switching to Alpine-based image for better multi-arch support
+    image: postgis/postgis:16-3.4-alpine
     container_name: kairn_db
     restart: unless-stopped
     volumes:
