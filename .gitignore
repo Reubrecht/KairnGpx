@@ -56,3 +56,4 @@ local.env
 
 # Deployment scripts (Secrets)
 scripts/remote_deploy.bat
+scripts/remote_reset_db.bat
