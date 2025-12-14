@@ -97,6 +97,7 @@ class User(Base):
     role = Column(Enum(Role), default=Role.USER)
     
     is_premium = Column(Boolean, default=False)
+    prediction_config = Column(JSON, nullable=True) # Custom prediction parameters for premium users
 
     # Profile
     full_name = Column(String, nullable=True)

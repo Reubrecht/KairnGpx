@@ -16,6 +16,13 @@ class RaceTimePredictor:
         
         cfg = PredictionConfigManager.get_config()
         
+        # Override with user config if premium
+        if user and user.is_premium and user.prediction_config:
+            # Shallow merge is enough for now, or deep merge if nested
+            # user.prediction_config is a dict from JSON column
+            cfg = {**cfg, **user.prediction_config}
+        
+        
         # 1. Determine User Performance Index
         indices = []
         if user.utmb_index: indices.append(user.utmb_index)
