@@ -102,6 +102,7 @@ class User(Base):
     # Profile
     full_name = Column(String, nullable=True)
     bio = Column(Text, nullable=True)
+    profile_picture = Column(String, nullable=True) # Path to uploaded file (relative to app/media or full URL)
     location = Column(String, nullable=True) # Text description: City/Country
     location_geom = Column(Geometry('POINT', srid=4326), nullable=True) # PostGIS Location
     

@@ -20,6 +20,10 @@ app = FastAPI(title="Kairn Trail Platform", version=app_version)
 os.makedirs("app/static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
+# Mount media files (User uploads)
+os.makedirs("app/media", exist_ok=True)
+app.mount("/media", StaticFiles(directory="app/media"), name="media")
+
 # Include Routers
 app.include_router(auth.router)
 app.include_router(pages.router)

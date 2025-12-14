@@ -88,9 +88,20 @@
                                 class="hidden absolute -top-1 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">0</span>
                         </a>
                         {% endif %}
-                        <a href="/profile"
-                            class="text-sm font-bold text-slate-700 mr-1 hover:text-brand-600 truncate max-w-[100px] md:max-w-none">{{
-                            user.username }}</a>
+                        <a href="/profile" class="flex items-center gap-2 group">
+                            {% if user.profile_picture %}
+                            <img src="{{ user.profile_picture }}" alt="{{ user.username }}"
+                                class="w-8 h-8 rounded-full object-cover border border-slate-200 group-hover:border-brand-500 transition-colors">
+                            {% else %}
+                            <div
+                                class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-xs border border-slate-200 group-hover:bg-brand-50 group-hover:text-brand-600 transition-colors">
+                                {{ user.username[:1].upper() }}
+                            </div>
+                            {% endif %}
+                            <span
+                                class="text-sm font-bold text-slate-700 hover:text-brand-600 truncate max-w-[100px] md:max-w-none hidden md:inline">{{
+                                user.username }}</span>
+                        </a>
                         <a href="/logout"
                             class="text-xs md:text-sm font-medium text-red-500 hover:text-red-600 transition-colors">
                             <span class="hidden md:inline">Déconnexion</span>

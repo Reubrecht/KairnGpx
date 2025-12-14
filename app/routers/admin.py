@@ -262,23 +262,37 @@ async def update_user_role(
             pass 
     return RedirectResponse(url="/superadmin#users", status_code=303) 
 
-@router.post("/superadmin/user/{user_id}/update")
-async def update_user_details(
+@router.post("/superadmin/user/{user_id}/edit_full")
+async def edit_user_full(
     user_id: int,
     username: str = Form(...),
     email: str = Form(...),
     full_name: str = Form(None),
+    role: str = Form(...),
     utmb_index: int = Form(None),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_super_admin)
 ):
     u = db.query(models.User).filter(models.User.id == user_id).first()
     if u:
-        u.username = username
-        u.email = email
-        u.full_name = full_name
-        u.utmb_index = utmb_index
-        db.commit()
+        try:
+            # Update Details
+            u.username = username
+            u.email = email
+            u.full_name = full_name
+            u.utmb_index = utmb_index
+            
+            # Update Role
+            role_enum = models.Role(role)
+            u.role = role_enum
+            if role_enum in [models.Role.ADMIN, models.Role.SUPER_ADMIN]:
+                u.is_admin = True
+            else:
+                u.is_admin = False
+                
+            db.commit()
+        except ValueError:
+            pass # Invalid role
     return RedirectResponse(url="/superadmin#users", status_code=303)
 
 @router.post("/superadmin/user/{user_id}/toggle_premium")

@@ -1,7 +1,10 @@
 import os
 from typing import Optional
+from typing import Optional
 import json
-from fastapi import APIRouter, Depends, Request, Form, status, HTTPException
+import shutil
+from pathlib import Path
+from fastapi import APIRouter, Depends, Request, Form, status, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
@@ -23,7 +26,6 @@ async def profile_page(request: Request, db: Session = Depends(get_db)):
     })
 
 @router.post("/profile")
-async def update_profile(
     request: Request,
     full_name: Optional[str] = Form(None),
     bio: Optional[str] = Form(None),
@@ -34,9 +36,36 @@ async def update_profile(
     itra_score: Optional[int] = Form(None),
     utmb_index: Optional[int] = Form(None),
     betrail_score: Optional[float] = Form(None),
+    profile_picture: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db)
 ):
     user = await get_current_user(request, db)
+    
+    # Handle Profile Picture
+    if profile_picture and profile_picture.filename:
+        try:
+            # Create profiles dir
+            upload_dir = Path("app/media/profiles")
+            upload_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Simple naming strategy: user_id.jpg (or original extension)
+            # To avoid caching issues, we might append timestamp but overwrite is simpler for storage
+            ext = profile_picture.filename.split('.')[-1].lower()
+            if ext not in ['jpg', 'jpeg', 'png', 'webp']:
+                # validation could go here
+                pass
+                
+            filename = f"{user.id}.{ext}"
+            file_path = upload_dir / filename
+            
+            with open(file_path, "wb") as buffer:
+                shutil.copyfileobj(profile_picture.file, buffer)
+                
+            # Update DB with web path
+            user.profile_picture = f"/media/profiles/{filename}"
+        except Exception as e:
+            print(f"Error uploading profile picture: {e}")
+            # Continue updating other fields
     
     user.full_name = full_name
     user.bio = bio

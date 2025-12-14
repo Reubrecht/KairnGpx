@@ -298,10 +298,15 @@
                         <tr class="hover:bg-slate-50 transition-colors group">
                             <td class="px-6 py-4">
                                 <div class="flex items-center gap-3">
+                                    {% if u.profile_picture %}
+                                    <img src="{{ u.profile_picture }}"
+                                        class="w-8 h-8 rounded-full object-cover border border-slate-200">
+                                    {% else %}
                                     <div
                                         class="w-8 h-8 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-bold text-xs">
                                         {{ u.username[:2].upper() }}
                                     </div>
+                                    {% endif %}
                                     <div>
                                         <div class="font-bold text-slate-900">{{ u.username }}</div>
                                         <div class="text-xs text-slate-500">{{ u.email }}</div>
@@ -328,25 +333,23 @@
                                 {% endif %}
                             </td>
                             <td class="px-6 py-4">
-                                <form action="/superadmin/user/{{ u.id }}/role" method="POST" class="inline-block">
-                                    <select name="role" onchange="this.form.submit()"
-                                        class="text-xs font-bold bg-transparent border-none focus:ring-0 cursor-pointer 
-                                        {% if u.role.value == 'super_admin' %}text-purple-600{% elif u.role.value == 'admin' %}text-blue-600{% elif u.role.value == 'moderator' %}text-yellow-600{% else %}text-slate-600{% endif %}">
-                                        <option value="user" {% if u.role.value=='user' %}selected{% endif %}>USER
-                                        </option>
-                                        <option value="moderator" {% if u.role.value=='moderator' %}selected{% endif %}>
-                                            MODERATOR</option>
-                                        <option value="admin" {% if u.role.value=='admin' %}selected{% endif %}>ADMIN
-                                        </option>
-                                        <option value="super_admin" {% if u.role.value=='super_admin' %}selected{% endif
-                                            %}>SUPER ADMIN</option>
-                                    </select>
-                                </form>
+                                <span
+                                    class="text-xs font-bold uppercase 
+                                    {% if u.role.value == 'super_admin' %}text-purple-600{% elif u.role.value == 'admin' %}text-blue-600{% elif u.role.value == 'moderator' %}text-yellow-600{% else %}text-slate-500{% endif %}">
+                                    {{ u.role.value }}
+                                </span>
                             </td>
-                            <td class="px-6 py-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                            <td
+                                class="px-6 py-4 text-right opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-1">
+                                <button
+                                    onclick="openUserEditModal('{{ u.id }}', '{{ u.username }}', '{{ u.email }}', '{{ u.utmb_index or '' }}', '{{ u.role.value }}', '{{ u.is_premium|lower }}', '{{ u.full_name or '' }}')"
+                                    class="text-blue-400 hover:text-blue-600 p-1 rounded hover:bg-blue-50 transition-colors"
+                                    title="Éditer">
+                                    <i class="ph-bold ph-pencil-simple"></i>
+                                </button>
                                 <form action="/superadmin/user/{{ u.id }}/toggle_premium" method="POST"
-                                    class="inline-block mr-1">
-                                    <button title="Activer/Désactiver Premium"
+                                    class="inline-block">
+                                    <button title="Toggle Premium"
                                         class="text-amber-400 hover:text-amber-600 p-1 rounded hover:bg-amber-50 transition-colors">
                                         <i
                                             class="ph-bold {% if u.is_premium %}ph-crown-slash{% else %}ph-crown{% endif %}"></i>
@@ -367,6 +370,7 @@
                 </table>
             </div>
         </div>
+
 
         <!-- MODERATION -->
         <div x-show="currentTab === 'moderation'" class="animate-fade-in-up">
@@ -891,5 +895,93 @@
         <button class="cursor-default w-full h-full">close</button>
     </form>
 </dialog>
+
+</dialog>
+
+<!-- EDIT USER MODAL -->
+<dialog id="modal-edit-user" class="modal">
+    <div
+        class="modal-box bg-white rounded-2xl p-6 max-w-lg fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 shadow-2xl border border-slate-100 z-50 w-full">
+        <h3 class="font-bold text-lg mb-4 text-slate-900 flex items-center gap-2">
+            <i class="ph-bold ph-pencil-simple text-brand-600"></i> Éditer Utilisateur
+        </h3>
+        <form id="edit-user-form" action="" method="POST" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Username</label>
+                <input type="text" name="username" required
+                    class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Email</label>
+                <input type="email" name="email" required
+                    class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nom Complet</label>
+                <input type="text" name="full_name"
+                    class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-sm">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Rôle</label>
+                    <select name="role" class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-sm">
+                        <option value="user">User</option>
+                        <option value="moderator">Moderator</option>
+                        <option value="admin">Admin</option>
+                        <option value="super_admin">Super Admin</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Index UTMB</label>
+                    <input type="number" name="utmb_index"
+                        class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-sm">
+                </div>
+            </div>
+
+            <div class="modal-action flex justify-end gap-2 pt-4">
+                <button type="button"
+                    class="px-4 py-2 font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition-colors"
+                    onclick="document.getElementById('modal-edit-user').close()">Annuler</button>
+                <button type="submit"
+                    class="px-4 py-2 font-bold bg-brand-600 hover:bg-brand-700 text-white rounded-xl shadow-lg shadow-brand-500/30 transition-colors">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
+        onclick="document.getElementById('modal-edit-user').close()">
+        <button class="cursor-default w-full h-full">close</button>
+    </form>
+</dialog>
+
+<script>
+    function openUserEditModal(id, username, email, utmb, role, isPremium, fullName) {
+        const modal = document.getElementById('modal-edit-user');
+        const form = document.getElementById('edit-user-form');
+
+        // Update Action URL
+        form.action = `/superadmin/user/${id}/update_full`; // New endpoint we need to add or reuse update
+        // Since we modified admin.py update_user_details to take these args, we might need to adjust action path
+        // Wait, looking at admin.py, existing endpoint is /superadmin/user/{user_id}/update but it doesn't take 'role'
+        // We should probably update the endpoint in admin.py to handle role update in same call, or just update details.
+        // Actually for now let's use the existing update endpoint and handle role separately if we want, OR update the endpoint.
+        // Let's stick to update_user_details (username, email, full_name, utmb) 
+        // AND we should probably add role to it or separate calls.
+
+        // Simpler: Just map to existing endpoint for now, role is handled by select in table (which I removed in favor of modal? No I should kept it or add it to modal).
+        // I replaced the table select with a text span. So I NEED to handle role in this new form.
+
+        // I will add a new endpoint /superadmin/user/{id}/edit_full in next step to handle everything cleanly.
+        form.action = `/superadmin/user/${id}/edit_full`;
+
+        form.querySelector('input[name="username"]').value = username;
+        form.querySelector('input[name="email"]').value = email;
+        form.querySelector('input[name="full_name"]').value = fullName;
+        form.querySelector('input[name="utmb_index"]').value = utmb;
+        form.querySelector('select[name="role"]').value = role;
+
+        modal.showModal();
+    }
+</script>
 
 {% endblock %}
