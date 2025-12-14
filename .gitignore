@@ -53,3 +53,6 @@ Thumbs.db
 
 # Local env
 local.env
+
+# Deployment scripts (Secrets)
+scripts/remote_deploy.bat

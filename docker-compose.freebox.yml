@@ -19,7 +19,8 @@ services:
       - db
 
   db:
-    image: postgis/postgis:15-3.3-alpine
+    # Switching to Debian-based image for better ARM64 compatibility on Freebox
+    image: postgis/postgis:16-3.4
     container_name: kairn_db
     restart: unless-stopped
     volumes:
