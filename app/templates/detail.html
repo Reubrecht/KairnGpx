@@ -168,6 +168,23 @@
                     </div>
                 </div>
 
+                <!-- CHART -->
+                <div class="mb-8 relative group">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Profil</h3>
+                        <!-- Stats Header (Fixed Line) -->
+                        <div id="chart-stats"
+                            class="flex items-center gap-4 text-xs font-bold font-mono text-slate-700 opacity-0 transition-opacity">
+                            <span><span id="stat-dist">--</span> km</span>
+                            <span class="text-slate-300">|</span>
+                            <span><span id="stat-elev">--</span> m</span>
+                        </div>
+                    </div>
+                    <div class="h-40 md:h-64 w-full bg-slate-50 rounded-xl border border-slate-100 p-2 relative">
+                        <canvas id="elevationChart"></canvas>
+                    </div>
+                </div>
+
                 <!-- PERFORMANCE & PREDICTION -->
                 {% if user_prediction and user_prediction.prediction_available %}
                 <div class="mb-8 bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 text-white shadow-xl">
@@ -192,50 +209,52 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-                        <!-- Endurance -->
+                        <!-- Endurance (Left) -->
                         <div
-                            class="bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-colors">
-                            <div class="flex justify-between items-start mb-2">
-                                <div class="p-2 bg-green-500/20 rounded-lg text-green-400">
-                                    <i class="ph-fill ph-plant text-xl"></i>
-                                </div>
-                                <span class="text-xs font-bold text-slate-400">ENDURANCE</span>
-                            </div>
-                            <div class="text-2xl font-bold mb-1">{{ user_prediction.times.endurance }}</div>
-                            <p class="text-[10px] text-slate-400 leading-tight">Allure "Cool", pour l'entraînement long
-                                ou la gestion prudente.</p>
-                        </div>
-
-                        <!-- Race (Highlight) -->
-                        <div
-                            class="bg-gradient-to-br from-brand-600/20 to-brand-900/40 rounded-xl p-4 border border-brand-500/30 relative overflow-hidden group">
-                            <div class="absolute inset-0 bg-brand-500/5 group-hover:bg-brand-500/10 transition-colors">
-                            </div>
+                            class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 relative overflow-hidden group hover:bg-slate-800 transition-colors">
                             <div class="relative z-10">
-                                <div class="flex justify-between items-start mb-2">
-                                    <div class="p-2 bg-brand-500 rounded-lg text-white shadow-lg shadow-brand-500/30">
-                                        <i class="ph-fill ph-flag-checkered text-xl"></i>
-                                    </div>
-                                    <span class="text-xs font-bold text-brand-200">OBJECTIF COURSE</span>
+                                <div class="text-xs text-slate-400 font-bold uppercase mb-2 tracking-widest">Endurance
                                 </div>
-                                <div class="text-3xl font-black mb-1 text-white">{{ user_prediction.times.race }}</div>
-                                <p class="text-[10px] text-brand-100/70 leading-tight">Allure de course optimale pour
-                                    votre index actuel.</p>
+                                <div class="text-3xl md:text-3xl font-black font-mono tracking-tight text-white mb-2">
+                                    {{ user_prediction.times.endurance }}
+                                </div>
+                                <div
+                                    class="text-[10px] text-slate-500 font-medium border-t border-slate-700 pt-2 flex items-center gap-1">
+                                    <i class="ph-fill ph-plant text-emerald-500"></i> Allure fondamentale
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Max / Push -->
+                        <!-- Course - Compétition (Center) -->
                         <div
-                            class="bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-colors">
-                            <div class="flex justify-between items-start mb-2">
-                                <div class="p-2 bg-orange-500/20 rounded-lg text-orange-400">
-                                    <i class="ph-fill ph-rocket-launch text-xl"></i>
+                            class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 relative overflow-hidden group hover:bg-slate-800 transition-colors">
+                            <div class="relative z-10">
+                                <div class="text-xs text-brand-400 font-bold uppercase mb-2 tracking-widest">Course -
+                                    Compétition</div>
+                                <div class="text-4xl md:text-4xl font-black font-mono tracking-tight text-white mb-2">
+                                    {{ user_prediction.times.race }}
                                 </div>
-                                <span class="text-xs font-bold text-slate-400">INTENSIF</span>
+                                <div
+                                    class="text-[10px] text-slate-500 font-medium border-t border-slate-700 pt-2 flex items-center gap-1">
+                                    <i class="ph-fill ph-flag-checkered text-brand-500"></i> Objectif
+                                </div>
                             </div>
-                            <div class="text-2xl font-bold mb-1">{{ user_prediction.times.push }}</div>
-                            <p class="text-[10px] text-slate-400 leading-tight">Allure "Challenge" ou segments courts.
-                                Risque d'explosion sur long.</p>
+                        </div>
+
+                        <!-- Tempo Entraînement Intensif (Right) -->
+                        <div
+                            class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 relative overflow-hidden group hover:bg-slate-800 transition-colors">
+                            <div class="relative z-10">
+                                <div class="text-xs text-orange-400 font-bold uppercase mb-2 tracking-widest">Tempo
+                                    Entraînement Intensif</div>
+                                <div class="text-3xl md:text-3xl font-black font-mono tracking-tight text-white mb-2">
+                                    {{ user_prediction.times.push }}
+                                </div>
+                                <div
+                                    class="text-[10px] text-slate-500 font-medium border-t border-slate-700 pt-2 flex items-center gap-1">
+                                    <i class="ph-fill ph-fire text-orange-500"></i> Seuil
+                                </div>
+                            </div>
                         </div>
 
                     </div>
@@ -251,13 +270,7 @@
                 {% endif %}
 
 
-                <!-- CHART -->
-                <div class="mb-8">
-                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Profil</h3>
-                    <div class="h-40 md:h-64 w-full bg-slate-50 rounded-xl border border-slate-100 p-2">
-                        <canvas id="elevationChart"></canvas>
-                    </div>
-                </div>
+
 
                 <!-- TAGS & DESC -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -329,8 +342,9 @@
                                 {% for k, v in track.surface_composition.items() %}
                                 <div class="flex items-center text-xs">
                                     <div class="w-12 font-bold text-slate-700 text-right mr-2">{{ v }}%</div>
-                                    <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                                        <div class="h-full bg-slate-400" style="width: {{ v }}%;"></div>
+                                    <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden"
+                                        style="--w: {{ v }}%;">
+                                        <div class="h-full bg-slate-400" style="width: var(--w);"></div>
                                     </div>
                                     <div class="ml-2 text-slate-500 capitalize">{{ k }}</div>
                                 </div>
@@ -385,134 +399,145 @@
 <script src="{{ url_for('static', path='/js/chart.min.js') }}"></script>
 <script src="{{ url_for('static', path='/js/maplibre-gl.js') }}"></script>
 <!-- Previously used scripts removed: leaflet, Control.Geocoder, gpx.min.js -->
+<script id="track-data" type="application/json">
+    {
+        "geojson": {{ track_geojson | safe }},
+        "startLon": {{ track.start_lon }},
+        "startLat": {{ track.start_lat }}
+    }
+</script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const trackGeoJSON = {{ track_geojson | safe
-    }};
-    if (!trackGeoJSON) {
-        console.error("No GeoJSON data available");
-        return;
-    }
+        const trackDataElement = document.getElementById('track-data');
+        if (!trackDataElement) return;
 
-    // Initialize MapLibre
-    const map = new maplibregl.Map({
-        container: 'map',
-        style: '/static/style.json', // OpenTrailMap style
-        center: [{{ track.start_lon }}, {{ track.start_lat }}],
-    zoom: 13,
-        attributionControl: false
-        });
+        const trackData = JSON.parse(trackDataElement.textContent);
+        const trackGeoJSON = trackData.geojson;
 
-    // Add controls
-    map.addControl(new maplibregl.NavigationControl(), 'top-right');
-    map.addControl(new maplibregl.AttributionControl({
-        customAttribution: 'OpenTrailMap | OpenStreetMap contributors'
-    }), 'bottom-right');
-
-    map.on('load', function () {
-        // 1. Add Track Source
-        // breakdown to segments for elevation gradient
-        const coords = trackGeoJSON.geometry.coordinates;
-        const segments = [];
-        let minElev = Infinity, maxElev = -Infinity;
-
-        // First pass: Find min/max elevation
-        coords.forEach(c => {
-            const ele = c[2];
-            if (ele !== null) {
-                if (ele < minElev) minElev = ele;
-                if (ele > maxElev) maxElev = ele;
-            }
-        });
-        const elevRange = maxElev - minElev;
-
-        // Second pass: Create segments
-        for (let i = 0; i < coords.length - 1; i++) {
-            const p1 = coords[i];
-            const p2 = coords[i + 1];
-            const avgElev = ((p1[2] || 0) + (p2[2] || 0)) / 2;
-
-            // Calculate Color (Green to Red or specific gradient)
-            // Kairn Gradient: Green(Low) -> Red(High) or similar? 
-            // Previous was: hue = (1 - ratio) * 120 (Green=120 low, Red=0 high)
-            // Actually usually Low=Green, High=Red is common for effort, but for altitude:
-            // Let's stick to the previous logic: Green (120) -> Red (0) based on relative altitude? 
-            // Or maybe Brand Color (#10b981) to Darker? 
-            // Let's use the HSL logic from before: 
-            const ratio = elevRange === 0 ? 0 : (avgElev - minElev) / elevRange;
-            const hue = (1 - ratio) * 120;
-            const color = `hsl(${hue}, 90%, 45%)`;
-
-            segments.push({
-                type: "Feature",
-                geometry: {
-                    type: "LineString",
-                    coordinates: [p1, p2]
-                },
-                properties: {
-                    color: color
-                }
-            });
+        if (!trackGeoJSON) {
+            console.error("No GeoJSON data available");
+            return;
         }
 
-        const segmentGeoJSON = {
-            type: "FeatureCollection",
-            features: segments
-        };
-
-        map.addSource('track-segments', {
-            type: 'geojson',
-            data: segmentGeoJSON
+        // Initialize MapLibre
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: '/static/style.json', // OpenTrailMap style
+            center: [trackData.startLon, trackData.startLat],
+            zoom: 13,
+            attributionControl: false
         });
 
-        map.addLayer({
-            id: 'track-line',
-            type: 'line',
-            source: 'track-segments',
-            layout: {
-                'line-join': 'round',
-                'line-cap': 'round'
-            },
-            paint: {
-                'line-color': ['get', 'color'],
-                'line-width': 5,
-                'line-opacity': 0.9
+        // Add controls
+        map.addControl(new maplibregl.NavigationControl(), 'top-right');
+        map.addControl(new maplibregl.AttributionControl({
+            customAttribution: 'OpenTrailMap | OpenStreetMap contributors'
+        }), 'bottom-right');
+
+        map.on('load', function () {
+            // 1. Add Track Source
+            // breakdown to segments for elevation gradient
+            const coords = trackGeoJSON.geometry.coordinates;
+            const segments = [];
+            let minElev = Infinity, maxElev = -Infinity;
+
+            // First pass: Find min/max elevation
+            coords.forEach(c => {
+                const ele = c[2];
+                if (ele !== null) {
+                    if (ele < minElev) minElev = ele;
+                    if (ele > maxElev) maxElev = ele;
+                }
+            });
+            const elevRange = maxElev - minElev;
+
+            // Second pass: Create segments
+            for (let i = 0; i < coords.length - 1; i++) {
+                const p1 = coords[i];
+                const p2 = coords[i + 1];
+                const avgElev = ((p1[2] || 0) + (p2[2] || 0)) / 2;
+
+                // Calculate Color (Green to Red or specific gradient)
+                // Kairn Gradient: Green(Low) -> Red(High) or similar? 
+                // Previous was: hue = (1 - ratio) * 120 (Green=120 low, Red=0 high)
+                // Actually usually Low=Green, High=Red is common for effort, but for altitude:
+                // Let's stick to the previous logic: Green (120) -> Red (0) based on relative altitude? 
+                // Or maybe Brand Color (#10b981) to Darker? 
+                // Let's use the HSL logic from before: 
+                const ratio = elevRange === 0 ? 0 : (avgElev - minElev) / elevRange;
+                const hue = (1 - ratio) * 120;
+                const color = `hsl(${hue}, 90%, 45%)`;
+
+                segments.push({
+                    type: "Feature",
+                    geometry: {
+                        type: "LineString",
+                        coordinates: [p1, p2]
+                    },
+                    properties: {
+                        color: color
+                    }
+                });
             }
-        });
 
-        // Fit Bounds
-        const bounds = new maplibregl.LngLatBounds();
-        coords.forEach(coord => bounds.extend(coord));
-        map.fitBounds(bounds, {
-            padding: { top: 50, bottom: 250, left: 50, right: 50 }
-        });
+            const segmentGeoJSON = {
+                type: "FeatureCollection",
+                features: segments
+            };
 
-        // 2. Setup Chart.js
-        initElevationChart(coords);
+            map.addSource('track-segments', {
+                type: 'geojson',
+                data: segmentGeoJSON
+            });
 
-        // Sync Chart Hover -> Map Marker
-        // Init Sync Marker
-        const markerEl = document.createElement('div');
-        markerEl.className = 'w-4 h-4 bg-white rounded-full border-4 border-emerald-500 shadow-lg';
-        const syncMarker = new maplibregl.Marker({ element: markerEl })
-            .setLngLat(coords[0])
-            .addTo(map);
+            map.addLayer({
+                id: 'track-line',
+                type: 'line',
+                source: 'track-segments',
+                layout: {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                paint: {
+                    'line-color': ['get', 'color'],
+                    'line-width': 5,
+                    'line-opacity': 0.9
+                }
+            });
 
-        // Hide initially
-        markerEl.style.opacity = '0';
+            // Fit Bounds
+            const bounds = new maplibregl.LngLatBounds();
+            coords.forEach(coord => bounds.extend(coord));
+            map.fitBounds(bounds, {
+                padding: { top: 50, bottom: 250, left: 50, right: 50 }
+            });
 
-        window.updateMapMarker = (index) => {
-            if (coords[index]) {
-                syncMarker.setLngLat(coords[index]);
-                markerEl.style.opacity = '1';
-            }
-        };
+            // 2. Setup Chart.js
+            initElevationChart(coords);
 
-        window.hideMapMarker = () => {
+            // Sync Chart Hover -> Map Marker
+            // Init Sync Marker
+            const markerEl = document.createElement('div');
+            markerEl.className = 'w-4 h-4 bg-white rounded-full border-4 border-emerald-500 shadow-lg';
+            const syncMarker = new maplibregl.Marker({ element: markerEl })
+                .setLngLat(coords[0])
+                .addTo(map);
+
+            // Hide initially
             markerEl.style.opacity = '0';
-        };
-    });
+
+            window.updateMapMarker = (index) => {
+                if (coords[index]) {
+                    syncMarker.setLngLat(coords[index]);
+                    markerEl.style.opacity = '1';
+                }
+            };
+
+            window.hideMapMarker = () => {
+                markerEl.style.opacity = '0';
+            };
+        });
     });
 
     function initElevationChart(coords) {
@@ -541,13 +566,37 @@
             if (i > 0) {
                 totalDist += getDistanceFromLatLonInKm(coords[i - 1][1], coords[i - 1][0], coords[i][1], coords[i][0]);
             }
-            // Only add point every X meters to avoid chart overload? Chart.js handles it okay usually, but optimization is good.
-            // For now, take all points.
-            labels.push(totalDist.toFixed(1) + 'km');
-            data.push(coords[i][2]); // Altitude
+            labels.push(totalDist.toFixed(1));
+            data.push(coords[i][2]);
         }
 
         const ctx = document.getElementById('elevationChart').getContext('2d');
+
+        // Custom Plugin for Vertical Cursor
+        const verticalLinePlugin = {
+            id: 'verticalLine',
+            afterDraw: (chart) => {
+                // Check if there is an active tooltip/hover
+                if (chart.getActiveElements().length) {
+                    const activePoint = chart.getActiveElements()[0];
+                    const ctx = chart.ctx;
+                    const x = activePoint.element.x;
+                    const topY = chart.scales.y.top;
+                    const bottomY = chart.scales.y.bottom;
+
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(x, topY);
+                    ctx.lineTo(x, bottomY);
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeStyle = '#475569'; // slate-600
+                    ctx.setLineDash([4, 2]); // Dashed line
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            }
+        };
+
         new Chart(ctx, {
             type: 'line',
             data: {
@@ -566,16 +615,19 @@
                         return gradient;
                     },
                     fill: true,
-                    tension: 0.3,
+                    tension: 0.2, // Slightly sharper than 0.3
                     pointRadius: 0,
-                    pointHoverRadius: 6,
+                    pointHoverRadius: 0, // Hide point on hover since we have the line
                     borderWidth: 2
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false } // Disable default tooltip
+                },
                 interaction: {
                     mode: 'index',
                     intersect: false,
@@ -584,26 +636,48 @@
                     x: {
                         grid: { display: false },
                         ticks: {
-                            maxTicksLimit: 10,
+                            maxTicksLimit: 6, // Reduced ticks
                             callback: function (val, index) {
-                                return index % Math.ceil(labels.length / 10) === 0 ? this.getLabelForValue(val) : '';
-                            }
+                                return this.getLabelForValue(val) + 'km';
+                            },
+                            font: { size: 10 }
                         }
                     },
                     y: {
                         grid: { color: '#f1f5f9' },
-                        ticks: { callback: (value) => value + 'm' }
+                        position: 'right', // Move Y axis to right to avoid overlap with left headers if any
+                        ticks: {
+                            maxTicksLimit: 5, // Reduced ticks
+                            callback: (value) => value,
+                            font: { size: 10 }
+                        }
                     }
                 },
                 onHover: (event, elements) => {
+                    const statsDiv = document.getElementById('chart-stats');
+
                     if (elements && elements.length) {
                         const index = elements[0].index;
+
+                        // Sync Map Marker
                         if (window.updateMapMarker) window.updateMapMarker(index);
+
+                        // Update Stats Header
+                        const dist = labels[index];
+                        const elev = data[index];
+
+                        document.getElementById('stat-dist').innerText = dist;
+                        document.getElementById('stat-elev').innerText = Math.round(elev);
+
+                        statsDiv.classList.remove('opacity-0');
                     } else {
+                        // Mouse out
                         if (window.hideMapMarker) window.hideMapMarker();
+                        statsDiv.classList.add('opacity-0');
                     }
                 }
-            }
+            },
+            plugins: [verticalLinePlugin]
         });
     }
 
