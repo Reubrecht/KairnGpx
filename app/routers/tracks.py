@@ -117,7 +117,7 @@ async def explore(
 
         # 6. Author
         if author:
-            query = query.filter(models.Track.user_id.ilike(f"%{author}%"))
+            query = query.join(models.User).filter(models.User.username.ilike(f"%{author}%"))
         
         # 7. Tags (JSON array contains)
         if tag:
@@ -126,7 +126,7 @@ async def explore(
             
         # Visibility
         if user:
-             query = query.filter(or_(models.Track.visibility == models.Visibility.PUBLIC, models.Track.user_id == user.username))
+             query = query.filter(or_(models.Track.visibility == models.Visibility.PUBLIC, models.Track.user_id == user.id))
         else:
              query = query.filter(models.Track.visibility == models.Visibility.PUBLIC)
 
@@ -322,11 +322,11 @@ async def advanced_search(
 
     # 6. Author
     if author:
-        query = query.filter(models.Track.user_id.ilike(f"%{author}%"))
+        query = query.join(models.User).filter(models.User.username.ilike(f"%{author}%"))
 
     # Visibility
     if user:
-         query = query.filter(or_(models.Track.visibility == models.Visibility.PUBLIC, models.Track.user_id == user.username))
+         query = query.filter(or_(models.Track.visibility == models.Visibility.PUBLIC, models.Track.user_id == user.id))
     else:
          query = query.filter(models.Track.visibility == models.Visibility.PUBLIC)
 
@@ -522,7 +522,7 @@ async def upload_track(
         title=title,
         slug=slug,
         description=description,
-        user_id=current_user.username,
+        user_id=current_user.id,
         activity_type=models.ActivityType(activity_type),
         is_official_route=is_official,
         distance_km=metrics["distance_km"],
@@ -698,7 +698,7 @@ async def edit_track_form(track_id: int, request: Request, db: Session = Depends
     if not track:
         raise HTTPException(status_code=404, detail="Track not found")
         
-    if track.user_id != user.username and not user.is_admin:
+    if track.user_id != user.id and not user.is_admin:
         raise HTTPException(status_code=403, detail="Not authorized")
         
     races_raw = db.query(models.RaceEvent).all()
@@ -745,7 +745,7 @@ async def edit_track_action(
     if not track:
         raise HTTPException(status_code=404, detail="Track not found")
         
-    if track.user_id != user.username and not user.is_admin:
+    if track.user_id != user.id and not user.is_admin:
         raise HTTPException(status_code=403, detail="Not authorized")
 
     track.title = title
@@ -784,7 +784,7 @@ async def delete_track_action(track_id: int, request: Request, db: Session = Dep
     if not track:
         raise HTTPException(status_code=404, detail="Track not found")
         
-    if track.user_id != user.username and not user.is_admin:
+    if track.user_id != user.id and not user.is_admin:
         raise HTTPException(status_code=403, detail="Not authorized")
         
     try:

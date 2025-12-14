@@ -208,7 +208,7 @@ async def link_route_track(
             title=f"{route.edition.event.name} - {route.name}", 
             description=f"Trace officielle pour {route.name}",
             uploader_name=current_user.username,
-            user_id=current_user.username,
+            user_id=current_user.id,
             file_hash=file_hash,
             file_path=file_path,
             distance_km=metrics["distance_km"],
@@ -304,7 +304,7 @@ async def delete_user(
         if u.id == current_user.id:
              pass 
         else:
-            db.query(models.Track).filter(models.Track.user_id == u.username).delete()
+            db.query(models.Track).filter(models.Track.user_id == u.id).delete()
             db.delete(u)
             db.commit()
     return RedirectResponse(url="/superadmin#users", status_code=303)

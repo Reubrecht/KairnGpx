@@ -12,7 +12,7 @@ router = APIRouter()
 @router.get("/profile", response_class=HTMLResponse)
 async def profile_page(request: Request, db: Session = Depends(get_db)):
     user = await get_current_user(request, db)
-    tracks = db.query(models.Track).filter(models.Track.user_id == user.username).order_by(models.Track.created_at.desc()).all()
+    tracks = db.query(models.Track).filter(models.Track.user_id == user.id).order_by(models.Track.created_at.desc()).all()
     
     return templates.TemplateResponse("profile.html", {
         "request": request,
@@ -80,7 +80,7 @@ async def request_event(
     user = await get_current_user(request, db)
     
     new_req = models.EventRequest(
-        user_id=user.username,
+        user_id=user.id,
         event_name=event_name,
         year=year,
         website=website,
