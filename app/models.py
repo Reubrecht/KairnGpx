@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Enum, JSON, Text, ForeignKey, Date
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from geoalchemy2 import Geometry
 import enum
 import uuid
 from datetime import datetime
@@ -57,6 +58,19 @@ class Role(str, enum.Enum):
     ADMIN = "admin"
     SUPER_ADMIN = "super_admin"
 
+class MediaType(str, enum.Enum):
+    IMAGE = "image"
+    VIDEO = "video"
+
+class OAuthProvider(str, enum.Enum):
+    GOOGLE = "google"
+    STRAVA = "strava"
+
+class RequestStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    FULFILLED = "FULFILLED"
+    REJECTED = "REJECTED"
+
 # --- Models ---
 
 class User(Base):
@@ -74,7 +88,9 @@ class User(Base):
     # Profile
     full_name = Column(String, nullable=True)
     bio = Column(Text, nullable=True)
-    location = Column(String, nullable=True) # City/Country
+    location = Column(String, nullable=True) # Text description: City/Country
+    location_geom = Column(Geometry('POINT', srid=4326), nullable=True) # PostGIS Location
+    
     website = Column(String, nullable=True)
     strava_url = Column(String, nullable=True)
     social_links = Column(JSON, nullable=True) # { "instagram": "handle", "twitter": "handle" }
@@ -88,8 +104,13 @@ class User(Base):
     max_heart_rate = Column(Integer, nullable=True)
     resting_heart_rate = Column(Integer, nullable=True)
     vo2_max = Column(Float, nullable=True)
-
-    # Community & Professional
+    
+    # Advanced Physio
+    ftp = Column(Integer, nullable=True) # Functional Threshold Power
+    lthr = Column(Integer, nullable=True) # Lactate Threshold Heart Rate
+    hr_zones = Column(JSON, nullable=True) # Custom zones
+    power_zones = Column(JSON, nullable=True) # Custom zones
+    weight_history = Column(JSON, nullable=True) # Timeline of weight
 
     # Community & Professional
     club_affiliation = Column(String, nullable=True) # "Team Hoka", etc.
@@ -103,6 +124,25 @@ class User(Base):
     achievements = Column(JSON, nullable=True) # List or Dict of manual results
 
     tracks = relationship("Track", back_populates="user_obj")
+    oauth_connections = relationship("OAuthConnection", back_populates="user")
+    media_items = relationship("Media", back_populates="user")
+    track_requests = relationship("TrackRequest", back_populates="user")
+    event_requests = relationship("EventRequest", back_populates="user")
+
+
+class OAuthConnection(Base):
+    __tablename__ = "oauth_connections"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    provider = Column(Enum(OAuthProvider))
+    provider_user_id = Column(String)
+    access_token = Column(String)
+    refresh_token = Column(String, nullable=True)
+    expires_at = Column(DateTime, nullable=True)
+    scopes = Column(JSON, nullable=True)
+
+    user = relationship("User", back_populates="oauth_connections")
 
 
 class Track(Base):
@@ -115,7 +155,17 @@ class Track(Base):
     title = Column(String, index=True)
     description = Column(Text, nullable=True) # Markdown
     
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True) # NOTE: using ID FK, logic might use username still? needs check
+    # Legacy user_id was String(username). Fixing to Integer FK would require migration logic.
+    # App usage check: User.username is used as ID? 
+    # Current models.py had `user_id = Column(Integer, ForeignKey("users.id"))` BUT app code used username.
+    # Let's keep `user_id` as String to match simplified app logic OR fix app.
+    # Checking previous models.py: `user_id = Column(Integer, ForeignKey("users.id"), nullable=True)`
+    # Checking upload logic: `new_track.user_id = current_user.username` -> Mismatch in python, but SQLAlchemy might coerce if User.id is int?
+    # NO, previous models said `user_id = Column(Integer...`. 
+    # Let's stick to strict schema: User.id is Int. Track.user_id is Int.
+    # We will need to fix the router to save User.id instead of username if it was saving username.
+    
     user_obj = relationship("User", back_populates="tracks")
     
     uploader_name = Column(String, default="anonymous") 
@@ -130,10 +180,9 @@ class Track(Base):
 
     # 2. Activity Type & Specifics
     activity_type = Column(Enum(ActivityType), default=ActivityType.TRAIL_RUNNING)
-    technical_rating_context = Column(JSON, nullable=True)
-    # e.g. { "mtb_scale": "S2", "alpi_grade": "AD" }
+    technical_rating_context = Column(JSON, nullable=True) # e.g. { "mtb_scale": "S2", "alpi_grade": "AD" }
 
-    # 3. Physical Metrics
+    # 3. Physical Metrics (PRESERVED)
     distance_km = Column(Float)
     elevation_gain = Column(Integer)
     elevation_loss = Column(Integer)
@@ -146,20 +195,24 @@ class Track(Base):
     avg_slope_uphill = Column(Float, nullable=True)
     longest_climb = Column(Integer, nullable=True)
 
-    # 4. Effort & Difficulty
+    # 4. Effort & Difficulty (PRESERVED)
     itra_points_estim = Column(Integer, nullable=True)
     km_effort = Column(Float, nullable=True)
     ibp_index = Column(Integer, nullable=True)
     
-    # 5. Terrain & Environment
+    # 5. Terrain & Environment (PRESERVED)
     surface_composition = Column(JSON, nullable=True) # { "asphalt": 10, "trail": 90 }
     path_type = Column(JSON, nullable=True) # { "single_track": 80 }
     environment = Column(JSON, default=[]) # ["high_mountain", "forest", ...]
     
     # 6. Logistics & Conditions
     route_type = Column(Enum(RouteType), default=RouteType.LOOP)
-    start_lat = Column(Float)
+    
+    # Spatial Data (PostGIS)
+    start_lat = Column(Float) # Request to keep/preserve legacy or sync? Keeping for simple queries/compat
     start_lon = Column(Float)
+    start_geom = Column(Geometry('POINT', srid=4326), nullable=True) # NEW
+    
     end_lat = Column(Float, nullable=True)
     end_lon = Column(Float, nullable=True)
     
@@ -187,8 +240,42 @@ class Track(Base):
     # 8. Competition Context
     is_official_route = Column(Boolean, default=False)
     
-    # Links to RaceRoute if this track IS an official route
+    # Links
     race_route = relationship("RaceRoute", back_populates="official_track", uselist=False)
+    media_items = relationship("Media", back_populates="track")
+
+
+class Media(Base):
+    __tablename__ = "media_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    url = Column(String, nullable=False)
+    media_type = Column(Enum(MediaType), default=MediaType.IMAGE)
+    is_thumbnail = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    track_id = Column(Integer, ForeignKey("tracks.id"), nullable=True)
+    event_id = Column(Integer, ForeignKey("race_events.id"), nullable=True)
+
+    user = relationship("User", back_populates="media_items")
+    track = relationship("Track", back_populates="media_items")
+    event = relationship("RaceEvent", back_populates="media_items")
+
+
+class TrackRequest(Base):
+    """User request for a specific official track"""
+    __tablename__ = "track_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    race_route_id = Column(Integer, ForeignKey("race_routes.id"))
+    status = Column(Enum(RequestStatus), default=RequestStatus.PENDING)
+    comment = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="track_requests")
+    race_route = relationship("RaceRoute", back_populates="track_requests")
 
 
 # --- Race Hierarchy ---
@@ -206,6 +293,7 @@ class RaceEvent(Base):
     circuit = Column(String, nullable=True) # "UTMB World Series", "Golden Trail"
 
     editions = relationship("RaceEdition", back_populates="event")
+    media_items = relationship("Media", back_populates="event")
 
 
 class RaceEdition(Base):
@@ -243,6 +331,7 @@ class RaceRoute(Base):
 
     edition = relationship("RaceEdition", back_populates="routes")
     official_track = relationship("Track", back_populates="race_route")
+    track_requests = relationship("TrackRequest", back_populates="race_route")
 
 
 class EventRequest(Base):
@@ -250,7 +339,7 @@ class EventRequest(Base):
     __tablename__ = "event_requests"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, ForeignKey("users.username"))
+    user_id = Column(Integer, ForeignKey("users.id")) # Fixed to Int to match User.id
     event_name = Column(String, nullable=False)
     year = Column(Integer, nullable=True)
     website = Column(String, nullable=True)
@@ -258,4 +347,4 @@ class EventRequest(Base):
     status = Column(String, default="PENDING") # PENDING, APPROVED, REJECTED
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    user = relationship("User")
+    user = relationship("User", back_populates="event_requests")

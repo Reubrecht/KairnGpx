@@ -9,11 +9,25 @@ services:
       - ./app/data:/app/app/data
       - ./app/uploads:/app/app/uploads
     environment:
-      - DATABASE_URL=sqlite:///./app/data/kairn.db
+      # Change connection string to use PostgreSQL
+      - DATABASE_URL=postgresql://kairn:kairn_password@db/kairn
       - INVITATION_CODE=${INVITATION_CODE}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
     ports:
-      - "8000:8000" # Access locally via http://IP:8000 while waiting for Tunnel
+      - "8000:8000"
+    depends_on:
+      - db
+
+  db:
+    image: postgis/postgis:15-3.3-alpine
+    container_name: kairn_db
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=kairn
+      - POSTGRES_PASSWORD=kairn_password
+      - POSTGRES_DB=kairn
 
   tunnel:
     container_name: cloudflared
@@ -24,3 +38,6 @@ services:
       - TUNNEL_TOKEN=${TUNNEL_TOKEN}
     depends_on:
       - kairn
+
+volumes:
+  postgres_data:
