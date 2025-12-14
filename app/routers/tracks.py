@@ -246,9 +246,48 @@ async def explore(
         # Count actual tracks (excluding grouped events)
         real_track_count = len([t for t in tracks if not getattr(t, 'is_grouped_event', False)])
 
+        # 10. Group by Location
+        grouped_tracks_dict = {}
+        for t in tracks:
+            loc = "Autre"
+            if getattr(t, 'is_grouped_event', False):
+               # Is an event object (MockObj)
+               if hasattr(t, 'location_city') and t.location_city:
+                   loc = t.location_city
+            else:
+               # Is a track object
+               if t.location_city:
+                   loc = t.location_city
+               elif t.location_region:
+                   loc = t.location_region
+            
+            # Capitalize first letter for consistency
+            if loc and isinstance(loc, str):
+                loc = loc.title()
+            else:
+                loc = "Autre"
+
+            if loc not in grouped_tracks_dict:
+                grouped_tracks_dict[loc] = []
+            grouped_tracks_dict[loc].append(t)
+        
+        # Sort groups: Alphabetical, but "Autre" last
+        sorted_locations = sorted(grouped_tracks_dict.keys())
+        if "Autre" in sorted_locations:
+            sorted_locations.remove("Autre")
+            sorted_locations.append("Autre")
+            
+        grouped_tracks = {loc: grouped_tracks_dict[loc] for loc in sorted_locations}
+
+        # 11. Prepare Map Data (JSON) to avoid Jinja in JS
+        map_tracks_data = [{"id": str(t.id)} for t in tracks if not getattr(t, 'is_grouped_event', False)]
+        map_tracks_json = json.dumps(map_tracks_data)
+
         return templates.TemplateResponse("index.html", {
             "request": request,
-            "tracks": tracks,
+            "tracks": tracks, # Keep flat list for legacy or other uses
+            "grouped_tracks": grouped_tracks,
+            "map_tracks_json": map_tracks_json, # Valid JSON string
             "real_track_count": real_track_count,
             "user": user,
             "active_page": "explore",
