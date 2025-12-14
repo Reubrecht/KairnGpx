@@ -1,47 +1,67 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="min-h-screen bg-slate-50 flex"
-    x-data="{ currentTab: window.location.hash ? window.location.hash.substring(1) : 'overview' }">
+<div class="min-h-screen bg-slate-50 flex flex-col md:flex-row" x-data="{ 
+        currentTab: window.location.hash ? window.location.hash.substring(1) : 'overview',
+        mobileMenuOpen: false
+    }">
+
+    <!-- Mobile Header -->
+    <div class="md:hidden bg-slate-900 text-white p-4 flex items-center justify-between sticky top-0 z-50">
+        <h1 class="text-lg font-black tracking-tight flex items-center gap-2">
+            <span class="text-brand-500 text-xl">⚡</span>
+            <span>Kairn<span class="text-slate-500 text-xs font-normal ml-1">Admin</span></span>
+        </h1>
+        <button @click="mobileMenuOpen = !mobileMenuOpen" class="p-2 text-slate-400 hover:text-white">
+            <i class="ph-bold ph-list text-2xl"></i>
+        </button>
+    </div>
+
+    <!-- Sidebar Backdrop -->
+    <div x-show="mobileMenuOpen" x-transition.opacity @click="mobileMenuOpen = false"
+        class="fixed inset-0 bg-black/50 z-40 md:hidden"></div>
 
     <!-- Sidebar -->
-    <aside
-        class="w-64 bg-slate-900 text-white flex-shrink-0 hidden md:flex flex-col sticky top-0 h-screen overflow-y-auto">
-        <div class="p-6">
+    <aside :class="{'translate-x-0': mobileMenuOpen, '-translate-x-full': !mobileMenuOpen}"
+        class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white flex-col transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:flex md:h-screen md:sticky md:top-0 h-full overflow-y-auto">
+        <div class="p-6 flex justify-between items-center">
             <h1 class="text-xl font-black tracking-tight flex items-center gap-2">
                 <span class="text-brand-500 text-2xl">⚡</span>
                 <span>Kairn<span class="text-slate-500 text-sm font-normal ml-1">Admin</span></span>
             </h1>
+            <button @click="mobileMenuOpen = false" class="md:hidden text-slate-400 hover:text-white">
+                <i class="ph-bold ph-x text-xl"></i>
+            </button>
         </div>
 
         <nav class="flex-1 px-4 space-y-2">
-            <button @click="currentTab = 'overview'; window.location.hash = 'overview'"
+            <button @click="currentTab = 'overview'; window.location.hash = 'overview'; mobileMenuOpen = false"
                 :class="{ 'bg-slate-800 text-white': currentTab === 'overview', 'text-slate-400 hover:bg-slate-800/50 hover:text-white': currentTab !== 'overview' }"
-                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200">
+                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200 text-left">
                 <i class="ph-fill ph-squares-four text-lg"></i>
                 Vue d'ensemble
             </button>
-            <button @click="currentTab = 'events'; window.location.hash = 'events'"
+            <button @click="currentTab = 'events'; window.location.hash = 'events'; mobileMenuOpen = false"
                 :class="{ 'bg-slate-800 text-white': currentTab === 'events', 'text-slate-400 hover:bg-slate-800/50 hover:text-white': currentTab !== 'events' }"
-                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200">
+                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200 text-left">
                 <i class="ph-fill ph-trophy text-lg"></i>
                 Courses & Événements
             </button>
-            <button @click="currentTab = 'users'; window.location.hash = 'users'"
+            <button @click="currentTab = 'users'; window.location.hash = 'users'; mobileMenuOpen = false"
                 :class="{ 'bg-slate-800 text-white': currentTab === 'users', 'text-slate-400 hover:bg-slate-800/50 hover:text-white': currentTab !== 'users' }"
-                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200">
+                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200 text-left">
                 <i class="ph-fill ph-users text-lg"></i>
                 Utilisateurs
             </button>
-            <button @click="currentTab = 'prediction'; window.location.hash = 'prediction'"
+            <button @click="currentTab = 'prediction'; window.location.hash = 'prediction'; mobileMenuOpen = false"
                 :class="{ 'bg-slate-800 text-white': currentTab === 'prediction', 'text-slate-400 hover:bg-slate-800/50 hover:text-white': currentTab !== 'prediction' }"
-                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200">
+                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200 text-left">
                 <i class="ph-fill ph-chart-line-up text-lg"></i>
                 Calibration Prédictions
             </button>
-            <button @click="currentTab = 'moderation'; window.location.hash = 'moderation'"
+            <button @click="currentTab = 'moderation'; window.location.hash = 'moderation'; mobileMenuOpen = false"
                 :class="{ 'bg-slate-800 text-white': currentTab === 'moderation', 'text-slate-400 hover:bg-slate-800/50 hover:text-white': currentTab !== 'moderation' }"
-                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200">
+                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200 text-left">
                 <i class="ph-fill ph-shield-check text-lg"></i>
                 Modération
                 {% if pending_count > 0 %}
@@ -171,7 +191,8 @@
                                 </div>
 
                                 <!-- Routes List -->
-                                <div x-show="edOpen" class="border-t border-slate-100 p-3 pl-8 bg-slate-50/50">
+                                <div x-show="edOpen"
+                                    class="border-t border-slate-100 p-3 pl-8 bg-slate-50/50 overflow-x-auto">
                                     <table class="w-full text-sm text-left">
                                         <thead class="text-xs text-slate-400 uppercase font-bold">
                                             <tr>
@@ -283,97 +304,94 @@
                     </div>
                 </div>
 
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-xs">
-                        <tr>
-                            <th class="px-6 py-4">Utilisateur</th>
-                            <th class="px-6 py-4">Performance</th>
-                            <th class="px-6 py-4">Premium</th>
-                            <th class="px-6 py-4">Rôle</th>
-                            <th class="px-6 py-4 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        {% for u in users %}
-                        <tr class="hover:bg-slate-50 transition-colors group">
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-3">
-                                    {% if u.profile_picture %}
-                                    <img src="{{ u.profile_picture }}"
-                                        class="w-8 h-8 rounded-full object-cover border border-slate-200">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm whitespace-nowrap">
+                        <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-xs">
+                            <tr>
+                                <th class="px-6 py-4">Utilisateur</th>
+                                <th class="px-6 py-4">Performance</th>
+                                <th class="px-6 py-4">Premium</th>
+                                <th class="px-6 py-4">Rôle</th>
+                                <th class="px-6 py-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for u in users %}
+                            <tr class="hover:bg-slate-50 transition-colors group">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        {% if u.profile_picture %}
+                                        <img src="{{ u.profile_picture }}"
+                                            class="w-8 h-8 rounded-full object-cover border border-slate-200">
+                                        {% else %}
+                                        <div
+                                            class="w-8 h-8 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-bold text-xs">
+                                            {{ u.username[:2].upper() }}
+                                        </div>
+                                        {% endif %}
+                                        <div>
+                                            <div class="font-bold text-slate-900">{{ u.username }}</div>
+                                            <div class="text-xs text-slate-500">{{ u.email }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    {% if u.utmb_index %}
+                                    <span
+                                        class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-mono font-bold">UTMB:
+                                        {{ u.utmb_index }}</span>
                                     {% else %}
-                                    <div
-                                        class="w-8 h-8 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-bold text-xs">
-                                        {{ u.username[:2].upper() }}
-                                    </div>
+                                    <span class="text-slate-300 text-xs">-</span>
                                     {% endif %}
-                                    <div>
-                                        <div class="font-bold text-slate-900">{{ u.username }}</div>
-                                        <div class="text-xs text-slate-500">{{ u.email }}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4">
-                                {% if u.utmb_index %}
-                                <span
-                                    class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-mono font-bold">UTMB:
-                                    {{ u.utmb_index }}</span>
-                                {% else %}
-                                <span class="text-slate-300 text-xs">-</span>
-                                {% endif %}
-                            </td>
-                            <td class="px-6 py-4">
-                                {% if u.is_premium %}
-                                <span
-                                    class="bg-amber-50 text-amber-600 px-2 py-1 rounded text-[10px] font-bold border border-amber-100 uppercase tracking-wide flex w-fit items-center">
-                                    <i class="ph-fill ph-crown mr-1"></i> Premium
-                                </span>
-                                {% else %}
-                                <span class="text-slate-300 text-xs">-</span>
-                                {% endif %}
-                            </td>
-                            <td class="px-6 py-4">
-                                <span
-                                    class="text-xs font-bold uppercase 
+                                </td>
+                                <td class="px-6 py-4">
+                                    {% if u.is_premium %}
+                                    <span
+                                        class="bg-amber-50 text-amber-600 px-2 py-1 rounded text-[10px] font-bold border border-amber-100 uppercase tracking-wide flex w-fit items-center">
+                                        <i class="ph-fill ph-crown mr-1"></i> Premium
+                                    </span>
+                                    {% else %}
+                                    <span class="text-slate-300 text-xs">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span
+                                        class="text-xs font-bold uppercase 
                                     {% if u.role.value == 'super_admin' %}text-purple-600{% elif u.role.value == 'admin' %}text-blue-600{% elif u.role.value == 'moderator' %}text-yellow-600{% else %}text-slate-500{% endif %}">
-                                    {{ u.role.value }}
-                                </span>
-                            </td>
-                            <td
-                                class="px-6 py-4 text-right opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-1">
-                                <button
-                                    onclick="openUserEditModal('{{ u.id }}', '{{ u.username }}', '{{ u.email }}', '{{ u.utmb_index or '' }}', '{{ u.role.value }}', '{{ u.is_premium|lower }}', '{{ u.full_name or '' }}')"
-                                    class="text-blue-400 hover:text-blue-600 p-1 rounded hover:bg-blue-50 transition-colors"
-                                    title="Éditer">
-                                    <i class="ph-bold ph-pencil-simple"></i>
-                                </button>
-                                <form action="/superadmin/user/{{ u.id }}/toggle_premium" method="POST"
-                                    class="inline-block">
-                                    <button title="Toggle Premium"
-                                        class="text-amber-400 hover:text-amber-600 p-1 rounded hover:bg-amber-50 transition-colors">
-                                        <i
-                                            class="ph-bold {% if u.is_premium %}ph-crown-slash{% else %}ph-crown{% endif %}"></i>
-                                    </button>
-                                </form>
-                                <form action="/superadmin/user/{{ u.id }}/delete" method="POST"
-                                    onsubmit="return confirm('Êtes-vous sûr ? Cette action est irréversible.');"
-                                    class="inline-block">
+                                        {{ u.role.value }}
+                                    </span>
+                                </td>
+                                <td
+                                    class="px-6 py-4 text-right opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-1">
                                     <button
-                                        class="text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-50 transition-colors">
-                                        <i class="ph-bold ph-trash"></i>
+                                        onclick="openUserEditModal('{{ u.id }}', '{{ u.username }}', '{{ u.email }}', '{{ u.utmb_index or '' }}', '{{ u.role.value }}', '{{ u.is_premium|lower }}', '{{ u.full_name or '' }}')"
+                                        class="text-blue-400 hover:text-blue-600 p-1 rounded hover:bg-blue-50 transition-colors"
+                                        title="Éditer">
+                                        <i class="ph-bold ph-pencil-simple"></i>
                                     </button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                                    <form action="/superadmin/user/{{ u.id }}/toggle_premium" method="POST"
+                                        class="inline-block">
+                                        <button title="Toggle Premium"
+                                            class="text-amber-400 hover:text-amber-600 p-1 rounded hover:bg-amber-50 transition-colors">
+                                            <i
+                                                class="ph-bold {% if u.is_premium %}ph-crown-slash{% else %}ph-crown{% endif %}"></i>
+                                        </button>
+                                    </form>
+                                    <form action="/superadmin/user/{{ u.id }}/delete" method="POST"
+                                        onsubmit="return confirm('Êtes-vous sûr ? Cette action est irréversible.');"
+                                        class="inline-block">
+                                        <button
+                                            class="text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-50 transition-colors">
+                                            <i class="ph-bold ph-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
-
-
-        <!-- MODERATION -->
-        <div x-show="currentTab === 'moderation'" class="animate-fade-in-up">
             <!-- EVENT REQUESTS SECTION -->
             <div class="mb-12">
                 <h3 class="text-xl font-bold text-slate-700 mb-4 flex items-center gap-2">
@@ -402,7 +420,8 @@
                             class="text-xs text-brand-600 hover:underline mb-3 block flex items-center gap-1"><i
                                 class="ph-bold ph-link"></i> {{ req.website }}</a>
                         {% endif %}
-                        <div class="text-xs text-slate-400 mb-4">Demandé par <strong>{{ req.user.username }}</strong>
+                        <div class="text-xs text-slate-400 mb-4">Demandé par <strong>{{ req.user.username
+                                }}</strong>
                         </div>
 
                         <div class="flex gap-2">
@@ -495,7 +514,8 @@
                         <!-- Link to Official Route -->
                         <form action="/superadmin/track/{{ t.id }}/link_route" method="POST"
                             class="border-t border-slate-100 pt-4">
-                            <label class="block text-xs font-bold text-slate-700 mb-2">Relier à une course officielle
+                            <label class="block text-xs font-bold text-slate-700 mb-2">Relier à une course
+                                officielle
                                 (Si applicable)</label>
                             <div class="flex gap-2">
                                 <select name="route_id"
@@ -505,7 +525,8 @@
                                     <optgroup label="{{ evt.name }}">
                                         {% for ed in evt.editions %}
                                         {% for r in ed.routes %}
-                                        <option value="{{ r.id }}">{{ ed.year }} - {{ r.name }} ({{ r.distance_km }}km)
+                                        <option value="{{ r.id }}">{{ ed.year }} - {{ r.name }} ({{ r.distance_km
+                                            }}km)
                                         </option>
                                         {% endfor %}
                                         {% endfor %}
@@ -537,10 +558,33 @@
         <div x-show="currentTab === 'prediction'" class="animate-fade-in-up"
             x-data='predictionEditor({{ prediction_config_json | safe }})'>
             <form action="/api/admin/prediction_config" method="POST" class="max-w-4xl mx-auto">
+
+                {% if user_has_custom_config %}
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start justify-between">
+                    <div class="flex items-start gap-3">
+                        <i class="ph-fill ph-warning-circle text-amber-500 text-xl mt-0.5"></i>
+                        <div>
+                            <h4 class="font-bold text-amber-900 text-sm">Conflit de Configuration</h4>
+                            <p class="text-xs text-amber-700 mt-1">
+                                Vous avez des paramètres de prédiction personnels définis dans votre profil.
+                                <br>Ces paramètres <strong>écrasent</strong> les valeurs globales ci-dessous lors de
+                                vos
+                                tests (page détail).
+                            </p>
+                        </div>
+                    </div>
+                    <button type="submit" formaction="/api/admin/reset_personal_config"
+                        class="bg-white border border-amber-200 text-amber-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-amber-100 transition-colors shadow-sm">
+                        Réinitialiser mes paramètres
+                    </button>
+                </div>
+                {% endif %}
+
                 <div class="flex justify-between items-center mb-8">
                     <div>
                         <h2 class="text-3xl font-black text-slate-900">Calibration des Prédictions</h2>
-                        <p class="text-slate-500 mt-1">Ajustez les facteurs de l'algorithme de prédiction de temps.</p>
+                        <p class="text-slate-500 mt-1">Ajustez les facteurs de l'algorithme de prédiction de temps.
+                        </p>
                     </div>
                     <button type="submit"
                         class="bg-brand-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-brand-700 transition shadow-lg shadow-brand-500/30">
@@ -556,7 +600,8 @@
                             Simulateur Live
                         </h3>
                         <div class="flex items-center gap-3 bg-slate-800 p-2 rounded-xl border border-slate-700">
-                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Index Coureur</span>
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Index
+                                Coureur</span>
                             <input type="range"
                                 class="w-48 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-brand-500"
                                 min="300" max="900" step="10" x-model="userIndex">
@@ -611,7 +656,8 @@
                                     class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
                             </div>
                             <div>
-                                <label class="block text-sm font-bold text-slate-700 mb-1">Vitesse Min (km/h)</label>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Vitesse Min
+                                    (km/h)</label>
                                 <input type="number" step="0.1" name="min_speed_kmeh" x-model="config.min_speed_kmeh"
                                     class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
                             </div>
@@ -623,7 +669,8 @@
                         <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
                             <i class="ph-fill ph-mountains text-brand-500"></i> Technicité (Pente Moyenne)
                         </h3>
-                        <p class="text-xs text-slate-400 mb-4">Pénalités appliquées si le ratio D+/Distance dépasse les
+                        <p class="text-xs text-slate-400 mb-4">Pénalités appliquées si le ratio D+/Distance dépasse
+                            les
                             seuils.</p>
                         <div class="space-y-4">
                             <div
@@ -699,7 +746,8 @@
                         <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
                             <i class="ph-fill ph-gauge text-brand-500"></i> Intensités
                         </h3>
-                        <p class="text-xs text-slate-400 mb-4">Multiplicateurs de vitesse pour les allures alternatives.
+                        <p class="text-xs text-slate-400 mb-4">Multiplicateurs de vitesse pour les allures
+                            alternatives.
                         </p>
                         <div class="space-y-4">
                             <div>

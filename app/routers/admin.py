@@ -48,7 +48,8 @@ async def super_admin_dashboard(request: Request, db: Session = Depends(get_db),
         "pending_tracks": pending_tracks,
         "event_requests": event_requests,
         "prediction_config": PredictionConfigManager.get_config(),
-        "prediction_config_json": json.dumps(PredictionConfigManager.get_config())
+        "prediction_config_json": json.dumps(PredictionConfigManager.get_config()),
+        "user_has_custom_config": bool(current_user.prediction_config)
     })
 
 # --- SUPER ADMIN : EVENTS ---
@@ -383,6 +384,15 @@ async def update_prediction_config(
     form_data = await request.form()
     config = {k: float(v) for k, v in form_data.items() if v}
     PredictionConfigManager.save_config(config)
+    return RedirectResponse(url="/superadmin#prediction", status_code=303)
+
+@router.post("/api/admin/reset_personal_config")
+async def reset_personal_config(
+    current_user: models.User = Depends(get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    current_user.prediction_config = None
+    db.commit()
     return RedirectResponse(url="/superadmin#prediction", status_code=303)
 
 @router.post("/superadmin/import_races")
