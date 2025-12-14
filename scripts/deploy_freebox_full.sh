@@ -21,6 +21,8 @@ docker compose -f $STACK_FILE down
 
 # 3. Pull latest changes
 echo ">> Pulling latest code..."
+# Stash any local changes on the VM (config tweaks, etc.) to ensure clean pull
+git stash
 git pull
 
 # 4. Permissions check
