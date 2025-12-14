@@ -1,3 +1,9 @@
+import sys
+import os
+
+# Add project root to path so we can import 'app'
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from app import models, database, main
 from app.main import get_password_hash, verify_password, create_access_token
 
