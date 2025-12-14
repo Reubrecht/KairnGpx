@@ -27,6 +27,34 @@ def update_schema():
             else:
                 print(f"  ⚠️ Warning creating 'role' column: {e}")
 
+        # 2. Add prediction_config column
+        try:
+            print("  Adding 'prediction_config' column to 'users' table...")
+            # Detect dialect
+            if "sqlite" in SQLALCHEMY_DATABASE_URL:
+                 conn.execute(text("ALTER TABLE users ADD COLUMN prediction_config JSON"))
+            else:
+                 conn.execute(text("ALTER TABLE users ADD COLUMN prediction_config JSON DEFAULT NULL"))
+            conn.commit()
+            print("  ✅ Column 'prediction_config' added successfully.")
+        except Exception as e:
+            if "duplicate column" in str(e).lower() or "already exists" in str(e).lower():
+                print("  ℹ️ Column 'prediction_config' already exists. Skipping.")
+            else:
+                print(f"  ⚠️ Warning creating 'prediction_config' column: {e}")
+
+        # 3. Add profile_picture column
+        try:
+            print("  Adding 'profile_picture' column to 'users' table...")
+            conn.execute(text("ALTER TABLE users ADD COLUMN profile_picture VARCHAR DEFAULT NULL"))
+            conn.commit()
+            print("  ✅ Column 'profile_picture' added successfully.")
+        except Exception as e:
+            if "duplicate column" in str(e).lower() or "already exists" in str(e).lower():
+                print("  ℹ️ Column 'profile_picture' already exists. Skipping.")
+            else:
+                print(f"  ⚠️ Warning creating 'profile_picture' column: {e}")
+
         # Note: 'is_admin' is already there? Yes.
         
         # We might also need to ensure Race tables exist...
