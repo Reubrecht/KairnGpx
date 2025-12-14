@@ -3,6 +3,7 @@ import json
 import re
 import math
 from typing import List, Optional
+from datetime import datetime
 from fastapi import APIRouter, Depends, Request, UploadFile, File, Form, HTTPException, status, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
@@ -188,7 +189,7 @@ async def explore(
                         "slug": event.slug,
                         "title": f"{event.name} {edition.year}",
                         "location_city": event.region,
-                        "created_at": event.created_at or datetime.now(), # Use event created_at if available or now
+                        "created_at": datetime.now(), # Use now as fallback since event has no created_at
                         "is_grouped_event": True,
                         "routes": [],
                         "tags": ["Course Officielle", "Trace à venir"],
