@@ -41,14 +41,37 @@
                 <div
                     class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 transition-colors hover:bg-slate-800">
                     <div
-                        class="text-xs text-slate-400 font-bold uppercase mb-2 tracking-widest flex items-center gap-1">
+                        class="text-xs text-slate-400 font-bold uppercase mb-4 tracking-widest flex items-center justify-center gap-1">
                         <i class="ph-fill ph-trophy text-brand-600" x-show="ex.dist > 80"></i>
                         <span x-text="ex.name"></span>
                     </div>
-                    <div class="text-3xl md:text-4xl font-black font-mono tracking-tight text-white mb-2"
-                        x-text="predict(ex)"></div>
+
+                    <!-- 3 PACES DISPLAY -->
+                    <div class="flex items-end justify-between gap-2 mb-4">
+                        <!-- ENDURANCE -->
+                        <div class="text-center">
+                            <div class="text-[10px] uppercase font-bold text-slate-500 mb-1">Endurance</div>
+                            <div class="text-lg font-mono text-slate-300"
+                                x-text="predict(ex, config.endurance_multiplier)"></div>
+                        </div>
+
+                        <!-- COMPETITION (Main) -->
+                        <div class="text-center relative -top-1">
+                            <div class="text-[10px] uppercase font-bold text-brand-500 mb-1">Compétition</div>
+                            <div class="text-2xl md:text-3xl font-black font-mono tracking-tight text-white"
+                                x-text="predict(ex, 1.0)"></div>
+                        </div>
+
+                        <!-- TEMPO -->
+                        <div class="text-center">
+                            <div class="text-[10px] uppercase font-bold text-slate-500 mb-1">Tempo</div>
+                            <div class="text-lg font-mono text-slate-300" x-text="predict(ex, config.push_multiplier)">
+                            </div>
+                        </div>
+                    </div>
+
                     <div
-                        class="text-[10px] text-slate-500 font-medium flex justify-between border-t border-slate-700 pt-2 mt-2">
+                        class="text-[10px] text-slate-500 font-medium flex justify-between border-t border-slate-700 pt-2">
                         <span class="flex items-center gap-1">📏 <span x-text="ex.dist + 'km'"></span></span>
                         <span class="flex items-center gap-1">⛰️ <span x-text="ex.elev + 'm'"></span></span>
                         <span class="flex items-center gap-1">⚡ <span
@@ -134,7 +157,8 @@
                     Kairn réduit votre vitesse quand la pente moyenne (D+/Distance) augmente.
                     <ul class="list-disc list-inside mt-1 ml-1 space-y-1 text-amber-800/80">
                         <li><strong>Vous êtes un grimpeur / descendeur agile ?</strong> Rapprochez les facteurs de
-                            <code>1.0</code> (ex: 0.85 en montagne).</li>
+                            <code>1.0</code> (ex: 0.85 en montagne).
+                        </li>
                         <li><strong>Le terrain technique vous ralentit beaucoup ?</strong> Baissez les facteurs (ex:
                             0.60 en Alpin).</li>
                         <li>Les seuils (40, 60, 90 m/km) correspondent à Vallonné, Montagne, Alpin.</li>
@@ -271,10 +295,10 @@
                         <p class="text-[10px] text-slate-400 mt-1">Simulez une sortie longue (ex: 0.85)</p>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Push / Court (x)</label>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tempo (x)</label>
                         <input type="number" step="0.01" name="push_multiplier" x-model="config.push_multiplier"
                             class="w-full rounded-lg border-slate-200 bg-slate-50 focus:border-brand-500 font-bold text-slate-700">
-                        <p class="text-[10px] text-slate-400 mt-1">Simulez un effort intense (ex: 1.15)</p>
+                        <p class="text-[10px] text-slate-400 mt-1">Allure entrainement tempo (ex: 1.15)</p>
                     </div>
                 </div>
 
@@ -303,7 +327,7 @@
                 { name: 'Ultra Alpin', dist: 110, elev: 6500 }
             ],
 
-            predict(ex) {
+            predict(ex, multiplier = 1.0) {
                 const dist = ex.dist;
                 const elev = ex.elev;
 
@@ -325,7 +349,14 @@
                 let speed = (parseFloat(c.base_speed_slope) * this.userIndex) - parseFloat(c.base_speed_intercept);
                 speed = Math.max(speed, parseFloat(c.min_speed_kmeh));
 
-                // 4. Decay
+                // Apply Intensity Multiplier (Speed * x)
+                // If multiplier is undefined/null use 1.0
+                const mult = parseFloat(multiplier) || 1.0;
+                speed = speed * mult;
+
+                // 4. Decay (Decay depends on distance, unrelated to speed multiplier usually, 
+                // although faster speed = less time = less decay? 
+                // For simplicity let's apply decay to the adjusted speed)
                 let distFactor = 1.0;
                 const startKm = parseFloat(c.decay_start_km);
                 if (kmEffort > startKm) {
@@ -337,7 +368,7 @@
 
                 // 5. Final Speed
                 let adjSpeed = speed * techFactor * distFactor;
-                adjSpeed = Math.max(adjSpeed, 2.5);
+                adjSpeed = Math.max(adjSpeed, 2.5); // Floor
 
                 const hours = kmEffort / adjSpeed;
                 return this.formatTime(hours);
