@@ -1,7 +1,20 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Enum, JSON, Text, ForeignKey, Date
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from geoalchemy2 import Geometry
+from sqlalchemy.types import TypeDecorator, TEXT
+import os
+
+# Conditional import for Geometry: Use GeoAlchemy2 for Postgres, Mock for SQLite
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite")
+if "postgres" in DATABASE_URL or "postgis" in DATABASE_URL:
+    from geoalchemy2 import Geometry
+else:
+    # Fallback: Treat Geometry as TEXT in SQLite to prevent crashes
+    class Geometry(TypeDecorator):
+        impl = TEXT
+        cache_ok = True
+        def __init__(self, *args, **kwargs):
+            super().__init__()
 import enum
 import uuid
 from datetime import datetime
