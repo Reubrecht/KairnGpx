@@ -363,8 +363,11 @@
                                 </td>
                                 <td
                                     class="px-6 py-4 text-right opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-1">
-                                    <button
-                                        onclick="openUserEditModal('{{ u.id }}', '{{ u.username }}', '{{ u.email }}', '{{ u.utmb_index or '' }}', '{{ u.role.value }}', '{{ u.is_premium|lower }}', '{{ u.full_name or '' }}')"
+                                    <button data-id="{{ u.id }}" data-username="{{ u.username }}"
+                                        data-email="{{ u.email }}" data-utmb="{{ u.utmb_index or '' }}"
+                                        data-role="{{ u.role.value }}" data-premium="{{ u.is_premium|string|lower }}"
+                                        data-fullname="{{ u.full_name or '' }}"
+                                        onclick="openUserEditModal(this.dataset.id, this.dataset.username, this.dataset.email, this.dataset.utmb, this.dataset.role, this.dataset.premium, this.dataset.fullname)"
                                         class="text-blue-400 hover:text-blue-600 p-1 rounded hover:bg-blue-50 transition-colors"
                                         title="Éditer">
                                         <i class="ph-bold ph-pencil-simple"></i>
@@ -427,14 +430,15 @@
                             </div>
 
                             <div class="flex gap-2">
-                                <button onclick="
-                                document.getElementById('modal-create-event').showModal();
-                                document.getElementById('event-creation-request-id').value = '{{ req.id }}';
-                                const evtName = `{{ req.event_name }}`;
-                                document.querySelector('#modal-create-event input[name=\'name\']').value = evtName;
-                                document.querySelector('#modal-create-event input[name=\'slug\']').value = slugify(evtName);
-                                document.querySelector('#modal-create-event input[name=\'website\']').value = '{{ req.website or '' }}';
-                                "
+                                <button data-reqid="{{ req.id }}" data-eventname="{{ req.event_name }}"
+                                    data-website="{{ req.website or '' }}" onclick="
+                                    document.getElementById('modal-create-event').showModal();
+                                    document.getElementById('event-creation-request-id').value = this.dataset.reqid;
+                                    const evtName = this.dataset.eventname;
+                                    document.querySelector('#modal-create-event input[name=\'name\']').value = evtName;
+                                    document.querySelector('#modal-create-event input[name=\'slug\']').value = slugify(evtName);
+                                    document.querySelector('#modal-create-event input[name=\'website\']').value = this.dataset.website;
+                                    "
                                     class="flex-1 bg-slate-900 text-white py-2 rounded-lg text-xs font-bold hover:bg-slate-800 transition-colors">
                                     <i class="ph-bold ph-plus"></i> Créer
                                 </button>
