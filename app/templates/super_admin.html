@@ -398,7 +398,8 @@
                             class="text-xs text-brand-600 hover:underline mb-3 block flex items-center gap-1"><i
                                 class="ph-bold ph-link"></i> {{ req.website }}</a>
                         {% endif %}
-                        <div class="text-xs text-slate-400 mb-4">Demandé par <strong>{{ req.user_id }}</strong></div>
+                        <div class="text-xs text-slate-400 mb-4">Demandé par <strong>{{ req.user.username }}</strong>
+                        </div>
 
                         <div class="flex gap-2">
                             <button onclick="

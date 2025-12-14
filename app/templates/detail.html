@@ -73,7 +73,7 @@
                         {% endif %}
 
                         <!-- Visibilité (Admin/User only) -->
-                        {% if user and (user.username == track.user_id or user.is_admin) %}
+                        {% if user and (user.id == track.user_id or user.is_admin) %}
                         {% if track.visibility.value == 'private' %}
                         <span
                             class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-500">🔒
@@ -108,7 +108,7 @@
                                 GPX
                             </a>
 
-                            {% if user and (user.username == track.user_id or user.is_admin) %}
+                            {% if user and (user.id == track.user_id or user.is_admin) %}
                             <a href="/track/{{ track.id }}/edit"
                                 class="p-2 text-slate-400 hover:text-brand-600 hover:bg-slate-50 rounded-lg transition-colors">
                                 <i class="ph ph-pencil-simple text-lg"></i>
