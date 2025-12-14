@@ -26,6 +26,7 @@ async def profile_page(request: Request, db: Session = Depends(get_db)):
     })
 
 @router.post("/profile")
+async def update_profile(
     request: Request,
     full_name: Optional[str] = Form(None),
     bio: Optional[str] = Form(None),
