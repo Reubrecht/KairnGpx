@@ -91,7 +91,7 @@ async def create_event(
     except Exception as e:
         print(f"Error creating event: {e}")
         db.rollback()
-    return RedirectResponse(url="/superadmin#events", status_code=303)
+    return RedirectResponse(url=f"/superadmin#event-{new_event.id}", status_code=303)
 
 @router.post("/superadmin/events/{event_id}/update")
 async def update_event(
@@ -100,6 +100,8 @@ async def update_event(
     slug: str = Form(...),
     website: str = Form(None),
     description: str = Form(None),
+    region: str = Form(None),
+    circuit: str = Form(None),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_super_admin)
 ):
@@ -111,8 +113,10 @@ async def update_event(
     event.slug = slug
     event.website = website
     event.description = description
+    event.region = region
+    event.circuit = circuit
     db.commit()
-    return RedirectResponse(url="/superadmin#events", status_code=303)
+    return RedirectResponse(url=f"/superadmin#event-{event_id}", status_code=303)
 
 @router.post("/superadmin/events/{event_id}/delete")
 async def delete_event(
@@ -138,7 +142,7 @@ async def add_edition(
         new_edition = models.RaceEdition(event_id=event_id, year=year)
         db.add(new_edition)
         db.commit()
-    return RedirectResponse(url="/superadmin#events", status_code=303)
+    return RedirectResponse(url=f"/superadmin#event-{event_id}", status_code=303)
 
 @router.get("/superadmin/edition/{edition_id}", response_class=HTMLResponse)
 async def edition_manager(edition_id: int, request: Request, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_super_admin)):

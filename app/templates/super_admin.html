@@ -133,7 +133,14 @@
 
             <div class="space-y-4">
                 {% for event in events %}
-                <div x-data="{ open: false }"
+                <div x-data="{ 
+                        open: (window.location.hash === '#event-{{ event.id }}'),
+                        init() {
+                            if (this.open) {
+                                setTimeout(() => this.$el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+                            }
+                        }
+                    }" id="event-{{ event.id }}"
                     class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     <!-- Event Header -->
                     <div class="p-4 flex items-center justify-between bg-slate-50/50 hover:bg-slate-50 transition-colors cursor-pointer"
@@ -155,8 +162,20 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <!-- Event Actions (Edit/Delete) could go here -->
-                            <span class="text-xs text-slate-400">ID: {{ event.id }}</span>
+                            <button
+                                @click.stop="openEventEditModal({{ event.id }}, '{{ event.name|escape }}', '{{ event.slug|escape }}', '{{ event.website|default('', true)|escape }}', '{{ event.region|default('', true)|escape }}', '{{ event.circuit|default('', true)|escape }}', `{{ event.description|default('', true)|escape }}`)"
+                                class="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
+                                title="Éditer">
+                                <i class="ph-bold ph-pencil-simple"></i>
+                            </button>
+                            <form action="/superadmin/events/{{ event.id }}/delete" method="POST"
+                                onsubmit="return confirm('Supprimer cet événement et TOUTES ses éditions/parcours ?');">
+                                <button type="submit" @click.stop
+                                    class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    title="Supprimer">
+                                    <i class="ph-bold ph-trash"></i>
+                                </button>
+                            </form>
                         </div>
                     </div>
 
@@ -951,6 +970,56 @@
     </form>
 </dialog>
 
+<dialog id="modal-edit-event" class="modal">
+    <div
+        class="modal-box bg-white rounded-2xl p-6 max-w-lg fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 shadow-2xl border border-slate-100 z-50">
+        <h3 class="font-bold text-lg mb-4 text-slate-900">Éditer l'Événement</h3>
+        <form id="edit-event-form" action="" method="POST" class="space-y-4">
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">Nom</label>
+                <input type="text" name="name" required
+                    class="w-full rounded-xl border-slate-200 focus:border-brand-500 focus:ring-brand-500">
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">Slug</label>
+                <input type="text" name="slug" required
+                    class="w-full rounded-xl border-slate-200 focus:border-brand-500 font-mono text-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">Site Web</label>
+                <input type="url" name="website" placeholder="https://"
+                    class="w-full rounded-xl border-slate-200 focus:border-brand-500">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Région</label>
+                    <input type="text" name="region" class="w-full rounded-xl border-slate-200 focus:border-brand-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Circuit</label>
+                    <input type="text" name="circuit" class="w-full rounded-xl border-slate-200 focus:border-brand-500">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">Description</label>
+                <textarea name="description" rows="3"
+                    class="w-full rounded-xl border-slate-200 focus:border-brand-500"></textarea>
+            </div>
+            <div class="modal-action flex justify-end gap-2 pt-4">
+                <button type="button"
+                    class="px-4 py-2 font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition-colors"
+                    onclick="document.getElementById('modal-edit-event').close()">Annuler</button>
+                <button type="submit"
+                    class="px-4 py-2 font-bold bg-brand-600 hover:bg-brand-700 text-white rounded-xl shadow-lg shadow-brand-500/30 transition-colors">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
+        onclick="document.getElementById('modal-edit-event').close()">
+        <button class="cursor-default w-full h-full">close</button>
+    </form>
+</dialog>
+
 </dialog>
 
 <!-- EDIT USER MODAL -->
@@ -1010,6 +1079,21 @@
 </dialog>
 
 <script>
+    function openEventEditModal(id, name, slug, website, region, circuit, description) {
+        const modal = document.getElementById('modal-edit-event');
+        const form = document.getElementById('edit-event-form');
+        form.action = `/superadmin/events/${id}/update`;
+
+        form.querySelector('input[name="name"]').value = name;
+        form.querySelector('input[name="slug"]').value = slug;
+        form.querySelector('input[name="website"]').value = website;
+        form.querySelector('input[name="region"]').value = region;
+        form.querySelector('input[name="circuit"]').value = circuit;
+        form.querySelector('textarea[name="description"]').value = description;
+
+        modal.showModal();
+    }
+
     function openUserEditModal(id, username, email, utmb, role, isPremium, fullName) {
         const modal = document.getElementById('modal-edit-user');
         const form = document.getElementById('edit-user-form');

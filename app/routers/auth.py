@@ -79,7 +79,13 @@ def login(
         
         access_token = create_access_token(data={"sub": user.username})
         response = RedirectResponse(url="/explore", status_code=status.HTTP_303_SEE_OTHER)
-        response.set_cookie(key="access_token", value=f"Bearer {access_token}", httponly=True)
+        response.set_cookie(
+            key="access_token", 
+            value=f"Bearer {access_token}", 
+            httponly=True,
+            max_age=60 * 60 * 24 * 30, # 30 days
+            expires=60 * 60 * 24 * 30  # IE/Edge support
+        )
         return response
     except Exception as e:
         with open("kairn_error.log", "a") as f:

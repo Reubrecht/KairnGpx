@@ -816,6 +816,83 @@ async def edit_track_action(
     
     return RedirectResponse(url=f"/track/{track_id}", status_code=303)
 
+@router.post("/track/{track_id}/analyze")
+async def analyze_track_action(track_id: int, request: Request, db: Session = Depends(get_db)):
+    user = await get_current_user(request, db)
+    
+    # Check permissions (Admin only as per UI)
+    if not user.is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    track = db.query(models.Track).filter(models.Track.id == track_id).first()
+    if not track:
+        raise HTTPException(status_code=404, detail="Track not found")
+
+    # Re-run Analysis
+    try:
+        if os.path.exists(track.file_path):
+            with open(track.file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+                
+            analytics = GpxAnalytics(content)
+            metrics = analytics.calculate_metrics()
+            gpx_meta = analytics.get_metadata()
+            
+            ai_analyzer = AiAnalyzer()
+            if ai_analyzer.model:
+                print(f"Manual AI Re-analysis triggered for Track {track.id}...")
+                
+                # We pass existing values to prioritize them if AI fails or returns empty, 
+                # but the AI analyzer typically overrides if it finds something better locally 
+                # or we can force it. For now let's just use the standard flow.
+                
+                # Get current tags
+                current_tags = []
+                if track.tags:
+                    current_tags = track.tags if isinstance(track.tags, list) else json.loads(track.tags)
+                
+                ai_data = ai_analyzer.analyze_track(
+                    metrics, 
+                    metadata=gpx_meta,
+                    user_title=track.title,
+                    user_description=track.description,
+                    scenery_rating=track.scenery_rating,
+                    water_count=track.water_points_count,
+                    user_tags=current_tags
+                )
+                
+                # Apply updates
+                if ai_data.get("ai_description"):
+                    track.description = ai_data["ai_description"]
+                
+                if ai_data.get("ai_title"):
+                    track.title = ai_data["ai_title"]
+                    
+                if ai_data.get("ai_tags"):
+                    # Merge tags unique
+                    new_tags = [t for t in ai_data["ai_tags"] if t not in current_tags]
+                    if new_tags:
+                        track.tags = current_tags + new_tags
+                
+                # Also update Verification Status if it was pending
+                if track.verification_status == models.VerificationStatus.PENDING:
+                     track.verification_status = models.VerificationStatus.VERIFIED_BY_ALGO
+
+                db.commit()
+                print(f"AI Re-analysis completed for Track {track.id}")
+                
+            else:
+                 print("AI Model not available.")
+        else:
+             print("Track file not found.")
+             
+    except Exception as e:
+        print(f"AI Re-analysis failed: {e}")
+        # Optionally flash an error message using session or similar if available, 
+        # but for now we just log it.
+
+    return RedirectResponse(url=f"/track/{track_id}/edit", status_code=303)
+
 @router.post("/track/{track_id}/delete")
 async def delete_track_action(track_id: int, request: Request, db: Session = Depends(get_db)):
     user = await get_current_user(request, db)
