@@ -12,12 +12,17 @@ def apply_migration():
     db = SessionLocal()
     try:
         with open("migrations/add_location_fields.sql", "r") as f:
-            sql_statements = f.read()
+            lines = f.readlines()
+        
+        # Remove comments and empty lines
+        clean_lines = [l for l in lines if l.strip() and not l.strip().startswith("--")]
+        sql_statements = "".join(clean_lines)
         
         statements = sql_statements.split(';')
         for statement in statements:
             if statement.strip():
-                db.execute(text(statement))
+                print(f"Executing: {statement.strip()[:50]}...")
+                db.execute(text(statement.strip()))
         
         db.commit()
         print("Migration applied successfully.")
