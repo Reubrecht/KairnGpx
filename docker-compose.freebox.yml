@@ -8,6 +8,8 @@ services:
     volumes:
       - ./app/data:/app/app/data
       - ./app/uploads:/app/app/uploads
+      - ./scripts:/app/scripts
+      - ./migrations:/app/migrations
     environment:
       # Change connection string to use PostgreSQL
       - DATABASE_URL=postgresql://kairn:kairn_password@db/kairn
