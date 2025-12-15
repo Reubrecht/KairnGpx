@@ -47,7 +47,8 @@ async def explore(
     limit: int = 10
 ):
     try:
-        from geopy.distance import haversine
+        from geopy.distance import geodesic
+
         
         user = await get_current_user_optional(request, db)
         has_beta = request.cookies.get("beta_access_v2") == "granted"
@@ -171,7 +172,7 @@ async def explore(
         if ref_lat is not None and ref_lon is not None:
             def get_dist(t):
                 if t.start_lat and t.start_lon:
-                    return haversine((ref_lat, ref_lon), (t.start_lat, t.start_lon)).km
+                    return geodesic((ref_lat, ref_lon), (t.start_lat, t.start_lon)).km
                 return 999999 # Far away if no coords
             
             tracks.sort(key=get_dist)
