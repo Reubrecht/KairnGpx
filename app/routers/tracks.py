@@ -927,10 +927,34 @@ async def global_map_page(request: Request, db: Session = Depends(get_db)):
     tracks = db.query(models.Track).filter(models.Track.visibility == models.Visibility.PUBLIC).all()
     users_with_location = db.query(models.User).filter(models.User.location_lat.isnot(None), models.User.location_lon.isnot(None)).all()
     
+    # Prepare JSON data for the map to avoid Jinja in JS errors
+    tracks_data = []
+    for t in tracks:
+        tracks_data.append({
+            "id": t.id,
+            "title": t.title,
+            "start_lat": t.start_lat,
+            "start_lon": t.start_lon,
+            "distance_km": t.distance_km,
+            "elevation_gain": t.elevation_gain
+        })
+    
+    users_data = []
+    for u in users_with_location:
+         users_data.append({
+             "username": u.username,
+             "location_lat": u.location_lat,
+             "location_lon": u.location_lon,
+             "location_city": u.location_city,
+             "profile_picture": u.profile_picture if u.profile_picture else None 
+         })
+
+    import json
     return templates.TemplateResponse("heatmap.html", {
         "request": request,
-        "tracks": tracks,
-        "users": users_with_location,
+        "tracks": tracks, # Keep raw for count or other uses if needed
+        "tracks_json": json.dumps(tracks_data),
+        "users_json": json.dumps(users_data),
         "total_tracks": len(tracks),
         "user": user
     })
