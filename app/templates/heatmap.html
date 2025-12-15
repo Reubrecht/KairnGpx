@@ -37,37 +37,68 @@
     // 1. Initialize Map
     const map = L.map('map').setView([46.603354, 1.888334], 6); // Centered on France
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    const baseLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
         subdomains: 'abcd',
         maxZoom: 20
     }).addTo(map);
 
-    // 2. Data from Backend
-    // Start coordinates of all tracks for heatmap
+    // 2. Heatmap Layer
     const heatData = [];
     {% for t in tracks %}
     heatData.push([{{ t.start_lat }}, {{ t.start_lon }}, 0.8]);
     {% endfor %}
 
-    // 3. Render Heatmap
+    let heatLayer = null;
     if (heatData.length > 0) {
-        L.heatLayer(heatData, {
+        heatLayer = L.heatLayer(heatData, {
             radius: 25,
             blur: 15,
             maxZoom: 10,
             gradient: { 0.4: 'blue', 0.65: 'lime', 1: 'red' }
-        }).addTo(map);
-
-        // Fit bounds to show data
-        const group = new L.featureGroup(heatData.map(p => L.marker([p[0], p[1]])));
-        map.fitBounds(group.getBounds().pad(0.1));
+        });
+        // Default: Add Heatmap
+        heatLayer.addTo(map);
     }
 
-    // 4. Add Clickable Markers (Optional: Only show at high zoom or cluster?)
-    // For now, let's add Circle Markers for interaction
-    // 4. Add Clickable Markers
-    // Use individual statements to be cleaner
+    // 3. User Markers Layer
+    const userMarkers = L.markerClusterGroup ? L.markerClusterGroup() : L.layerGroup(); // Use cluster if available/loaded, else group
+    // Note: We didn't load Cluster plugin, so let's stick to layerGroup or featureGroup
+    const userLayer = L.featureGroup();
+
+    {% for u in users %}
+    {% if u.location_lat and u.location_lon %}
+    var iconHtml = "";
+    {% if u.profile_picture %}
+    iconHtml = `<div class='w-10 h-10 rounded-full border-2 border-white overflow-hidden shadow-lg bg-slate-200'>
+                                <img src='{{ u.profile_picture }}' class='w-full h-full object-cover'>
+                            </div>`;
+    {% else %}
+    iconHtml = `<div class='w-10 h-10 rounded-full border-2 border-white overflow-hidden shadow-lg bg-brand-600 flex items-center justify-center text-white font-bold text-xs'>
+                                {{ u.username[:2].upper() }}
+                            </div>`;
+    {% endif %}
+
+    var icon = L.divIcon({
+        className: 'bg-transparent border-none',
+        html: iconHtml,
+        iconSize: [40, 40],
+        iconAnchor: [20, 20]
+    });
+
+    var marker = L.marker([{{ u.location_lat }}, { { u.location_lon } }], { icon: icon })
+                .bindPopup(`
+                    <div class="text-center">
+                        <div class="font-bold text-slate-900">{{ u.username }}</div>
+                        <div class="text-xs text-slate-500">{{ u.location_city or '' }}</div>
+                    </div>
+                `);
+    userLayer.addLayer(marker);
+    {% endif %}
+    {% endfor %}
+
+    // 4. Activity/Track Markers (Circles)
+    const trackLayer = L.featureGroup();
     {% for t in tracks %}
     L.circleMarker([{{ t.start_lat }}, {{ t.start_lon }}], {
         radius: 6,
@@ -76,7 +107,7 @@
         weight: 2,
         opacity: 1,
         fillOpacity: 0.8
-    }).addTo(map).bindPopup(`
+    }).addTo(trackLayer).bindPopup(`
         <div class="text-center">
             <h3 class="font-bold text-slate-900">{{ t.title }}</h3>
             <p class="text-xs text-slate-500 mb-2">{{ t.distance_km }}km • {{ t.elevation_gain }}m+</p>
@@ -84,6 +115,27 @@
         </div>
     `);
     {% endfor %}
+    // Default: Add Track Markers
+    trackLayer.addTo(map);
+
+    // 5. Layer Control
+    const overlays = {
+        "Heatmap": heatLayer,
+        "Traces (Points)": trackLayer,
+        "Membres": userLayer
+    };
+
+    // Filter out null layers
+    if (!heatLayer) delete overlays["Heatmap"];
+
+    L.control.layers(null, overlays, { position: 'topleft', collapsed: false }).addTo(map);
+
+    // Fit bounds to include everything?
+    if (heatData.length > 0) {
+        // map.fitBounds(heatLayer.getLatLngs()); // heatLayer doesn't have getBounds easily
+        const group = new L.featureGroup(heatData.map(p => L.marker([p[0], p[1]])));
+        map.fitBounds(group.getBounds().pad(0.1));
+    }
 
 </script>
 {% endblock %}

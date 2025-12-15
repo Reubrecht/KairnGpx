@@ -925,10 +925,12 @@ async def global_map_page(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     
     tracks = db.query(models.Track).filter(models.Track.visibility == models.Visibility.PUBLIC).all()
+    users_with_location = db.query(models.User).filter(models.User.location_lat.isnot(None), models.User.location_lon.isnot(None)).all()
     
     return templates.TemplateResponse("heatmap.html", {
         "request": request,
         "tracks": tracks,
+        "users": users_with_location,
         "total_tracks": len(tracks),
         "user": user
     })

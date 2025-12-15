@@ -38,6 +38,14 @@ async def update_profile(
     utmb_index: Optional[int] = Form(None),
     betrail_score: Optional[float] = Form(None),
     profile_picture: Optional[UploadFile] = File(None),
+    
+    # New Location Fields
+    location_city: Optional[str] = Form(None),
+    location_region: Optional[str] = Form(None),
+    location_country: Optional[str] = Form(None),
+    location_lat: Optional[float] = Form(None),
+    location_lon: Optional[float] = Form(None),
+    
     db: Session = Depends(get_db)
 ):
     user = await get_current_user(request, db)
@@ -50,11 +58,9 @@ async def update_profile(
             upload_dir.mkdir(parents=True, exist_ok=True)
             
             # Simple naming strategy: user_id.jpg (or original extension)
-            # To avoid caching issues, we might append timestamp but overwrite is simpler for storage
             ext = profile_picture.filename.split('.')[-1].lower()
-            if ext not in ['jpg', 'jpeg', 'png', 'webp']:
-                # validation could go here
-                pass
+            if ext not in ['jpg', 'jpeg', 'png', 'webp', 'gif']:
+                pass # validation could go here
                 
             filename = f"{user.id}.{ext}"
             file_path = upload_dir / filename
@@ -77,6 +83,13 @@ async def update_profile(
     user.itra_score = itra_score
     user.utmb_index = utmb_index
     user.betrail_score = betrail_score
+    
+    # Update granular location
+    if location_lat is not None: user.location_lat = location_lat
+    if location_lon is not None: user.location_lon = location_lon
+    if location_city is not None: user.location_city = location_city
+    if location_region is not None: user.location_region = location_region
+    if location_country is not None: user.location_country = location_country
     
     db.commit()
     

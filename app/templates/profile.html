@@ -10,7 +10,34 @@
             <div class="bg-white shadow rounded-2xl p-6 border border-slate-100">
                 <h3 class="text-lg font-bold text-slate-900 mb-4">Mon Profil</h3>
 
-                <form action="/profile" method="POST" class="space-y-4">
+                <form action="/profile" method="POST" enctype="multipart/form-data" class="space-y-6">
+
+                    <!-- Profile Picture -->
+                    <div class="flex items-center gap-4">
+                        <div class="relative group">
+                            <div
+                                class="w-20 h-20 rounded-full overflow-hidden border-2 border-slate-200 bg-slate-50 flex items-center justify-center">
+                                {% if user.profile_picture %}
+                                <img src="{{ user.profile_picture }}" alt="Profile" class="w-full h-full object-cover">
+                                {% else %}
+                                <span class="text-2xl font-bold text-slate-300">{{ user.username[:2].upper() }}</span>
+                                {% endif %}
+
+                                <label for="profile-upload"
+                                    class="absolute inset-0 bg-slate-900/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                                    <i class="ph-bold ph-camera text-white text-2xl"></i>
+                                </label>
+                            </div>
+                            <input type="file" id="profile-upload" name="profile_picture" accept="image/*"
+                                class="hidden" onchange="previewImage(this)">
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-slate-900 mb-1">Photo de profil</p>
+                            <label for="profile-upload"
+                                class="text-xs text-brand-600 font-bold cursor-pointer hover:underline">Modifier</label>
+                        </div>
+                    </div>
+
                     <!-- Identity -->
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nom Complet</label>
@@ -18,10 +45,34 @@
                             class="w-full rounded-lg border-slate-200 text-sm focus:border-brand-500 focus:ring-brand-500">
                     </div>
 
-                    <div>
+                    <!-- Location Autocomplete -->
+                    <div class="relative">
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Localisation</label>
-                        <input type="text" name="location" value="{{ user.location or '' }}" placeholder="Ville, Pays"
-                            class="w-full rounded-lg border-slate-200 text-sm focus:border-brand-500 focus:ring-brand-500">
+                        <div class="relative">
+                            <input type="text" id="city-input" name="location" value="{{ user.location or '' }}"
+                                placeholder="Ville, Région..." autocomplete="off"
+                                class="w-full rounded-lg border-slate-200 text-sm focus:border-brand-500 focus:ring-brand-500 pl-9">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="ph ph-map-pin text-slate-400"></i>
+                            </div>
+
+                            <!-- Hidden Fields -->
+                            <input type="hidden" name="location_lat" id="search-lat"
+                                value="{{ user.location_lat or '' }}">
+                            <input type="hidden" name="location_lon" id="search-lon"
+                                value="{{ user.location_lon or '' }}">
+                            <input type="hidden" name="location_city" id="search-city"
+                                value="{{ user.location_city or '' }}">
+                            <input type="hidden" name="location_region" id="search-region"
+                                value="{{ user.location_region or '' }}">
+                            <input type="hidden" name="location_country" id="search-country"
+                                value="{{ user.location_country or '' }}">
+
+                            <!-- Suggestions List -->
+                            <ul id="suggestions-list"
+                                class="hidden absolute z-50 w-full bg-white border border-slate-100 rounded-xl shadow-lg mt-1 max-h-60 overflow-y-auto">
+                            </ul>
+                        </div>
                     </div>
 
                     <div>
@@ -226,4 +277,98 @@
 
     </div>
 </div>
+<script>
+    function previewImage(input) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                // Find the img tag in the previous sibling container or parent
+                var img = input.previousElementSibling.querySelector('img');
+                if (img) {
+                    img.src = e.target.result;
+                } else {
+                    // Start from scratch scenario (if it was text avatar)
+                    var container = input.previousElementSibling;
+                    container.innerHTML = '<img src="' + e.target.result + '" alt="Profile" class="w-full h-full object-cover">';
+                }
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const cityInput = document.getElementById('city-input');
+        const suggestionsList = document.getElementById('suggestions-list');
+        const searchLat = document.getElementById('search-lat');
+        const searchLon = document.getElementById('search-lon');
+        const searchCity = document.getElementById('search-city');
+        const searchRegion = document.getElementById('search-region');
+        const searchCountry = document.getElementById('search-country');
+
+        let debounceTimer;
+
+        if (cityInput) {
+            cityInput.addEventListener('input', function () {
+                const query = this.value;
+
+                if (query.length < 3) {
+                    suggestionsList.classList.add('hidden');
+                    return;
+                }
+
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&lang=fr&limit=5`)
+                        .then(res => res.json())
+                        .then(data => {
+                            suggestionsList.innerHTML = '';
+                            if (data.features && data.features.length > 0) {
+                                suggestionsList.classList.remove('hidden');
+                                data.features.forEach(feature => {
+                                    const props = feature.properties;
+                                    const coords = feature.geometry.coordinates;
+
+                                    const li = document.createElement('li');
+                                    li.className = "px-4 py-2 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 flex flex-col border-b border-slate-50 last:border-0";
+
+                                    let label = props.name;
+                                    let context = [];
+                                    if (props.city && props.name !== props.city) context.push(props.city);
+                                    if (props.state) context.push(props.state);
+                                    if (props.country) context.push(props.country);
+
+                                    li.innerHTML = `
+                                        <span class="font-bold">${label}</span>
+                                        <span class="text-xs text-slate-400">${context.join(', ')}</span>
+                                    `;
+
+                                    li.addEventListener('click', () => {
+                                        cityInput.value = label;
+                                        searchLat.value = coords[1];
+                                        searchLon.value = coords[0];
+
+                                        searchCity.value = props.city || props.name;
+                                        searchRegion.value = props.state || props.county || '';
+                                        searchCountry.value = props.country || '';
+
+                                        suggestionsList.classList.add('hidden');
+                                    });
+                                    suggestionsList.appendChild(li);
+                                });
+                            } else {
+                                suggestionsList.classList.add('hidden');
+                            }
+                        })
+                        .catch(err => console.error(err));
+                }, 300);
+            });
+
+            document.addEventListener('click', function (e) {
+                if (cityInput && !cityInput.contains(e.target) && suggestionsList && !suggestionsList.contains(e.target)) {
+                    suggestionsList.classList.add('hidden');
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}

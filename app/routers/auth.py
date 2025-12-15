@@ -1,6 +1,9 @@
 import os
+import shutil
 import traceback
-from fastapi import APIRouter, Depends, Request, Form, status
+from pathlib import Path
+from typing import Optional
+from fastapi import APIRouter, Depends, Request, Form, status, File, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
@@ -26,8 +29,17 @@ def register(
     username: str = Form(...),
     email: str = Form(...),
     password: str = Form(...),
-    full_name: str = Form(None), # Validate new field
+    full_name: str = Form(None),
     invitation_code: str = Form(None),
+    
+    # New Fields
+    profile_picture: Optional[UploadFile] = File(None),
+    location_city: Optional[str] = Form(None),
+    location_region: Optional[str] = Form(None),
+    location_country: Optional[str] = Form(None),
+    location_lat: Optional[float] = Form(None),
+    location_lon: Optional[float] = Form(None),
+    
     db: Session = Depends(get_db)
 ):
     try:
@@ -45,17 +57,45 @@ def register(
             return templates.TemplateResponse("register.html", {"request": request, "error": "Ce nom d'utilisateur ou email existe déjà."})
         
         hashed_pwd = get_password_hash(password)
-        # Add full_name to user creation
+        
+        # Construct User with new fields
         user = models.User(
             username=username, 
             email=email, 
             hashed_password=hashed_pwd,
-            full_name=full_name
+            full_name=full_name,
+            # Location Data
+            location=location_city, # Fallback display
+            location_city=location_city,
+            location_region=location_region,
+            location_country=location_country,
+            location_lat=location_lat,
+            location_lon=location_lon
         )
-        db.add(user)
-        db.commit()
         
-        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+        db.add(user)
+        db.commit() # Commit to get ID
+        
+        # Handle Profile Picture Upload
+        if profile_picture and profile_picture.filename:
+            try:
+                upload_dir = Path("app/media/profiles")
+                upload_dir.mkdir(parents=True, exist_ok=True)
+                
+                ext = profile_picture.filename.split('.')[-1].lower()
+                if ext in ['jpg', 'jpeg', 'png', 'webp', 'gif']:
+                    filename = f"{user.id}.{ext}"
+                    file_path = upload_dir / filename
+                    
+                    with open(file_path, "wb") as buffer:
+                        shutil.copyfileobj(profile_picture.file, buffer)
+                    
+                    user.profile_picture = f"/media/profiles/{filename}"
+                    db.commit()
+            except Exception as e:
+                print(f"Profile Pic Error: {e}")
+        
+        return RedirectResponse(url="/login?registered=True", status_code=status.HTTP_303_SEE_OTHER)
     except Exception as e:
         print(f"REGISTER ERROR: {e}")
         traceback.print_exc()

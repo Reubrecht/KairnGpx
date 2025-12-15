@@ -23,7 +23,7 @@
         </div>
         {% endif %}
 
-        <form class="mt-8 space-y-6" action="/register" method="post">
+        <form class="mt-8 space-y-6" action="/register" method="post" enctype="multipart/form-data">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label class="block text-sm font-bold text-slate-700 mb-1">Nom d'utilisateur</label>
@@ -34,6 +34,48 @@
                     <label class="block text-sm font-bold text-slate-700 mb-1">Nom Complet</label>
                     <input type="text" name="full_name" placeholder="Jean Dupont"
                         class="appearance-none block w-full px-4 py-3 border border-slate-300 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm transition-colors">
+                </div>
+            </div>
+
+            <!-- Profile Picture -->
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">Photo de profil</label>
+                <div class="flex items-center justify-center w-full">
+                    <label for="dropzone-file"
+                        class="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <i class="ph ph-cloud-arrow-up text-2xl text-slate-400 mb-2"></i>
+                            <p class="text-sm text-slate-500"><span class="font-bold">Cliquez pour uploader</span> ou
+                                glissez-déposez</p>
+                            <p class="text-xs text-slate-500">SVG, PNG, JPG or GIF</p>
+                        </div>
+                        <input id="dropzone-file" name="profile_picture" type="file" class="hidden" accept="image/*" />
+                    </label>
+                </div>
+            </div>
+
+            <!-- Location Autocomplete -->
+            <div class="relative">
+                <label class="block text-sm font-bold text-slate-700 mb-1">Localisation</label>
+                <div class="relative">
+                    <input type="text" id="city-input" name="city_search" placeholder="Ville, Région..."
+                        autocomplete="off"
+                        class="appearance-none block w-full px-4 py-3 border border-slate-300 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm transition-colors pl-10">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="ph ph-map-pin text-slate-400"></i>
+                    </div>
+
+                    <!-- Hidden Fields -->
+                    <input type="hidden" name="location_lat" id="search-lat">
+                    <input type="hidden" name="location_lon" id="search-lon">
+                    <input type="hidden" name="location_city" id="search-city">
+                    <input type="hidden" name="location_region" id="search-region">
+                    <input type="hidden" name="location_country" id="search-country">
+
+                    <!-- Suggestions List -->
+                    <ul id="suggestions-list"
+                        class="hidden absolute z-50 w-full bg-white border border-slate-100 rounded-xl shadow-lg mt-1 max-h-60 overflow-y-auto">
+                    </ul>
                 </div>
             </div>
 
@@ -63,6 +105,84 @@
                 </button>
             </div>
         </form>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const cityInput = document.getElementById('city-input');
+                const suggestionsList = document.getElementById('suggestions-list');
+                const searchLat = document.getElementById('search-lat');
+                const searchLon = document.getElementById('search-lon');
+                const searchCity = document.getElementById('search-city');
+                const searchRegion = document.getElementById('search-region');
+                const searchCountry = document.getElementById('search-country');
+
+                let debounceTimer;
+
+                if (cityInput) {
+                    cityInput.addEventListener('input', function () {
+                        const query = this.value;
+
+                        if (query.length < 3) {
+                            suggestionsList.classList.add('hidden');
+                            return;
+                        }
+
+                        clearTimeout(debounceTimer);
+                        debounceTimer = setTimeout(() => {
+                            fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&lang=fr&limit=5`)
+                                .then(res => res.json())
+                                .then(data => {
+                                    suggestionsList.innerHTML = '';
+                                    if (data.features && data.features.length > 0) {
+                                        suggestionsList.classList.remove('hidden');
+                                        data.features.forEach(feature => {
+                                            const props = feature.properties;
+                                            const coords = feature.geometry.coordinates;
+
+                                            const li = document.createElement('li');
+                                            li.className = "px-4 py-2 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 flex flex-col border-b border-slate-50 last:border-0";
+
+                                            let label = props.name;
+                                            let context = [];
+                                            if (props.city && props.name !== props.city) context.push(props.city);
+                                            if (props.state) context.push(props.state);
+                                            if (props.country) context.push(props.country);
+
+                                            li.innerHTML = `
+                                                <span class="font-bold">${label}</span>
+                                                <span class="text-xs text-slate-400">${context.join(', ')}</span>
+                                            `;
+
+                                            li.addEventListener('click', () => {
+                                                cityInput.value = label;
+                                                searchLat.value = coords[1];
+                                                searchLon.value = coords[0];
+
+                                                // Intelligent mapping
+                                                searchCity.value = props.city || props.name;
+                                                searchRegion.value = props.state || props.county || '';
+                                                searchCountry.value = props.country || '';
+
+                                                suggestionsList.classList.add('hidden');
+                                            });
+                                            suggestionsList.appendChild(li);
+                                        });
+                                    } else {
+                                        suggestionsList.classList.add('hidden');
+                                    }
+                                })
+                                .catch(err => console.error(err));
+                        }, 300);
+                    });
+
+                    document.addEventListener('click', function (e) {
+                        if (cityInput && !cityInput.contains(e.target) && suggestionsList && !suggestionsList.contains(e.target)) {
+                            suggestionsList.classList.add('hidden');
+                        }
+                    });
+                }
+            });
+        </script>
 
         <div class="text-center mt-6">
             <p class="text-sm text-slate-600">
