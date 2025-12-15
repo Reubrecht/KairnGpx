@@ -14,10 +14,6 @@ def apply_migration():
         with open("migrations/add_location_fields.sql", "r") as f:
             sql_statements = f.read()
         
-        # Split by semicolon if needed, but text() often handles scripts depending on driver
-        # For simplicity, let's assume psycopg2 handles the block or we split
-        
-        # Simple split by ';' for safety if driver doesn't support multiple result sets in one go
         statements = sql_statements.split(';')
         for statement in statements:
             if statement.strip():
