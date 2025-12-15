@@ -313,6 +313,11 @@ class RaceEvent(Base):
     website = Column(String, nullable=True)
     description = Column(Text, nullable=True)
     region = Column(String, nullable=True)
+    continent = Column(String, nullable=True)
+    country = Column(String, nullable=True)
+    department = Column(String, nullable=True)
+    massif = Column(String, nullable=True)
+    city = Column(String, nullable=True)
     circuit = Column(String, nullable=True) # "UTMB World Series", "Golden Trail"
 
     editions = relationship("RaceEdition", back_populates="event")

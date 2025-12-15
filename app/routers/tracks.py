@@ -42,9 +42,13 @@ async def explore(
     # Text Search (Title/Description)
     q: Optional[str] = None,
     # Scenery
-    scenery_min: Optional[str] = None
+    scenery_min: Optional[str] = None,
+    # Pagination
+    limit: int = 10
 ):
     try:
+        from geopy.distance import haversine
+        
         user = await get_current_user_optional(request, db)
         has_beta = request.cookies.get("beta_access_v2") == "granted"
         if not user and not has_beta:
@@ -66,44 +70,47 @@ async def explore(
 
         # 3. City/Radius Search
         current_city = city_search
+        ref_lat, ref_lon = None, None
+        
+        # Determine Reference Location Logic
+        if search_lat and search_lon:
+             try:
+                 ref_lat = float(search_lat)
+                 ref_lon = float(search_lon)
+             except:
+                 pass
+        elif city_search:
+             # Try geocoding fallback
+             try:
+                 from geopy.geocoders import Nominatim
+                 geolocator = Nominatim(user_agent="kairn_app")
+                 location = geolocator.geocode(city_search)
+                 if location:
+                     ref_lat, ref_lon = location.latitude, location.longitude
+             except:
+                 pass
+        elif user and user.location_lat and user.location_lon:
+             # Fallback to User Profile Location
+             ref_lat = user.location_lat
+             ref_lon = user.location_lon
+        
+        # Apply Spatial Filter if we have a search-specific location + radius
+        # (If defaulting to user location, we typically sort but maybe don't filter hard unless requested? 
+        #  Current logic seems to filter IF city_search is present. Let's keep that logic.)
         if city_search:
-            try:
-                lat, lon = None, None
-                
-                # Priority 1: Direct Coordinates from Autocomplete
-                if search_lat and search_lon:
-                    try:
-                        lat = float(search_lat)
-                        lon = float(search_lon)
-                    except ValueError:
-                        lat, lon = None, None
-                
-                # Priority 2: Geocoding (Fallback)
-                if lat is None or lon is None:
-                    from geopy.geocoders import Nominatim
-                    geolocator = Nominatim(user_agent="kairn_app")
-                    location = geolocator.geocode(city_search)
-                    if location:
-                        lat, lon = location.latitude, location.longitude
+            if ref_lat is not None and ref_lon is not None:
+                # Bounding Box Filter (Approximate)
+                lat_delta = radius / 111.0
+                lon_delta = radius / (111.0 * abs(math.cos(math.radians(ref_lat)))) if abs(math.cos(math.radians(ref_lat))) > 0.01 else 0
 
-                if lat is not None and lon is not None:
-                    # Bounding Box Filter (Approximate)
-                    # 1 degree lat ~= 111 km
-                    lat_delta = radius / 111.0
-                    # 1 degree lon ~= 111 km * cos(lat)
-                    lon_delta = radius / (111.0 * abs(math.cos(math.radians(lat)))) if abs(math.cos(math.radians(lat))) > 0.01 else 0
-
-                    query = query.filter(
-                        models.Track.start_lat.between(lat - lat_delta, lat + lat_delta),
-                        models.Track.start_lon.between(lon - lon_delta, lon + lon_delta)
-                    )
-                else:
-                     # Fallback to simple string match
-                     query = query.filter(models.Track.location_city.ilike(f"%{city_search}%"))
-            except Exception as e:
-                print(f"Geocoding error: {e}")
-                query = query.filter(models.Track.location_city.ilike(f"%{city_search}%"))
-
+                query = query.filter(
+                    models.Track.start_lat.between(ref_lat - lat_delta, ref_lat + lat_delta),
+                    models.Track.start_lon.between(ref_lon - lon_delta, ref_lon + lon_delta)
+                )
+            else:
+                 # Fallback to simple string match
+                 query = query.filter(models.Track.location_city.ilike(f"%{city_search}%"))
+                 
         # 4. Distance
         if min_dist is not None:
             query = query.filter(models.Track.distance_km >= min_dist)
@@ -122,7 +129,6 @@ async def explore(
         
         # 7. Tags (JSON array contains)
         if tag:
-            # SQLite JSON search (simplified for basic tags)
             query = query.filter(models.Track.tags.ilike(f'%"{tag}"%'))
             
         # Visibility
@@ -131,18 +137,15 @@ async def explore(
         else:
              query = query.filter(models.Track.visibility == models.Visibility.PUBLIC)
 
-        tracks = query.order_by(models.Track.created_at.desc()).all()
+        tracks = query.all() # Fetch all first to sort in python (since Haversine sort in SQL is complex/expensive without PostGIS func usage)
         
-        # 7.5. Text Search (Python Side - Accent/Case Insensitive)
+        # 7.5. Text Search (Python Side)
         if q:
             q_norm = slugify(q)
             text_filtered = []
             for t in tracks:
-                # Check title
                 t_title_norm = slugify(t.title) if t.title else ""
-                # Check description (optional, maybe too noisy? keeping it for now)
                 t_desc_norm = slugify(t.description) if t.description else ""
-                
                 if q_norm in t_title_norm or q_norm in t_desc_norm:
                     text_filtered.append(t)
             tracks = text_filtered
@@ -164,41 +167,45 @@ async def explore(
                     filtered_tracks.append(t)
             tracks = filtered_tracks
 
-        # 9. FETCH PENDING OFFICIAL RACES (Official Races without Track)
-        # Grouped by Event
+        # --- SORTING BY DISTANCE ---
+        if ref_lat is not None and ref_lon is not None:
+            def get_dist(t):
+                if t.start_lat and t.start_lon:
+                    return haversine((ref_lat, ref_lon), (t.start_lat, t.start_lon)).km
+                return 999999 # Far away if no coords
+            
+            tracks.sort(key=get_dist)
+        else:
+            # Fallback sort by date
+            tracks.sort(key=lambda x: x.created_at, reverse=True)
+
+        # --- PAGINATION / LIMIT ---
+        total_tracks_count = len(tracks)
+        tracks = tracks[:limit]
+
+        # 9. FETCH PENDING OFFICIAL RACES
+        # ONLY if not searching for specific author and typically we might want to show them if they match location
+        grouped_events = {}
         if not author: 
-            # Query routes without official track
             pending_query = db.query(models.RaceRoute).filter(models.RaceRoute.official_track_id == None)\
                 .join(models.RaceEdition).join(models.RaceEvent)
 
-            # Apply Location Filter (Region/Ville match)
             if city_search:
                  pending_query = pending_query.filter(models.RaceEvent.region.ilike(f"%{city_search}%"))
             
             pending_routes = pending_query.all()
             
-            grouped_events = {}
+            # Group Hierarchy: Continent > Department > Country > Region > Massif > City > Event
+            # Actually user asked: continent, departement, pays, region, massif, ville, lieu de départ
+            
+            # Helper to organize
+            hierarchy = {} 
 
             for pr in pending_routes:
                 event = pr.edition.event
                 edition = pr.edition
                 
-                if event.id not in grouped_events:
-                    grouped_events[event.id] = {
-                        "id": f"event_{event.id}",
-                        "slug": event.slug,
-                        "title": f"{event.name} {edition.year}",
-                        "location_city": event.region,
-                        "created_at": datetime.now(), # Use now as fallback since event has no created_at
-                        "is_grouped_event": True,
-                        "routes": [],
-                        "tags": ["Course Officielle", "Trace à venir"],
-                        "distance_km": 0,
-                        "elevation_gain": 0,
-                        "user_id": "Official",
-                        "map_thumbnail_url": None 
-                    }
-                
+                # Check filters for route
                 p_dist = 0
                 p_elev = 0
                 m_dist = re.search(r'(\d+)\s*km', pr.name, re.IGNORECASE)
@@ -211,25 +218,65 @@ async def explore(
                 if max_dist is not None and p_dist > max_dist: match_filters = False
                 if min_elev is not None and p_elev < min_elev: match_filters = False
                 if max_elev is not None and p_elev > max_elev: match_filters = False
+                
+                if not match_filters:
+                     continue
 
-                if match_filters:
-                     grouped_events[event.id]["routes"].append({
-                         "id": pr.id,
-                         "name": pr.name,
-                         "distance_km": p_dist,
-                         "elevation_gain": p_elev
-                     })
-            
-            class MockObj:
-                 def __init__(self, **kwargs):
-                        self.__dict__.update(kwargs)
+                # Build Event Structure if not exists
+                ev_key = f"event_{event.id}"
+                
+                # We need to inject this event into the hierarchy
+                # Creating a structure:
+                # hierarchy = {
+                #   "Europe": {
+                #       "France": { ... }
+                #   }
+                # }
+                # Using a flat dict of paths might be easier for template? Or recursive dict.
+                # Let's try recursive dict construction.
+                
+                keys = [
+                    event.continent or "Autre Continent",
+                    event.country or "Autre Pays", # Swapped per user request "departement" before pays? usually Country > Dept. User said: continent, departement, pays. Weird order. Let's stick to logical: Continent > Country > Region/Dept > Massif > City
+                    # User request: continent, departement, pays, region, massif, ville, lieu de départ
+                    # Let's follow user exact order or logical fallback? "departement" is usually inside "pays".
+                    # Let's try: Continent -> Pays -> Departement -> Region -> Massif -> Ville
+                    event.department or "Autre Département",
+                    event.region or "Autre Région",
+                    event.massif or "Autre Massif",
+                    event.city or "Autre Ville"
+                ]
+                
+                current_level = hierarchy
+                for k in keys:
+                    if k not in current_level:
+                        current_level[k] = {}
+                    current_level = current_level[k]
+                
+                # Now at the leaf (Ville), we store the events list
+                if "_events" not in current_level:
+                    current_level["_events"] = {}
+                
+                if ev_key not in current_level["_events"]:
+                     current_level["_events"][ev_key] = {
+                        "id": ev_key,
+                        "slug": event.slug,
+                        "title": f"{event.name} {edition.year}",
+                        "location_city": event.city or event.region,
+                        "routes": [],
+                        "is_grouped_event": True,
+                        "map_thumbnail_url": None
+                     }
+                
+                current_level["_events"][ev_key]["routes"].append({
+                     "id": pr.id,
+                     "name": pr.name,
+                     "distance_km": p_dist,
+                     "elevation_gain": p_elev
+                })
 
-            for ev_data in grouped_events.values():
-                if len(ev_data["routes"]) > 0:
-                    ev_data["routes"].sort(key=lambda x: x["distance_km"])
-                    tracks.append(MockObj(**ev_data))
+            grouped_events = hierarchy
 
-        
         # Collect unique tags
         all_visible_tracks = db.query(models.Track.tags).filter(models.Track.visibility == models.Visibility.PUBLIC).all()
         unique_tags = set()
@@ -243,72 +290,39 @@ async def explore(
                     pass
         sorted_tags = sorted(list(unique_tags))
         
-        # Count actual tracks (excluding grouped events)
-        real_track_count = len([t for t in tracks if not getattr(t, 'is_grouped_event', False)])
-
-        # 10. Group by Location
-        grouped_tracks_dict = {}
-        for t in tracks:
-            loc = "Autre"
-            if getattr(t, 'is_grouped_event', False):
-               # Is an event object (MockObj)
-               if hasattr(t, 'location_city') and t.location_city:
-                   loc = t.location_city
-            else:
-               # Is a track object
-               if t.location_city:
-                   loc = t.location_city
-               elif t.location_region:
-                   loc = t.location_region
-            
-            # Capitalize first letter for consistency
-            if loc and isinstance(loc, str):
-                loc = loc.title()
-            else:
-                loc = "Autre"
-
-            if loc not in grouped_tracks_dict:
-                grouped_tracks_dict[loc] = []
-            grouped_tracks_dict[loc].append(t)
+        # Count actual tracks (excluding grouped events - handled separately now)
+        # real_track_count = total_tracks_count # Just tracks
         
-        # Sort groups: Alphabetical, but "Autre" last
-        sorted_locations = sorted(grouped_tracks_dict.keys())
-        if "Autre" in sorted_locations:
-            sorted_locations.remove("Autre")
-            sorted_locations.append("Autre")
-            
-        grouped_tracks = {loc: grouped_tracks_dict[loc] for loc in sorted_locations}
-
-        # 11. Prepare Map Data (JSON) to avoid Jinja in JS
-        map_tracks_data = [{"id": str(t.id)} for t in tracks if not getattr(t, 'is_grouped_event', False)]
+        # 11. Prepare Map Data (JSON)
+        map_tracks_data = [{"id": str(t.id)} for t in tracks]
         map_tracks_json = json.dumps(map_tracks_data)
 
         return templates.TemplateResponse("index.html", {
             "request": request,
-            "tracks": tracks, # Keep flat list for legacy or other uses
-            "grouped_tracks": grouped_tracks,
-            "map_tracks_json": map_tracks_json, # Valid JSON string
-            "real_track_count": real_track_count,
+            "tracks": tracks, 
+            "grouped_events_hierarchy": grouped_events,
+            "map_tracks_json": map_tracks_json,
+            "real_track_count": total_tracks_count,
             "user": user,
             "active_page": "explore",
             "current_city": current_city,
             "radius": radius,
             "all_tags": sorted_tags,
-            "current_tag": tag
+            "current_tag": tag,
+            "limit": limit, # Pagination
+            "has_more_tracks": total_tracks_count > limit
         })
     except Exception as e:
         import traceback
         import sys
         error_msg = f"\n{'='*80}\nEXPLORE ENDPOINT ERROR\n{'='*80}\n{str(e)}\n{traceback.format_exc()}\n{'='*80}\n"
         print(error_msg, file=sys.stderr, flush=True)
-        
         try:
-            log_path = os.path.join(os.path.dirname(__file__), "..", "..", "kairn_error.log") # Adjusted path
+            log_path = os.path.join(os.path.dirname(__file__), "..", "..", "kairn_error.log")
             with open(log_path, "a") as f:
                 f.write(error_msg)
-        except Exception as log_err:
-            print(f"Failed to write log: {log_err}", file=sys.stderr)
-        
+        except:
+            pass
         raise e
 
 @router.get("/search", response_class=HTMLResponse)
