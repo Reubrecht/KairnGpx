@@ -461,7 +461,7 @@
                     class="bg-amber-100 text-amber-700 w-8 h-8 rounded-full flex items-center justify-center text-sm">⛰️</span>
                 Traces en Attente
                 {% if pending_tracks %}
-                <span class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full ml-2">{{
+                <span class="bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded-full ml-2">{{
                     pending_tracks|length }}</span>
                 {% endif %}
             </h3>
@@ -495,8 +495,8 @@
                                         t.user_obj.username if t.user_obj else t.uploader_name }}</span> le {{
                                     t.created_at.strftime('%d/%m/%Y') }}</p>
                             </div>
-                            <span class="bg-yellow-100 text-yellow-700 text-xs font-bold px-2 py-1 rounded">En
-                                Attente</span>
+                            <span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded">Nouvelle
+                                Trace</span>
                         </div>
 
                         <div class="bg-slate-50 rounded-xl p-4 mb-6 border border-slate-100">

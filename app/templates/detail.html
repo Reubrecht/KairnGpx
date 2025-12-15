@@ -118,6 +118,23 @@
                     </div>
                 </div>
 
+                <!-- CHART (Moved Top) -->
+                <div class="mb-6 relative group">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Profil</h3>
+                        <!-- Stats Header (Fixed Line) -->
+                        <div id="chart-stats"
+                            class="flex items-center gap-4 text-xs font-bold font-mono text-slate-700 opacity-0 transition-opacity">
+                            <span><span id="stat-dist">--</span> km</span>
+                            <span class="text-slate-300">|</span>
+                            <span><span id="stat-elev">--</span> m</span>
+                        </div>
+                    </div>
+                    <div class="h-40 md:h-64 w-full bg-slate-50 rounded-xl border border-slate-100 p-2 relative">
+                        <canvas id="elevationChart"></canvas>
+                    </div>
+                </div>
+
                 <!-- KEY METRICS (Mobile Grid) -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
                     <!-- Distance -->
@@ -168,23 +185,6 @@
                     </div>
                 </div>
 
-                <!-- CHART -->
-                <div class="mb-8 relative group">
-                    <div class="flex items-center justify-between mb-2">
-                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Profil</h3>
-                        <!-- Stats Header (Fixed Line) -->
-                        <div id="chart-stats"
-                            class="flex items-center gap-4 text-xs font-bold font-mono text-slate-700 opacity-0 transition-opacity">
-                            <span><span id="stat-dist">--</span> km</span>
-                            <span class="text-slate-300">|</span>
-                            <span><span id="stat-elev">--</span> m</span>
-                        </div>
-                    </div>
-                    <div class="h-40 md:h-64 w-full bg-slate-50 rounded-xl border border-slate-100 p-2 relative">
-                        <canvas id="elevationChart"></canvas>
-                    </div>
-                </div>
-
                 <!-- PERFORMANCE & PREDICTION -->
                 {% if user_prediction and user_prediction.prediction_available %}
                 <div class="mb-8 bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 text-white shadow-xl">
@@ -232,7 +232,7 @@
                                 <div class="text-xs text-brand-400 font-bold uppercase mb-2 tracking-widest">Course -
                                     Compétition</div>
                                 <div class="text-4xl md:text-4xl font-black font-mono tracking-tight text-white mb-2">
-                                    {{ user_prediction.times.race }}
+                                    {{ user_prediction.times.push }}
                                 </div>
                                 <div
                                     class="text-[10px] text-slate-500 font-medium border-t border-slate-700 pt-2 flex items-center gap-1">
@@ -248,7 +248,7 @@
                                 <div class="text-xs text-orange-400 font-bold uppercase mb-2 tracking-widest">Tempo
                                     Entraînement Intensif</div>
                                 <div class="text-3xl md:text-3xl font-black font-mono tracking-tight text-white mb-2">
-                                    {{ user_prediction.times.push }}
+                                    {{ user_prediction.times.race }}
                                 </div>
                                 <div
                                     class="text-[10px] text-slate-500 font-medium border-t border-slate-700 pt-2 flex items-center gap-1">
@@ -636,7 +636,9 @@
                     x: {
                         grid: { display: false },
                         ticks: {
-                            maxTicksLimit: 6, // Reduced ticks
+                            maxTicksLimit: window.innerWidth < 768 ? 4 : 8, // 4 graduation on mobile portrait, more on desktop
+                            maxRotation: 0, // No slanted labels
+                            minRotation: 0,
                             callback: function (val, index) {
                                 return this.getLabelForValue(val) + 'km';
                             },
