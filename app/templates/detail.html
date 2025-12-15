@@ -403,7 +403,8 @@
     {
         "geojson": {{ track_geojson | safe }},
         "startLon": {{ track.start_lon }},
-        "startLat": {{ track.start_lat }}
+        "startLat": {{ track.start_lat }},
+        "city": "{{ track.location_city or '' }}"
     }
 </script>
 
@@ -515,6 +516,46 @@
 
             // 2. Setup Chart.js
             initElevationChart(coords);
+
+            // --- NEW: Geographical Markers (City & Summit) ---
+
+            // A. City Marker (Start)
+            const cityName = trackData.city;
+
+            if (cityName) {
+                const cityEl = document.createElement('div');
+                // Minimalist Design: Text only, slightly blurred bg for readability, no borders/pins
+                cityEl.className = 'text-[10px] font-black tracking-widest uppercase text-slate-500/90 mix-blend-multiply drop-shadow-sm select-none pointer-events-none transform -translate-y-1/2 translate-x-1';
+                cityEl.innerText = cityName;
+
+                new maplibregl.Marker({ element: cityEl, anchor: 'left' })
+                    .setLngLat([trackData.startLon, trackData.startLat])
+                    .addTo(map);
+            }
+
+            // B. Summit Marker (Highest Point)
+            if (maxElev > -Infinity) {
+                // Find coordinate with maxElev
+                let maxCoord = null;
+                for (let c of coords) {
+                    if (c[2] === maxElev) {
+                        maxCoord = c;
+                        break;
+                    }
+                }
+
+                if (maxCoord) {
+                    const summitEl = document.createElement('div');
+                    // Minimalist Design: Text only for Summit
+                    summitEl.className = 'text-[10px] font-bold text-slate-500/90 mix-blend-multiply drop-shadow-sm select-none pointer-events-none transform -translate-y-full';
+                    summitEl.innerHTML = `▲ ${Math.round(maxElev)}m`;
+
+                    new maplibregl.Marker({ element: summitEl, anchor: 'bottom' })
+                        .setLngLat(maxCoord)
+                        .setOffset([0, -5])
+                        .addTo(map);
+                }
+            }
 
             // Sync Chart Hover -> Map Marker
             // Init Sync Marker
