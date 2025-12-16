@@ -813,63 +813,64 @@
 <!-- Icons are Phosphor, ensure CSS included in base -->
 
 
-// Prediction Simulator
-document.addEventListener('alpine:init', () => {
-Alpine.data('predictionEditor', (initialConfig) => ({
-config: initialConfig,
-userIndex: 500,
-examples: [
-{ name: 'Court (20km 1000d+)', dist: 20, elev: 1000 },
-{ name: 'Moyen (50km 2500d+)', dist: 50, elev: 2500 },
-{ name: 'Ultra (100km 6000d+)', dist: 100, elev: 6000 }
-],
+<script>
+    // Prediction Simulator
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('predictionEditor', (initialConfig) => ({
+            config: initialConfig,
+            userIndex: 500,
+            examples: [
+                { name: 'Court (20km 1000d+)', dist: 20, elev: 1000 },
+                { name: 'Moyen (50km 2500d+)', dist: 50, elev: 2500 },
+                { name: 'Ultra (100km 6000d+)', dist: 100, elev: 6000 }
+            ],
 
-predict(ex) {
-const dist = ex.dist;
-const elev = ex.elev;
+            predict(ex) {
+                const dist = ex.dist;
+                const elev = ex.elev;
 
-// Formulas match python app/services/prediction.py
-const kmEffort = dist + (elev / 100.0);
-const ratio = dist > 0 ? elev / dist : 0;
+                // Formulas match python app/services/prediction.py
+                const kmEffort = dist + (elev / 100.0);
+                const ratio = dist > 0 ? elev / dist : 0;
 
-// Base Speed
-let speed = (parseFloat(this.config.base_speed_slope) * this.userIndex) - parseFloat(this.config.base_speed_intercept);
-speed = Math.max(speed, parseFloat(this.config.min_speed_kmeh));
+                // Base Speed
+                let speed = (parseFloat(this.config.base_speed_slope) * this.userIndex) - parseFloat(this.config.base_speed_intercept);
+                speed = Math.max(speed, parseFloat(this.config.min_speed_kmeh));
 
-// Tech
-let techFactor = 1.0;
-// Note: Check order (highest threshold first)
-if (ratio > parseFloat(this.config.tech_factor_3_threshold)) techFactor = parseFloat(this.config.tech_factor_3_alpine);
-else if (ratio > parseFloat(this.config.tech_factor_2_threshold)) techFactor =
-parseFloat(this.config.tech_factor_2_mountain);
-else if (ratio > parseFloat(this.config.tech_factor_1_threshold)) techFactor =
-parseFloat(this.config.tech_factor_1_hilly);
+                // Tech
+                let techFactor = 1.0;
+                // Note: Check order (highest threshold first)
+                if (ratio > parseFloat(this.config.tech_factor_3_threshold)) techFactor = parseFloat(this.config.tech_factor_3_alpine);
+                else if (ratio > parseFloat(this.config.tech_factor_2_threshold)) techFactor =
+                    parseFloat(this.config.tech_factor_2_mountain);
+                else if (ratio > parseFloat(this.config.tech_factor_1_threshold)) techFactor =
+                    parseFloat(this.config.tech_factor_1_hilly);
 
-// Decay
-let distFactor = 1.0;
-const startKm = parseFloat(this.config.decay_start_km);
-if (kmEffort > startKm) {
-const over = kmEffort - startKm;
-let pct = (over / parseFloat(this.config.decay_step_km)) * parseFloat(this.config.decay_rate_per_step);
-pct = Math.min(pct, parseFloat(this.config.decay_max_total));
-distFactor = 1.0 - pct;
-}
+                // Decay
+                let distFactor = 1.0;
+                const startKm = parseFloat(this.config.decay_start_km);
+                if (kmEffort > startKm) {
+                    const over = kmEffort - startKm;
+                    let pct = (over / parseFloat(this.config.decay_step_km)) * parseFloat(this.config.decay_rate_per_step);
+                    pct = Math.min(pct, parseFloat(this.config.decay_max_total));
+                    distFactor = 1.0 - pct;
+                }
 
-let adjSpeed = speed * techFactor * distFactor;
-adjSpeed = Math.max(adjSpeed, 2.5); // Floor
+                let adjSpeed = speed * techFactor * distFactor;
+                adjSpeed = Math.max(adjSpeed, 2.5); // Floor
 
-const hours = kmEffort / adjSpeed;
-return this.formatTime(hours);
-},
+                const hours = kmEffort / adjSpeed;
+                return this.formatTime(hours);
+            },
 
-formatTime(h) {
-if (!isFinite(h)) return "--";
-const hours = Math.floor(h);
-const mins = Math.round((h - hours) * 60);
-return `${hours}h${mins.toString().padStart(2, '0')}`;
-}
-}));
-});
+            formatTime(h) {
+                if (!isFinite(h)) return "--";
+                const hours = Math.floor(h);
+                const mins = Math.round((h - hours) * 60);
+                return `${hours}h${mins.toString().padStart(2, '0')}`;
+            }
+        }));
+    });
 </script>
 
 <dialog id="modal-import-races" class="modal">
