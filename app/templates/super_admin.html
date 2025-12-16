@@ -143,15 +143,16 @@
                     class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     <!-- Event Header -->
                     <div class="p-4 flex items-center justify-between bg-slate-50/50 hover:bg-slate-50 transition-colors cursor-pointer"
-                        @click="open = !open">
+                        onclick="window.location.href='/superadmin/event/{{ event.id }}/edit'">
                         <div class="flex items-center gap-4">
-                            <button
-                                class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 transition-transform duration-200"
+                            <button @click.stop="open = !open"
+                                class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 transition-transform duration-200 hover:text-brand-600 hover:border-brand-300"
                                 :class="{ 'rotate-90': open }">
                                 <i class="ph-bold ph-caret-right"></i>
                             </button>
                             <div>
-                                <h3 class="font-bold text-slate-900 text-lg">{{ event.name }}</h3>
+                                <h3 class="font-bold text-slate-900 text-lg hover:text-brand-600 transition-colors">{{
+                                    event.name }}</h3>
                                 <div class="flex items-center gap-2 text-xs text-slate-500">
                                     <span class="bg-slate-200 px-1.5 py-0.5 rounded text-slate-600 font-mono">{{
                                         event.slug }}</span>

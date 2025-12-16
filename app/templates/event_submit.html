@@ -80,11 +80,27 @@
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="space-y-2">
-                                <label class="block text-sm font-bold text-slate-700">Région / Massif</label>
-                                <input type="text" name="region" value="{{ event.region if event else '' }}"
-                                    class="w-full rounded-xl border-slate-200 focus:border-brand-500"
-                                    placeholder="Ex: Alpes / Chamonix">
+                            <div class="space-y-2 relative">
+                                <label class="block text-sm font-bold text-slate-700">Lieu / Région</label>
+                                <div class="relative">
+                                    <input type="text" id="location-input" name="location_display"
+                                        value="{% if event %}{% if event.city %}{{ event.city }}{% if event.country %}, {{ event.country }}{% endif %}{% else %}{{ event.region or '' }}{% endif %}{% endif %}"
+                                        class="w-full rounded-xl border-slate-200 focus:border-brand-500"
+                                        placeholder="Rechercher une ville, une région..." autocomplete="off">
+
+                                    <!-- Hidden Fields for Storage -->
+                                    <input type="hidden" name="region" id="input-region"
+                                        value="{{ event.region if event else '' }}">
+                                    <input type="hidden" name="city" id="input-city"
+                                        value="{{ event.city if event else '' }}">
+                                    <input type="hidden" name="country" id="input-country"
+                                        value="{{ event.country if event else '' }}">
+
+                                    <!-- Suggestions -->
+                                    <ul id="location-suggestions"
+                                        class="hidden absolute z-50 w-full bg-white border border-slate-200 rounded-xl shadow-xl mt-1 max-h-60 overflow-y-auto">
+                                    </ul>
+                                </div>
                             </div>
                             <div class="space-y-2">
                                 <label class="block text-sm font-bold text-slate-700">Site Web Officiel</label>
@@ -199,7 +215,8 @@
             try {
                 const formData = new FormData();
                 formData.append('name', document.getElementById('eventName').value);
-                formData.append('region', document.querySelector('input[name="region"]').value);
+                // Use the region hidden input or fallback to visual input
+                formData.append('region', document.getElementById('input-region').value || document.getElementById('location-input').value);
                 formData.append('website', document.querySelector('input[name="website"]').value);
                 formData.append('description', document.querySelector('textarea[name="description"]').value);
 
@@ -212,7 +229,11 @@
                     const data = await response.json();
                     if (data.normalized_name) document.getElementById('eventName').value = data.normalized_name;
                     if (data.slug) document.getElementById('eventSlug').value = data.slug;
-                    if (data.region) document.querySelector('input[name="region"]').value = data.region;
+                    if (data.region) {
+                        document.getElementById('input-region').value = data.region;
+                        // If we have a location input, try to set it nicely
+                        document.getElementById('location-input').value = data.region;
+                    }
                     if (data.circuit) document.querySelector('input[name="circuit"]').value = data.circuit;
                     if (data.description) document.querySelector('textarea[name="description"]').value = data.description;
 
@@ -232,6 +253,85 @@
             } finally {
                 btnAi.innerHTML = originalText;
                 btnAi.disabled = false;
+            }
+        });
+    }
+
+    // --- LOCATION AUTOCOMPLETE ---
+    const locInput = document.getElementById('location-input');
+    const locList = document.getElementById('location-suggestions');
+    const inputRegion = document.getElementById('input-region');
+    const inputCity = document.getElementById('input-city');
+    const inputCountry = document.getElementById('input-country');
+    let locTimer;
+
+    if (locInput && locList) {
+        locInput.addEventListener('input', function () {
+            const query = this.value;
+
+            // Sync fallback to region
+            if (inputRegion) inputRegion.value = query;
+
+            if (query.length < 3) {
+                locList.classList.add('hidden');
+                return;
+            }
+
+            clearTimeout(locTimer);
+            locTimer = setTimeout(() => {
+                fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&lang=fr&limit=5`)
+                    .then(res => res.json())
+                    .then(data => {
+                        locList.innerHTML = '';
+                        if (data.features && data.features.length > 0) {
+                            locList.classList.remove('hidden');
+                            data.features.forEach(feature => {
+                                const props = feature.properties;
+                                const li = document.createElement('li');
+                                li.className = "px-4 py-2 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 flex flex-col border-b border-slate-50 last:border-0";
+
+                                let label = props.name;
+                                let context = [];
+                                if (props.city && props.name !== props.city) context.push(props.city);
+                                if (props.state) context.push(props.state);
+                                if (props.country) context.push(props.country);
+
+                                li.innerHTML = `
+                                    <span class="font-bold">${label}</span>
+                                    <span class="text-xs text-slate-400">${context.join(', ')}</span>
+                                `;
+
+                                li.addEventListener('click', () => {
+                                    // Populate Fields
+                                    const city = props.city || (props.osm_key === 'place' ? props.name : '');
+                                    const region = props.state || props.name; // Fallback
+                                    const country = props.country || '';
+
+                                    // Display Logic
+                                    let displayVal = props.name;
+                                    if (country) displayVal += `, ${country}`;
+                                    locInput.value = displayVal;
+
+                                    // Hidden Fields
+                                    if (inputCity) inputCity.value = city;
+                                    if (inputRegion) inputRegion.value = region;
+                                    if (inputCountry) inputCountry.value = country;
+
+                                    locList.classList.add('hidden');
+                                });
+                                locList.appendChild(li);
+                            });
+                        } else {
+                            locList.classList.add('hidden');
+                        }
+                    });
+            }, 300);
+        });
+
+        // Hide on click outside
+        document.addEventListener('click', function (e) {
+            if (!locInput.contains(e.target) && !locList.contains(e.target)) {
+                locList.classList.add('hidden');
             }
         });
     }

@@ -125,6 +125,8 @@ async def create_event(
     website: str = Form(None),
     description: str = Form(None),
     region: str = Form(None),
+    city: str = Form(None),
+    country: str = Form(None),
     circuit: str = Form(None),
     request_id: Optional[str] = Form(None),
     db: Session = Depends(get_db),
@@ -137,7 +139,7 @@ async def create_event(
 
         new_event = models.RaceEvent(
             name=name, slug=slug, website=website, description=description,
-            region=region, circuit=circuit
+            region=region, circuit=circuit, city=city, country=country
         )
         db.add(new_event)
         
@@ -165,6 +167,8 @@ async def update_event(
     website: str = Form(None),
     description: str = Form(None),
     region: str = Form(None),
+    city: str = Form(None),
+    country: str = Form(None),
     circuit: str = Form(None),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_super_admin)
@@ -178,6 +182,8 @@ async def update_event(
     event.website = website
     event.description = description
     event.region = region
+    event.city = city
+    event.country = country
     event.circuit = circuit
     db.commit()
     return RedirectResponse(url=f"/superadmin#event-{event_id}", status_code=303)
