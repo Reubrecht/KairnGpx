@@ -121,10 +121,62 @@ class AiAnalyzer:
                 "ai_description": data.get("description"),
                 "ai_tags": data.get("tags", [])
             }
-        except Exception as e:
             print(f"AI Analysis failed: {e}")
             return {
                 "ai_title": None,
                 "ai_description": None,
                 "ai_tags": []
             }
+
+    def normalize_event(self, name: str, region: str = None, website: str = None, description: str = None) -> Dict[str, Any]:
+        """
+        Standardizes event nomenclature using Gemini.
+        Returns:
+        {
+            "normalized_name": "UTMB Mont-Blanc", 
+            "slug": "utmb-mont-blanc",
+            "region": "Chamonix, France",
+            "circuit": "UTMB World Series",
+            "description": "..."
+        }
+        """
+        if not self.model:
+             return {}
+             
+        prompt = f"""
+        Tu es un expert en gestion de courses de trail et d'événements sportifs. Ton rôle est de normaliser les données d'un événement pour qu'elles suivent une nomenclature propre, standardisée et professionnelle (Type UTMB).
+        
+        Données brutes reçues :
+        - Nom : {name}
+        - Région : {region}
+        - Site Web : {website}
+        - Description : {description}
+        
+        Instructions de normalisation :
+        1. **Nom** : Doit être le nom officiel court et propre. Ex: "Marathon du Mont-Blanc" (pas "42km du mont blanc"). En cas d'acronyme célèbre (UTMB, GRP), utilise le format "Acronyme Nom-Complet" (ex: "UTMB Mont-Blanc") ou juste le nom officiel s'il est très connu.
+        2. **Slug** : Format url-friendly (kebab-case). Ex: "utmb-mont-blanc".
+        3. **Région** : Format "Ville Principale (Département/Pays)". Ex: "Chamonix (74)".
+        4. **Circuit** : Si l'événement fait partie d'un circuit connu (UTMB World Series, Golden Trail Series, Spartanguill), indique-le. Sinon null.
+        5. **Description** : Rédige une description courte (2 phrases), pro et marketing, en français.
+        
+        Réponds UNIQUEMENT au format JSON strict :
+        {{
+            "normalized_name": "...",
+            "slug": "...",
+            "region": "...",
+            "circuit": "...",
+            "description": "..."
+        }}
+        """
+        
+        try:
+            response = self.model.generate_content(prompt)
+            text = response.text.strip()
+            if text.startswith("```json"):
+                text = text[7:]
+            if text.endswith("```"):
+                text = text[:-3]
+            return json.loads(text)
+        except Exception as e:
+            print(f"AI Normalization failed: {e}")
+            return {}

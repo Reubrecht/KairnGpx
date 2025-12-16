@@ -11,8 +11,21 @@ from ..utils import calculate_file_hash, get_location_info
 from ..services.prediction_config_manager import PredictionConfigManager
 from ..services.import_service import process_race_import
 from ..services.analytics import GpxAnalytics
+from ..services.ai_analyzer import AiAnalyzer
 
 router = APIRouter()
+
+@router.post("/api/admin/normalize_event")
+async def api_normalize_event(
+    name: str = Form(...),
+    region: str = Form(None),
+    website: str = Form(None),
+    description: str = Form(None),
+    current_user: models.User = Depends(get_current_super_admin)
+):
+    analyzer = AiAnalyzer()
+    normalized = analyzer.normalize_event(name, region, website, description)
+    return normalized
 
 @router.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request, db: Session = Depends(get_db)):
@@ -53,6 +66,57 @@ async def super_admin_dashboard(request: Request, db: Session = Depends(get_db),
     })
 
 # --- SUPER ADMIN : EVENTS ---
+
+@router.get("/superadmin/event/new", response_class=HTMLResponse)
+async def new_event_page(
+    request: Request, 
+    request_id: Optional[int] = None,
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_super_admin)
+):
+    # If request_id is provided, pre-fill data
+    req_name = ""
+    req_slug = ""
+    req_website = ""
+    
+    if request_id:
+        req = db.query(models.EventRequest).filter(models.EventRequest.id == request_id).first()
+        if req:
+            req_name = req.event_name
+            # Simplified slugify logic for pre-fill
+            import re
+            import unicodedata
+            
+            s = unicodedata.normalize('NFKD', req.event_name).encode('ascii', 'ignore').decode('utf-8')
+            s = re.sub(r'[^\w\s-]', '', s).strip().lower()
+            req_slug = re.sub(r'[-\s]+', '-', s)
+            
+            req_website = req.website
+
+    return templates.TemplateResponse("event_submit.html", {
+        "request": request,
+        "event": None,
+        "request_id": request_id,
+        "request_name": req_name,
+        "request_slug": req_slug,
+        "request_website": req_website
+    })
+
+@router.get("/superadmin/event/{event_id}/edit", response_class=HTMLResponse)
+async def edit_event_page(
+    event_id: int, 
+    request: Request, 
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_super_admin)
+):
+    event = db.query(models.RaceEvent).filter(models.RaceEvent.id == event_id).first()
+    if not event:
+         raise HTTPException(status_code=404, detail="Event not found")
+         
+    return templates.TemplateResponse("event_submit.html", {
+        "request": request,
+        "event": event
+    })
 
 @router.post("/superadmin/events")
 async def create_event(
@@ -171,6 +235,50 @@ async def add_route(
         elevation_gain=elevation_gain
     )
     db.add(new_route)
+    db.commit()
+    return RedirectResponse(url="/superadmin#events", status_code=303)
+
+@router.post("/superadmin/routes/{route_id}/link_existing_track")
+async def link_route_existing_track(
+    route_id: int,
+    track_input: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_super_admin)
+):
+    route = db.query(models.RaceRoute).filter(models.RaceRoute.id == route_id).first()
+    if not route:
+        raise HTTPException(status_code=404, detail="Route not found")
+        
+    # Parse input (ID or URL)
+    track_id = None
+    if track_input.isdigit():
+        track_id = int(track_input)
+    else:
+        # Try to extract ID from URL like /track/123
+        import re
+        match = re.search(r'/track/(\d+)', track_input)
+        if match:
+            track_id = int(match.group(1))
+            
+    if not track_id:
+         # flash error? For now just redirect
+         print(f"Invalid track input: {track_input}")
+         return RedirectResponse(url="/superadmin#events", status_code=303)
+
+    track = db.query(models.Track).filter(models.Track.id == track_id).first()
+    if not track:
+        print(f"Track {track_id} not found")
+        return RedirectResponse(url="/superadmin#events", status_code=303)
+        
+    # Link
+    route.official_track_id = track.id
+    
+    # Update track status to reflect official nature
+    track.is_official_route = True
+    track.verification_status = models.VerificationStatus.VERIFIED_HUMAN
+    track.visibility = models.Visibility.PUBLIC
+    track.title = f"{route.edition.event.name} {route.edition.year} - {route.name}"
+    
     db.commit()
     return RedirectResponse(url="/superadmin#events", status_code=303)
 

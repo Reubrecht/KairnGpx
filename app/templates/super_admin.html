@@ -123,11 +123,10 @@
                         class="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-4 py-2 rounded-xl font-bold text-sm flex items-center transition-all">
                         <i class="ph-bold ph-upload-simple mr-2"></i> Import JSON
                     </button>
-                    <button
-                        onclick="document.getElementById('event-creation-request-id').value = ''; document.getElementById('modal-create-event').showModal()"
+                    <a href="/superadmin/event/new"
                         class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-brand-500/30 transition-all">
                         <i class="ph-bold ph-plus mr-2"></i> Nouvel Événement
-                    </button>
+                    </a>
                 </div>
             </div>
 
@@ -162,12 +161,11 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                                @click.stop="openEventEditModal({{ event.id }}, '{{ event.name|escape }}', '{{ event.slug|escape }}', '{{ event.website|default('', true)|escape }}', '{{ event.region|default('', true)|escape }}', '{{ event.circuit|default('', true)|escape }}', `{{ event.description|default('', true)|escape }}`)"
+                            <a href="/superadmin/event/{{ event.id }}/edit"
                                 class="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
                                 title="Éditer">
                                 <i class="ph-bold ph-pencil-simple"></i>
-                            </button>
+                            </a>
                             <form action="/superadmin/events/{{ event.id }}/delete" method="POST"
                                 onsubmit="return confirm('Supprimer cet événement et TOUTES ses éditions/parcours ?');">
                                 <button type="submit" @click.stop
@@ -250,6 +248,20 @@
                                                         <div
                                                             class="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase bg-slate-50">
                                                             Gestion Trace</div>
+                                                        <form
+                                                            action="/superadmin/routes/{{ route.id }}/link_existing_track"
+                                                            method="POST" class="p-2 border-b border-slate-100">
+                                                            <div class="flex items-center gap-1">
+                                                                <input type="text" name="track_input"
+                                                                    placeholder="ID ou URL..."
+                                                                    class="w-full text-[10px] px-2 py-1 rounded border-slate-200 focus:border-brand-500"
+                                                                    required>
+                                                                <button type="submit"
+                                                                    class="p-1 text-brand-600 hover:bg-brand-50 rounded">
+                                                                    <i class="ph-bold ph-check"></i>
+                                                                </button>
+                                                            </div>
+                                                        </form>
                                                         <form action="/superadmin/routes/{{ route.id }}/link_track"
                                                             method="POST" enctype="multipart/form-data">
                                                             <label
@@ -450,18 +462,10 @@
                         </div>
 
                         <div class="flex gap-2">
-                            <button data-reqid="{{ req.id }}" data-eventname="{{ req.event_name }}"
-                                data-website="{{ req.website or '' }}" onclick="
-                                    document.getElementById('modal-create-event').showModal();
-                                    document.getElementById('event-creation-request-id').value = this.dataset.reqid;
-                                    const evtName = this.dataset.eventname;
-                                    document.querySelector('#modal-create-event input[name=\'name\']').value = evtName;
-                                    document.querySelector('#modal-create-event input[name=\'slug\']').value = slugify(evtName);
-                                    document.querySelector('#modal-create-event input[name=\'website\']').value = this.dataset.website;
-                                    "
-                                class="flex-1 bg-slate-900 text-white py-2 rounded-lg text-xs font-bold hover:bg-slate-800 transition-colors">
+                            <a href="/superadmin/event/new?request_id={{ req.id }}"
+                                class="flex-1 bg-slate-900 text-white py-2 rounded-lg text-xs font-bold hover:bg-slate-800 transition-colors text-center">
                                 <i class="ph-bold ph-plus"></i> Créer
-                            </button>
+                            </a>
                             <!-- Add Approve/Reject endpoints? For now manual creation is fine -->
                         </div>
                     </div>
@@ -807,142 +811,65 @@
 
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
 <!-- Icons are Phosphor, ensure CSS included in base -->
-<!-- Modals -->
-<dialog id="modal-create-event" class="modal">
-    <div
-        class="modal-box bg-white rounded-2xl p-6 max-w-lg fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 shadow-2xl border border-slate-100 z-50">
-        <h3 class="font-bold text-lg mb-4 text-slate-900">Nouvel Événement</h3>
-        <form action="/superadmin/events" method="POST" class="space-y-4">
-            <input type="hidden" name="request_id" id="event-creation-request-id" value="">
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">Nom de l'événement</label>
-                <input type="text" name="name" required
-                    class="w-full rounded-xl border-slate-200 focus:border-brand-500 focus:ring-brand-500">
-            </div>
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">Slug (URL)</label>
-                <input type="text" name="slug" required
-                    class="w-full rounded-xl border-slate-200 focus:border-brand-500 font-mono text-sm">
-            </div>
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">Site Web</label>
-                <input type="url" name="website" placeholder="https://"
-                    class="w-full rounded-xl border-slate-200 focus:border-brand-500">
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Région / Pays</label>
-                    <input type="text" name="region" placeholder="ex: Alpes, France"
-                        class="w-full rounded-xl border-slate-200 focus:border-brand-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Circuit</label>
-                    <input type="text" name="circuit" placeholder="ex: UTMB World Series"
-                        class="w-full rounded-xl border-slate-200 focus:border-brand-500">
-                </div>
-            </div>
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">Description</label>
-                <textarea name="description" rows="3"
-                    class="w-full rounded-xl border-slate-200 focus:border-brand-500"></textarea>
-            </div>
-            <div class="modal-action flex justify-end gap-2 pt-4">
-                <button type="button"
-                    class="px-4 py-2 font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition-colors"
-                    onclick="document.getElementById('modal-create-event').close()">Annuler</button>
-                <button type="submit"
-                    class="px-4 py-2 font-bold bg-brand-600 hover:bg-brand-700 text-white rounded-xl shadow-lg shadow-brand-500/30 transition-colors">Créer</button>
-            </div>
-        </form>
-    </div>
-    <form method="dialog" class="modal-backdrop fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
-        onclick="document.getElementById('modal-create-event').close()">
-        <button class="cursor-default w-full h-full">close</button>
-    </form>
-</dialog>
 
-<script>
-    function slugify(text) {
-        return text.toString().toLowerCase()
-            .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Remove accents
-            .replace(/\s+/g, '-')           // Replace spaces with -
-            .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
-            .replace(/\-\-+/g, '-')         // Replace multiple - with single -
-            .replace(/^-+/, '')             // Trim - from start
-            .replace(/-+$/, '');            // Trim - from end
-    }
 
-    // Auto-slug on typing
-    const nameInput = document.querySelector('#modal-create-event input[name="name"]');
-    const slugInput = document.querySelector('#modal-create-event input[name="slug"]');
+// Prediction Simulator
+document.addEventListener('alpine:init', () => {
+Alpine.data('predictionEditor', (initialConfig) => ({
+config: initialConfig,
+userIndex: 500,
+examples: [
+{ name: 'Court (20km 1000d+)', dist: 20, elev: 1000 },
+{ name: 'Moyen (50km 2500d+)', dist: 50, elev: 2500 },
+{ name: 'Ultra (100km 6000d+)', dist: 100, elev: 6000 }
+],
 
-    if (nameInput && slugInput) {
-        nameInput.addEventListener('input', function (e) {
-            if (!slugInput.dataset.manual || slugInput.value === '') {
-                slugInput.value = slugify(e.target.value);
-            }
-        });
+predict(ex) {
+const dist = ex.dist;
+const elev = ex.elev;
 
-        slugInput.addEventListener('input', function () {
-            slugInput.dataset.manual = 'true';
-        });
-    }
+// Formulas match python app/services/prediction.py
+const kmEffort = dist + (elev / 100.0);
+const ratio = dist > 0 ? elev / dist : 0;
 
-    // Prediction Simulator
-    document.addEventListener('alpine:init', () => {
-        Alpine.data('predictionEditor', (initialConfig) => ({
-            config: initialConfig,
-            userIndex: 500,
-            examples: [
-                { name: 'Court (20km 1000d+)', dist: 20, elev: 1000 },
-                { name: 'Moyen (50km 2500d+)', dist: 50, elev: 2500 },
-                { name: 'Ultra (100km 6000d+)', dist: 100, elev: 6000 }
-            ],
+// Base Speed
+let speed = (parseFloat(this.config.base_speed_slope) * this.userIndex) - parseFloat(this.config.base_speed_intercept);
+speed = Math.max(speed, parseFloat(this.config.min_speed_kmeh));
 
-            predict(ex) {
-                const dist = ex.dist;
-                const elev = ex.elev;
+// Tech
+let techFactor = 1.0;
+// Note: Check order (highest threshold first)
+if (ratio > parseFloat(this.config.tech_factor_3_threshold)) techFactor = parseFloat(this.config.tech_factor_3_alpine);
+else if (ratio > parseFloat(this.config.tech_factor_2_threshold)) techFactor =
+parseFloat(this.config.tech_factor_2_mountain);
+else if (ratio > parseFloat(this.config.tech_factor_1_threshold)) techFactor =
+parseFloat(this.config.tech_factor_1_hilly);
 
-                // Formulas match python app/services/prediction.py
-                const kmEffort = dist + (elev / 100.0);
-                const ratio = dist > 0 ? elev / dist : 0;
+// Decay
+let distFactor = 1.0;
+const startKm = parseFloat(this.config.decay_start_km);
+if (kmEffort > startKm) {
+const over = kmEffort - startKm;
+let pct = (over / parseFloat(this.config.decay_step_km)) * parseFloat(this.config.decay_rate_per_step);
+pct = Math.min(pct, parseFloat(this.config.decay_max_total));
+distFactor = 1.0 - pct;
+}
 
-                // Base Speed
-                let speed = (parseFloat(this.config.base_speed_slope) * this.userIndex) - parseFloat(this.config.base_speed_intercept);
-                speed = Math.max(speed, parseFloat(this.config.min_speed_kmeh));
+let adjSpeed = speed * techFactor * distFactor;
+adjSpeed = Math.max(adjSpeed, 2.5); // Floor
 
-                // Tech
-                let techFactor = 1.0;
-                // Note: Check order (highest threshold first)
-                if (ratio > parseFloat(this.config.tech_factor_3_threshold)) techFactor = parseFloat(this.config.tech_factor_3_alpine);
-                else if (ratio > parseFloat(this.config.tech_factor_2_threshold)) techFactor = parseFloat(this.config.tech_factor_2_mountain);
-                else if (ratio > parseFloat(this.config.tech_factor_1_threshold)) techFactor = parseFloat(this.config.tech_factor_1_hilly);
+const hours = kmEffort / adjSpeed;
+return this.formatTime(hours);
+},
 
-                // Decay
-                let distFactor = 1.0;
-                const startKm = parseFloat(this.config.decay_start_km);
-                if (kmEffort > startKm) {
-                    const over = kmEffort - startKm;
-                    let pct = (over / parseFloat(this.config.decay_step_km)) * parseFloat(this.config.decay_rate_per_step);
-                    pct = Math.min(pct, parseFloat(this.config.decay_max_total));
-                    distFactor = 1.0 - pct;
-                }
-
-                let adjSpeed = speed * techFactor * distFactor;
-                adjSpeed = Math.max(adjSpeed, 2.5); // Floor
-
-                const hours = kmEffort / adjSpeed;
-                return this.formatTime(hours);
-            },
-
-            formatTime(h) {
-                if (!isFinite(h)) return "--";
-                const hours = Math.floor(h);
-                const mins = Math.round((h - hours) * 60);
-                return `${hours}h${mins.toString().padStart(2, '0')}`;
-            }
-        }));
-    });
+formatTime(h) {
+if (!isFinite(h)) return "--";
+const hours = Math.floor(h);
+const mins = Math.round((h - hours) * 60);
+return `${hours}h${mins.toString().padStart(2, '0')}`;
+}
+}));
+});
 </script>
 
 <dialog id="modal-import-races" class="modal">
@@ -970,55 +897,7 @@
     </form>
 </dialog>
 
-<dialog id="modal-edit-event" class="modal">
-    <div
-        class="modal-box bg-white rounded-2xl p-6 max-w-lg fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 shadow-2xl border border-slate-100 z-50">
-        <h3 class="font-bold text-lg mb-4 text-slate-900">Éditer l'Événement</h3>
-        <form id="edit-event-form" action="" method="POST" class="space-y-4">
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">Nom</label>
-                <input type="text" name="name" required
-                    class="w-full rounded-xl border-slate-200 focus:border-brand-500 focus:ring-brand-500">
-            </div>
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">Slug</label>
-                <input type="text" name="slug" required
-                    class="w-full rounded-xl border-slate-200 focus:border-brand-500 font-mono text-sm">
-            </div>
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">Site Web</label>
-                <input type="url" name="website" placeholder="https://"
-                    class="w-full rounded-xl border-slate-200 focus:border-brand-500">
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Région</label>
-                    <input type="text" name="region" class="w-full rounded-xl border-slate-200 focus:border-brand-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Circuit</label>
-                    <input type="text" name="circuit" class="w-full rounded-xl border-slate-200 focus:border-brand-500">
-                </div>
-            </div>
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">Description</label>
-                <textarea name="description" rows="3"
-                    class="w-full rounded-xl border-slate-200 focus:border-brand-500"></textarea>
-            </div>
-            <div class="modal-action flex justify-end gap-2 pt-4">
-                <button type="button"
-                    class="px-4 py-2 font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition-colors"
-                    onclick="document.getElementById('modal-edit-event').close()">Annuler</button>
-                <button type="submit"
-                    class="px-4 py-2 font-bold bg-brand-600 hover:bg-brand-700 text-white rounded-xl shadow-lg shadow-brand-500/30 transition-colors">Enregistrer</button>
-            </div>
-        </form>
-    </div>
-    <form method="dialog" class="modal-backdrop fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
-        onclick="document.getElementById('modal-edit-event').close()">
-        <button class="cursor-default w-full h-full">close</button>
-    </form>
-</dialog>
+
 
 </dialog>
 
@@ -1079,20 +958,7 @@
 </dialog>
 
 <script>
-    function openEventEditModal(id, name, slug, website, region, circuit, description) {
-        const modal = document.getElementById('modal-edit-event');
-        const form = document.getElementById('edit-event-form');
-        form.action = `/superadmin/events/${id}/update`;
 
-        form.querySelector('input[name="name"]').value = name;
-        form.querySelector('input[name="slug"]').value = slug;
-        form.querySelector('input[name="website"]').value = website;
-        form.querySelector('input[name="region"]').value = region;
-        form.querySelector('input[name="circuit"]').value = circuit;
-        form.querySelector('textarea[name="description"]').value = description;
-
-        modal.showModal();
-    }
 
     function openUserEditModal(id, username, email, utmb, role, isPremium, fullName) {
         const modal = document.getElementById('modal-edit-user');

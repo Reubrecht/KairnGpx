@@ -20,7 +20,7 @@
         border: none;
         border-radius: 9999px;
         box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
-        height: 10px;
+        height: 6px;
     }
 
     .noUi-connect {
@@ -35,11 +35,11 @@
         background: #ffffff;
         cursor: grab;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        width: 24px !important;
-        height: 24px !important;
-        right: -12px !important;
+        width: 16px !important;
+        height: 16px !important;
+        right: -8px !important;
         /* Half width to center */
-        top: -7px !important;
+        top: -5px !important;
     }
 
     .noUi-handle::before,
@@ -100,418 +100,415 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <div class="flex flex-col md:flex-row gap-8">
+    <div class="flex flex-col gap-6">
 
-        <!-- Filters Sidebar -->
-        <div class="w-full md:w-80 flex-shrink-0">
-            <div
-                class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto custom-scrollbar">
-                <div class="flex items-center justify-between mb-8">
-                    <h3 class="text-xl font-bold flex items-center gap-2">
-                        <i class="ph ph-faders text-2xl text-slate-700"></i>
-                        Filtres
-                    </h3>
-                    <a href="/explore" class="text-xs font-semibold text-slate-400 hover:text-brand-600">Reset</a>
-                </div>
-
-                <form action="/explore" method="get" class="space-y-8" id="filter-form">
+        <!-- Filters Bar (Sticky & Compact) -->
+        <div
+            class="sticky top-16 z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 bg-white/95 backdrop-blur shadow-sm border-b border-slate-200 py-3 transition-all">
+            <div class="max-w-7xl mx-auto">
+                <form action="/explore" method="get" id="filter-form">
                     <input type="hidden" name="limit" id="input-limit" value="{{ limit }}">
 
-                    <!-- Text Search (Predictive) -->
-                    <div class="relative">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1">
-                            <i class="ph ph-magnifying-glass text-lg text-slate-400"></i>
-                            Recherche
-                        </label>
-                        <input type="text" name="q" list="track-titles" value="{{ request.query_params.get('q', '') }}"
-                            placeholder="Nom de la trace..."
-                            class="w-full px-4 py-2 rounded-xl border-slate-200 bg-slate-50 text-sm focus:bg-white focus:border-brand-500 transition-colors">
+                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-x-2 gap-y-3 items-end">
 
-                        <!-- Datalist for Autocomplete (Predictive) -->
-                        <datalist id="track-titles">
-                            {% for track in tracks %}
-                            <option value="{{ track.title }}"></option>
-                            {% endfor %}
-                        </datalist>
-                    </div>
-
-                    <!-- Location -->
-                    <div class="relative">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1">
-                            <i class="ph ph-map-pin text-lg text-brand-600"></i>
-                            Localisation
-                        </label>
-                        <div class="flex gap-2">
-                            <div class="relative flex-1">
-                                <input type="text" id="city-input" name="city_search" value="{{ current_city or '' }}"
-                                    placeholder="Ville, massif, région..." autocomplete="off"
-                                    class="w-full px-4 py-2 rounded-xl border-slate-200 bg-slate-50 text-sm focus:bg-white focus:border-brand-500 transition-colors">
-                                <input type="hidden" name="search_lat" id="search-lat"
-                                    value="{{ request.query_params.get('search_lat', '') }}">
-                                <input type="hidden" name="search_lon" id="search-lon"
-                                    value="{{ request.query_params.get('search_lon', '') }}">
-                                <!-- Suggestions List -->
-                                <ul id="suggestions-list"
-                                    class="hidden absolute z-50 w-full bg-white border border-slate-100 rounded-xl shadow-lg mt-1 max-h-60 overflow-y-auto">
-                                </ul>
-                            </div>
-
-                            <button type="button" id="btn-around-me"
-                                class="px-3 rounded-xl border border-slate-200 bg-white text-slate-400 hover:bg-brand-50 hover:text-brand-600 hover:border-brand-200 transition-all"
-                                title="Autour de moi">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                                    stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Distance Slider -->
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1">
-                            <i class="ph ph-ruler text-lg text-slate-400"></i>
-                            Distance (km)
-                        </label>
-                        <div id="slider-dist" class="mb-10 px-2"></div>
-
-                        <input type="hidden" name="min_dist" id="input-min-dist"
-                            value="{{ request.query_params.get('min_dist', '0') }}">
-                        <input type="hidden" name="max_dist" id="input-max-dist"
-                            value="{{ request.query_params.get('max_dist', '100') }}">
-                    </div>
-
-                    <!-- Elevation Slider -->
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1">
-                            <i class="ph ph-trend-up text-lg text-slate-400"></i>
-                            Dénivelé (m+)
-                        </label>
-                        <div id="slider-elev" class="mb-10 px-2"></div>
-
-                        <input type="hidden" name="min_elev" id="input-min-elev"
-                            value="{{ request.query_params.get('min_elev', '0') }}">
-                        <input type="hidden" name="max_elev" id="input-max-elev"
-                            value="{{ request.query_params.get('max_elev', '5000') }}">
-                    </div>
-
-                    <!-- Activity Type -->
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1">
-                            <i class="ph ph-person-simple-run text-lg text-slate-400"></i>
-                            Activité
-                        </label>
-                        <select name="activity_type"
-                            class="w-full px-4 py-2 rounded-xl border-slate-200 bg-slate-50 text-sm focus:bg-white focus:border-brand-500 transition-colors">
-                            <option value="">Toutes les activités</option>
-                            <option value="TRAIL_RUNNING" {% if
-                                request.query_params.get('activity_type')=='TRAIL_RUNNING' %}selected{% endif %}>Trail
-                                Running</option>
-                            <option value="RUNNING" {% if request.query_params.get('activity_type')=='RUNNING'
-                                %}selected{% endif %}>Course à pied</option>
-                            <option value="HIKING" {% if request.query_params.get('activity_type')=='HIKING'
-                                %}selected{% endif %}>Randonnée</option>
-                            <option value="MTB_CROSS_COUNTRY" {% if
-                                request.query_params.get('activity_type')=='MTB_CROSS_COUNTRY' %}selected{% endif %}>VTT
-                                Cross-Country</option>
-                            <option value="GRAVEL" {% if request.query_params.get('activity_type')=='GRAVEL'
-                                %}selected{% endif %}>Gravel</option>
-                            <option value="ROAD_CYCLING" {% if request.query_params.get('activity_type')=='ROAD_CYCLING'
-                                %}selected{% endif %}>Vélo de route</option>
-                        </select>
-                    </div>
-
-                    <!-- Profile (Ratio D+) -->
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1">
-                            <i class="ph ph-mountains text-lg text-slate-400"></i>
-                            Profil
-                        </label>
-                        <select name="ratio_category"
-                            class="w-full px-4 py-2 rounded-xl border-slate-200 bg-slate-50 text-sm focus:bg-white focus:border-brand-500 transition-colors">
-                            <option value="">Tous les profils</option>
-                            <option value="FLAT" {% if request.query_params.get('ratio_category')=='FLAT' %}selected{%
-                                endif %}>Plat (< 15m/km)</option>
-                            <option value="ROLLING" {% if request.query_params.get('ratio_category')=='ROLLING'
-                                %}selected{% endif %}>Roulant (15-40m/km)</option>
-                            <option value="HILLY" {% if request.query_params.get('ratio_category')=='HILLY' %}selected{%
-                                endif %}>Vallonné (40-80m/km)</option>
-                            <option value="MOUNTAIN" {% if request.query_params.get('ratio_category')=='MOUNTAIN'
-                                %}selected{% endif %}>Montagneux (> 80m/km)</option>
-                        </select>
-                    </div>
-
-                    <!-- Official Race -->
-                    <div class="flex items-center">
-                        <label class="inline-flex items-center cursor-pointer">
-                            <input type="checkbox" name="is_official" value="true" class="sr-only peer" {% if
-                                request.query_params.get('is_official') %}checked{% endif %}>
-                            <div
-                                class="relative w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600">
-                            </div>
-                            <span class="ms-3 text-sm font-bold text-slate-700">Courses Officielles</span>
-                        </label>
-                    </div>
-
-                    <!-- Scenery Rating -->
-                    <div class="space-y-2">
-                        <label class="block text-xs font-bold text-slate-500 uppercase flex items-center gap-1">
-                            <i class="ph-fill ph-star text-lg text-yellow-500"></i>
-                            Beauté du Paysage (Min)
-                        </label>
-                        <div class="flex gap-1 bg-slate-50 p-2 rounded-xl border border-slate-200 justify-between">
-                            {% set current_min = request.query_params.get('scenery_min')|int if
-                            request.query_params.get('scenery_min') else 0 %}
-
-                            {% for i in range(1, 6) %}
-                            <label class="cursor-pointer group relative">
-                                <input type="radio" name="scenery_min" value="{{ i }}" class="peer sr-only" {% if
-                                    current_min==i %}checked{% endif %} onchange="this.form.submit()">
-
-                                {% set is_active = current_min > 0 and i >= current_min %}
-                                <div
-                                    class="w-8 h-8 flex items-center justify-center rounded-lg border transition-all
-                                            {{ 'bg-yellow-50 border-yellow-400 text-yellow-500' if is_active else 'border-transparent hover:bg-white text-slate-300' }}">
-                                    <span class="font-bold text-sm">{{ i }}</span>
-                                    <i class="ph-fill ph-star text-[10px] ml-0.5"></i>
-                                </div>
+                        <!-- 1. Search -->
+                        <div class="col-span-1 md:col-span-1">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 truncate">
+                                <i class="ph ph-magnifying-glass"></i> Recherche
                             </label>
-                            {% endfor %}
+                            <input type="text" name="q" list="track-titles"
+                                value="{{ request.query_params.get('q', '') }}" placeholder="Nom..."
+                                class="w-full px-2 py-1.5 rounded-lg border-slate-200 bg-slate-50 text-xs focus:bg-white focus:border-brand-500 transition-colors">
+                            <datalist id="track-titles">
+                                {% for track in tracks %}
+                                <option value="{{ track.title }}"></option>
+                                {% endfor %}
+                            </datalist>
+                        </div>
 
-                            <!-- Clear Button -->
-                            <label class="cursor-pointer group relative" title="Tout afficher">
-                                <input type="radio" name="scenery_min" value="" class="peer sr-only" {% if
-                                    current_min==0 %}checked{% endif %} onchange="this.form.submit()">
-                                <div
-                                    class="w-8 h-8 flex items-center justify-center rounded-lg border border-transparent 
-                                            text-slate-400 {{ 'bg-slate-200 text-slate-600' if current_min == 0 else 'hover:bg-slate-100' }}">
-                                    <i class="ph ph-x"></i>
-                                </div>
+                        <!-- 2. Location -->
+                        <div class="col-span-1 md:col-span-1 relative">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 truncate">
+                                <i class="ph ph-map-pin text-brand-600"></i> Localisation
                             </label>
-                        </div>
-                    </div>
-
-                    <!-- Ambiance & Tags -->
-                    {% if all_tags %}
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1">
-                            <i class="ph ph-tag text-lg text-slate-400"></i>
-                            Ambiance & Tags
-                        </label>
-                        <select name="tag"
-                            class="w-full px-4 py-2 rounded-xl border-slate-200 bg-slate-50 text-sm focus:bg-white focus:border-brand-500 transition-colors">
-                            <option value="">Tous les tags</option>
-                            {% for tag in all_tags %}
-                            <option value="{{ tag }}" {% if current_tag==tag %}selected{% endif %}>{{ tag }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    {% endif %}
-
-                    <!-- Created By -->
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1">
-                            <img src="{{ url_for('static', path='/img/icon_user.png') }}" class="w-4 h-4 object-contain"
-                                alt="User">
-                            Créé par
-                        </label>
-                        <input type="text" name="author" value="{{ request.query_params.get('author', '') }}"
-                            placeholder="Nom d'utilisateur"
-                            class="w-full px-4 py-2 rounded-xl border-slate-200 bg-slate-50 text-sm focus:bg-white focus:border-brand-500 transition-colors">
-                    </div>
-
-                    <noscript>
-                        <button type="submit"
-                            class="w-full bg-brand-600 text-white font-bold py-3 rounded-xl hover:bg-brand-700 transition-all shadow-lg shadow-brand-500/30">
-                            Appliquer
-                        </button>
-                    </noscript>
-
-                </form>
-            </div>
-        </div>
-
-        <!-- Results Grid -->
-        <div class="flex-1">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">{{ real_track_count }} Traces trouvées</h2>
-
-            <!-- 1. TRACKS LIST (Proximity Sorted) -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                {% for track in tracks %}
-                <!-- Standard Track Card -->
-                <a href="/track/{{ track.id }}"
-                    class="group block bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 hover:border-brand-200 hover:-translate-y-1">
-                    <!-- Map Thumbnail with Overlay -->
-                    <div class="h-48 bg-slate-100 relative overflow-hidden flex items-center justify-center isolate">
-                        <div id="map-{{ track.id }}" class="absolute inset-0 z-0 settings-map"></div>
-                        <!-- Gradient Overlay -->
-                        <div
-                            class="absolute inset-0 pointer-events-none bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent z-10 opacity-90">
-                        </div>
-
-                        <!-- Title & Location Overlay -->
-                        <div class="absolute bottom-0 left-0 p-4 z-20 w-full">
-                            <h3 class="text-white font-bold text-lg leading-tight truncate drop-shadow-sm">{{
-                                track.title }}</h3>
-                            <div class="flex items-center text-slate-300 text-xs mt-1">
-                                <svg class="h-3 w-3 mr-1 opacity-80" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                </svg>
-                                <span class="truncate pr-4">{{ track.location_city or 'Lieu inconnu' }}</span>
-                            </div>
-                        </div>
-
-                        {% if track.is_official_route %}
-                        <span
-                            class="absolute top-2 right-2 z-20 bg-yellow-400/90 text-yellow-900 text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm backdrop-blur-sm">Officiel</span>
-                        {% endif %}
-                    </div>
-
-                    <div class="p-4">
-                        <!-- Stats Grid -->
-                        <div class="grid grid-cols-3 gap-2 pb-3 border-b border-gray-50 text-center">
-                            <div>
-                                <span class="block text-[10px] text-gray-400 uppercase tracking-wide">Distance</span>
-                                <span class="font-bold text-slate-700 text-sm">{{ "%.1f"|format(track.distance_km)
-                                    }}<span class="text-xs font-normal text-gray-400">km</span></span>
-                            </div>
-                            <div>
-                                <span class="block text-[10px] text-gray-400 uppercase tracking-wide">D+</span>
-                                <span class="font-bold text-slate-700 text-sm">{{ track.elevation_gain|int }}<span
-                                        class="text-xs font-normal text-gray-400">m</span></span>
-                            </div>
-                            <div>
-                                <span class="block text-[10px] text-gray-400 uppercase tracking-wide">Auteur</span>
-                                <span class="font-bold text-slate-700 text-sm truncate px-1">{{
-                                    track.uploader_name|truncate(8, True) }}</span>
-                            </div>
-                        </div>
-
-                        <!-- Tags Compact -->
-                        <div class="mt-3 flex flex-wrap gap-1.5 h-6 overflow-hidden">
-                            {% if track.tags %}
-                            {% if track.tags is string %}
-                            <span
-                                class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">#{{
-                                track.tags }}</span>
-                            {% else %}
-                            {% for tag in track.tags %}
-                            <span
-                                class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">#{{
-                                tag }}</span>
-                            {% endfor %}
-                            {% endif %}
-                            {% endif %}
-                        </div>
-                    </div>
-                </a>
-                {% endfor %}
-            </div>
-
-            <!-- LOAD MORE BUTTON -->
-            {% if has_more_tracks %}
-            <div class="flex justify-center mb-12">
-                <button onclick="loadMoreTracks()"
-                    class="px-6 py-3 rounded-full bg-white border border-slate-200 text-slate-600 font-bold shadow-sm hover:bg-slate-50 hover:border-brand-300 hover:text-brand-600 transition-all flex items-center gap-2">
-                    <i class="ph ph-plus-circle text-xl"></i>
-                    Voir plus de traces
-                </button>
-            </div>
-            {% endif %}
-
-            <!-- 2. EVENTS HIERARCHY -->
-            {% if grouped_events_hierarchy %}
-            <div class="mt-12 pt-8 border-t border-slate-100">
-                <h2 class="text-2xl font-bold text-gray-800 mb-8 flex items-center gap-2">
-                    <i class="ph-fill ph-trophy text-yellow-500"></i>
-                    Événements Officiels (En attente)
-                </h2>
-
-                {% macro render_node(node) %}
-                {# 1. Render Events at this exact level #}
-                {% if node._events %}
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                    {% for ev_key, track in node._events.items() %}
-                    <!-- Grouped Event Card -->
-                    <div onclick="window.location.href='/race/{{ track.slug }}'"
-                        class="group block bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 hover:border-brand-200 hover:-translate-y-1 relative h-full flex flex-col cursor-pointer">
-                        <div class="h-32 bg-slate-900 relative overflow-hidden flex items-center justify-center">
-                            <div
-                                class="absolute inset-0 opacity-20 bg-[url('/static/img/hero.png')] bg-cover bg-center">
-                            </div>
-                            <div class="z-10 text-center">
-                                <h3 class="text-white font-bold text-xl px-4">{{ track.title }}</h3>
-                                <p class="text-slate-400 text-sm flex items-center justify-center gap-1">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="flex gap-1">
+                                <div class="relative flex-1 min-w-0">
+                                    <input type="text" id="city-input" name="city_search"
+                                        value="{{ current_city or '' }}" placeholder="Ville..." autocomplete="off"
+                                        class="w-full px-2 py-1.5 rounded-lg border-slate-200 bg-slate-50 text-xs focus:bg-white focus:border-brand-500 transition-colors truncate">
+                                    <input type="hidden" name="search_lat" id="search-lat"
+                                        value="{{ request.query_params.get('search_lat', '') }}">
+                                    <input type="hidden" name="search_lon" id="search-lon"
+                                        value="{{ request.query_params.get('search_lon', '') }}">
+                                    <ul id="suggestions-list"
+                                        class="hidden absolute z-50 w-full min-w-[200px] bg-white border border-slate-100 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto left-0">
+                                    </ul>
+                                </div>
+                                <button type="button" id="btn-around-me"
+                                    class="px-2 py-1 rounded-lg border border-slate-200 bg-white text-slate-400 hover:bg-brand-50 hover:text-brand-600 transition-all flex items-center justify-center flex-shrink-0"
+                                    title="Autour de moi">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                     </svg>
-                                    {{ track.location_city }}
-                                </p>
+                                </button>
                             </div>
-                            <span
-                                class="absolute top-2 right-2 bg-yellow-400 text-yellow-900 text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm opacity-90">Événement
-                                Officiel</span>
                         </div>
-                        <div class="p-4 flex-1 bg-slate-50">
-                            <h4 class="text-xs font-bold text-slate-500 uppercase mb-3">Parcours en attente</h4>
-                            <div class="space-y-3">
-                                {% for route in track.routes %}
-                                <div
-                                    class="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-200 shadow-sm">
-                                    <div>
-                                        <p class="font-bold text-slate-800 text-sm">{{ route.name }}</p>
-                                        <p class="text-xs text-slate-500">{{ route.distance_km }}km • {{
-                                            route.elevation_gain }}m+</p>
-                                    </div>
-                                    {% if user and user.role and ((user.role.value in ['moderator', 'admin',
-                                    'super_admin']) if user.role.value is defined else (user.role in ['moderator',
-                                    'admin', 'super_admin'])) %}
-                                    <a href="/upload?race_route_id={{ route.id }}" onclick="event.stopPropagation()"
-                                        class="flex items-center gap-1 px-2 py-1 bg-brand-50 text-brand-700 rounded text-xs font-bold hover:bg-brand-100 transition-colors"
-                                        title="Uploader la trace pour ce parcours">
-                                        Add
-                                    </a>
-                                    {% else %}
-                                    <span class="text-slate-300 text-xs italic">En attente</span>
-                                    {% endif %}
+
+                        <!-- 3. Distance -->
+                        <div class="col-span-1 md:col-span-1 px-1">
+                            <label class="flex justify-between items-center text-[10px] text-slate-500 uppercase mb-1">
+                                <span class="font-bold flex items-center gap-1"><i class="ph ph-ruler"></i> Dist</span>
+                                <span id="dist-display" class="font-mono text-slate-700 font-bold ml-1 text-[10px]">--
+                                    km</span>
+                            </label>
+                            <div id="slider-dist" class="mb-1"></div>
+                            <input type="hidden" name="min_dist" id="input-min-dist"
+                                value="{{ request.query_params.get('min_dist', '0') }}">
+                            <input type="hidden" name="max_dist" id="input-max-dist"
+                                value="{{ request.query_params.get('max_dist', '100') }}">
+                        </div>
+
+                        <!-- 4. Elevation -->
+                        <div class="col-span-1 md:col-span-1 px-1">
+                            <label class="flex justify-between items-center text-[10px] text-slate-500 uppercase mb-1">
+                                <span class="font-bold flex items-center gap-1"><i class="ph ph-trend-up"></i> D+</span>
+                                <span id="elev-display" class="font-mono text-slate-700 font-bold ml-1 text-[10px]">--
+                                    m</span>
+                            </label>
+                            <div id="slider-elev" class="mb-1"></div>
+                            <input type="hidden" name="min_elev" id="input-min-elev"
+                                value="{{ request.query_params.get('min_elev', '0') }}">
+                            <input type="hidden" name="max_elev" id="input-max-elev"
+                                value="{{ request.query_params.get('max_elev', '5000') }}">
+                        </div>
+
+
+                        <!-- 5. Advanced Search & Reset -->
+                        <div
+                            class="col-span-2 md:col-span-2 lg:col-span-2 flex items-center justify-between pt-1 gap-2">
+                            <button type="button" id="btn-advanced" onclick="toggleAdvancedFilters()"
+                                class="flex-1 text-xs font-bold text-slate-500 hover:text-brand-600 flex items-center justify-center gap-1 transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-50 border border-slate-100 bg-white">
+                                <i class="ph ph-sliders-horizontal text-lg"></i>
+                                Filtres
+                                <i id="icon-chevron"
+                                    class="ph ph-caret-down text-slate-400 transition-transform duration-300"></i>
+                            </button>
+                            <a href="/explore"
+                                class="text-[10px] font-bold text-slate-400 hover:text-red-500 border border-slate-200 px-2 py-1.5 rounded hover:bg-slate-50 transition-colors">Reset</a>
+                        </div>
+                    </div>
+
+                    <!-- ADVANCED FILTERS (Collapsible) -->
+                    <div id="advanced-filters" class="hidden overflow-hidden transition-all duration-300 ease-in-out">
+                        <div
+                            class="pt-4 mt-4 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 bg-slate-50/50 p-4 rounded-xl">
+
+                            <!-- Activity Type -->
+                            <div>
+                                <label
+                                    class="block text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-1">
+                                    <i class="ph ph-person-simple-run text-sm text-slate-400"></i> Activité
+                                </label>
+                                <select name="activity_type"
+                                    class="w-full px-2 py-1.5 rounded-lg border-slate-200 bg-white text-xs focus:border-brand-500 transition-colors">
+                                    <option value="">Toutes</option>
+                                    <option value="TRAIL_RUNNING" {% if
+                                        request.query_params.get('activity_type')=='TRAIL_RUNNING' %}selected{% endif
+                                        %}>Trail</option>
+                                    <option value="RUNNING" {% if request.query_params.get('activity_type')=='RUNNING'
+                                        %}selected{% endif %}>Running</option>
+                                    <option value="HIKING" {% if request.query_params.get('activity_type')=='HIKING'
+                                        %}selected{% endif %}>Rando</option>
+                                    <option value="MTB_CROSS_COUNTRY" {% if
+                                        request.query_params.get('activity_type')=='MTB_CROSS_COUNTRY' %}selected{%
+                                        endif %}>VTT</option>
+                                    <option value="GRAVEL" {% if request.query_params.get('activity_type')=='GRAVEL'
+                                        %}selected{% endif %}>Gravel</option>
+                                    <option value="ROAD_CYCLING" {% if
+                                        request.query_params.get('activity_type')=='ROAD_CYCLING' %}selected{% endif %}>
+                                        Vélo</option>
+                                </select>
+                            </div>
+
+                            <!-- Profile -->
+                            <div>
+                                <label
+                                    class="block text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-1">
+                                    <i class="ph ph-mountains text-sm text-slate-400"></i> Profil
+                                </label>
+                                <select name="ratio_category"
+                                    class="w-full px-2 py-1.5 rounded-lg border-slate-200 bg-white text-xs focus:border-brand-500 transition-colors">
+                                    <option value="">Tous</option>
+                                    <option value="FLAT" {% if request.query_params.get('ratio_category')=='FLAT'
+                                        %}selected{% endif %}>Plat</option>
+                                    <option value="ROLLING" {% if request.query_params.get('ratio_category')=='ROLLING'
+                                        %}selected{% endif %}>Roulant</option>
+                                    <option value="HILLY" {% if request.query_params.get('ratio_category')=='HILLY'
+                                        %}selected{% endif %}>Vallonné</option>
+                                    <option value="MOUNTAIN" {% if
+                                        request.query_params.get('ratio_category')=='MOUNTAIN' %}selected{% endif %}>
+                                        Montagne</option>
+                                </select>
+                            </div>
+
+                            <!-- Official Race -->
+                            <div class="flex items-end pb-1">
+                                <label
+                                    class="flex items-center cursor-pointer bg-white px-3 py-1.5 rounded-lg border border-slate-200 hover:border-brand-300 w-full transition-colors">
+                                    <input type="checkbox" name="is_official" value="true"
+                                        class="w-4 h-4 text-brand-600 border-slate-300 rounded focus:ring-brand-500" {%
+                                        if request.query_params.get('is_official') %}checked{% endif %}>
+                                    <span class="ml-2 text-xs font-bold text-slate-700">Courses Officielles
+                                        Uniquement</span>
+                                </label>
+                            </div>
+
+                            <!-- Scenery Rating -->
+                            <div class="space-y-1">
+                                <label
+                                    class="block text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                                    <i class="ph-fill ph-star text-sm text-yellow-500"></i>
+                                    Paysage (Min)
+                                </label>
+                                <div class="flex gap-1 bg-white p-1 rounded-lg border border-slate-200 justify-between">
+                                    {% set current_min = request.query_params.get('scenery_min')|int if
+                                    request.query_params.get('scenery_min') else 0 %}
+                                    {% for i in range(1, 6) %}
+                                    <label class="cursor-pointer group relative">
+                                        <input type="radio" name="scenery_min" value="{{ i }}" class="peer sr-only" {%
+                                            if current_min==i %}checked{% endif %} onchange="this.form.submit()">
+                                        <div
+                                            class="w-6 h-6 flex items-center justify-center rounded transition-all {{ 'bg-yellow-50 text-yellow-500 font-bold' if current_min > 0 and i >= current_min else 'text-slate-300 hover:text-slate-400' }}">
+                                            <span class="text-[10px]">{{ i }}</span>
+                                        </div>
+                                    </label>
+                                    {% endfor %}
+                                    <label class="cursor-pointer" title="Effacer">
+                                        <input type="radio" name="scenery_min" value="" class="peer sr-only" {% if
+                                            current_min==0 %}checked{% endif %} onchange="this.form.submit()">
+                                        <div
+                                            class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-red-400">
+                                            <i class="ph ph-x text-xs"></i>
+                                        </div>
+                                    </label>
                                 </div>
-                                {% endfor %}
+                            </div>
+
+                            <!-- Tags -->
+                            {% if all_tags %}
+                            <div>
+                                <label
+                                    class="block text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-1">
+                                    <i class="ph ph-tag text-sm text-slate-400"></i> Tag
+                                </label>
+                                <select name="tag"
+                                    class="w-full px-2 py-1.5 rounded-lg border-slate-200 bg-white text-xs focus:border-brand-500 transition-colors">
+                                    <option value="">Tous</option>
+                                    {% for tag in all_tags %}
+                                    <option value="{{ tag }}" {% if current_tag==tag %}selected{% endif %}>{{ tag }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            {% endif %}
+
+                            <!-- Author -->
+                            <div>
+                                <label
+                                    class="block text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-1">
+                                    <i class="ph ph-user text-sm text-slate-400"></i> Auteur
+                                </label>
+                                <input type="text" name="author" value="{{ request.query_params.get('author', '') }}"
+                                    placeholder="Username..."
+                                    class="w-full px-2 py-1.5 rounded-lg border-slate-200 bg-white text-xs focus:border-brand-500 transition-colors">
                             </div>
                         </div>
                     </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
-
-                {# 2. Iterate children locations #}
-                {% for key, child in node.items() %}
-                {% if key != "_events" %}
-                <div class="mb-6 pl-0">
-                    <h3
-                        class="flex items-center gap-2 text-xl font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">
-                        <span class="w-2 h-2 rounded-full bg-brand-500"></span>
-                        {{ key }}
-                    </h3>
-                    <div class="pl-4 border-l-2 border-slate-100 ml-1">
-                        {{ render_node(child) }}
-                    </div>
-                </div>
-                {% endif %}
-                {% endfor %}
-                {% endmacro %}
-
-                {# Start Recursion #}
-                {{ render_node(grouped_events_hierarchy) }}
             </div>
-            {% endif %}
+            </form>
         </div>
     </div>
+
+    <!-- Results Grid -->
+    <div class="w-full">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">{{ real_track_count }} Traces trouvées</h2>
+
+        <!-- 1. TRACKS LIST (Proximity Sorted) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {% for track in tracks %}
+            <!-- Standard Track Card -->
+            <a href="/track/{{ track.id }}"
+                class="group block bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 hover:border-brand-200 hover:-translate-y-1">
+                <!-- Map Thumbnail with Overlay -->
+                <div class="h-48 bg-slate-100 relative overflow-hidden flex items-center justify-center isolate">
+                    <div id="map-{{ track.id }}" class="absolute inset-0 z-0 settings-map"></div>
+                    <!-- Gradient Overlay -->
+                    <div
+                        class="absolute inset-0 pointer-events-none bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent z-10 opacity-90">
+                    </div>
+
+                    <!-- Title & Location Overlay -->
+                    <div class="absolute bottom-0 left-0 p-4 z-20 w-full">
+                        <h3 class="text-white font-bold text-lg leading-tight truncate drop-shadow-sm">{{
+                            track.title }}</h3>
+                        <div class="flex items-center text-slate-300 text-xs mt-1">
+                            <svg class="h-3 w-3 mr-1 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            </svg>
+                            <span class="truncate pr-4">{{ track.location_city or 'Lieu inconnu' }}</span>
+                        </div>
+                    </div>
+
+                    {% if track.is_official_route %}
+                    <span
+                        class="absolute top-2 right-2 z-20 bg-yellow-400/90 text-yellow-900 text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm backdrop-blur-sm">Officiel</span>
+                    {% endif %}
+                </div>
+
+                <div class="p-4">
+                    <!-- Stats Grid -->
+                    <div class="grid grid-cols-3 gap-2 pb-3 border-b border-gray-50 text-center">
+                        <div>
+                            <span class="block text-[10px] text-gray-400 uppercase tracking-wide">Distance</span>
+                            <span class="font-bold text-slate-700 text-sm">{{ "%.1f"|format(track.distance_km)
+                                }}<span class="text-xs font-normal text-gray-400">km</span></span>
+                        </div>
+                        <div>
+                            <span class="block text-[10px] text-gray-400 uppercase tracking-wide">D+</span>
+                            <span class="font-bold text-slate-700 text-sm">{{ track.elevation_gain|int }}<span
+                                    class="text-xs font-normal text-gray-400">m</span></span>
+                        </div>
+                        <div>
+                            <span class="block text-[10px] text-gray-400 uppercase tracking-wide">Auteur</span>
+                            <span class="font-bold text-slate-700 text-sm truncate px-1">{{
+                                track.uploader_name|truncate(8, True) }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Tags Compact -->
+                    <div class="mt-3 flex flex-wrap gap-1.5 h-6 overflow-hidden">
+                        {% if track.tags %}
+                        {% if track.tags is string %}
+                        <span
+                            class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">#{{
+                            track.tags }}</span>
+                        {% else %}
+                        {% for tag in track.tags %}
+                        <span
+                            class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">#{{
+                            tag }}</span>
+                        {% endfor %}
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+
+        <!-- LOAD MORE BUTTON -->
+        {% if has_more_tracks %}
+        <div class="flex justify-center mb-12">
+            <button onclick="loadMoreTracks()"
+                class="px-6 py-3 rounded-full bg-white border border-slate-200 text-slate-600 font-bold shadow-sm hover:bg-slate-50 hover:border-brand-300 hover:text-brand-600 transition-all flex items-center gap-2">
+                <i class="ph ph-plus-circle text-xl"></i>
+                Voir plus de traces
+            </button>
+        </div>
+        {% endif %}
+
+        <!-- 2. EVENTS HIERARCHY -->
+        {% if grouped_events_hierarchy %}
+        <div class="mt-12 pt-8 border-t border-slate-100">
+            <h2 class="text-2xl font-bold text-gray-800 mb-8 flex items-center gap-2">
+                <i class="ph-fill ph-trophy text-yellow-500"></i>
+                Événements Officiels (En attente)
+            </h2>
+
+            {% macro render_node(node) %}
+            {# 1. Render Events at this exact level #}
+            {% if node._events %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                {% for ev_key, track in node._events.items() %}
+                <!-- Grouped Event Card -->
+                <div onclick="window.location.href='/race/{{ track.slug }}'"
+                    class="group block bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 hover:border-brand-200 hover:-translate-y-1 relative h-full flex flex-col cursor-pointer">
+                    <div class="h-32 bg-slate-900 relative overflow-hidden flex items-center justify-center">
+                        <div class="absolute inset-0 opacity-20 bg-[url('/static/img/hero.png')] bg-cover bg-center">
+                        </div>
+                        <div class="z-10 text-center">
+                            <h3 class="text-white font-bold text-xl px-4">{{ track.title }}</h3>
+                            <p class="text-slate-400 text-sm flex items-center justify-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                </svg>
+                                {{ track.location_city }}
+                            </p>
+                        </div>
+                        <span
+                            class="absolute top-2 right-2 bg-yellow-400 text-yellow-900 text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm opacity-90">Événement
+                            Officiel</span>
+                    </div>
+                    <div class="p-4 flex-1 bg-slate-50">
+                        <h4 class="text-xs font-bold text-slate-500 uppercase mb-3">Parcours en attente</h4>
+                        <div class="space-y-3">
+                            {% for route in track.routes %}
+                            <div
+                                class="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-200 shadow-sm">
+                                <div>
+                                    <p class="font-bold text-slate-800 text-sm">{{ route.name }}</p>
+                                    <p class="text-xs text-slate-500">{{ route.distance_km }}km • {{
+                                        route.elevation_gain }}m+</p>
+                                </div>
+                                {% if user and user.role and ((user.role.value in ['moderator', 'admin',
+                                'super_admin']) if user.role.value is defined else (user.role in ['moderator',
+                                'admin', 'super_admin'])) %}
+                                <a href="/upload?race_route_id={{ route.id }}" onclick="event.stopPropagation()"
+                                    class="flex items-center gap-1 px-2 py-1 bg-brand-50 text-brand-700 rounded text-xs font-bold hover:bg-brand-100 transition-colors"
+                                    title="Uploader la trace pour ce parcours">
+                                    Add
+                                </a>
+                                {% else %}
+                                <span class="text-slate-300 text-xs italic">En attente</span>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {# 2. Iterate children locations #}
+            {% for key, child in node.items() %}
+            {% if key != "_events" %}
+            <div class="mb-6 pl-0">
+                <h3
+                    class="flex items-center gap-2 text-xl font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">
+                    <span class="w-2 h-2 rounded-full bg-brand-500"></span>
+                    {{ key }}
+                </h3>
+                <div class="pl-4 border-l-2 border-slate-100 ml-1">
+                    {{ render_node(child) }}
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+            {% endmacro %}
+
+            {# Start Recursion #}
+            {{ render_node(grouped_events_hierarchy) }}
+        </div>
+        {% endif %}
+    </div>
+</div>
 </div>
 
 <script>
@@ -520,6 +517,28 @@
         document.getElementById('input-limit').value = currentLimit + 10;
         document.getElementById('filter-form').submit();
     }
+
+    function toggleAdvancedFilters() {
+        const advanced = document.getElementById('advanced-filters');
+        const icon = document.getElementById('icon-chevron');
+        if (advanced.classList.contains('hidden')) {
+            advanced.classList.remove('hidden');
+            icon.style.transform = 'rotate(180deg)';
+        } else {
+            advanced.classList.add('hidden');
+            icon.style.transform = 'rotate(0deg)';
+        }
+    }
+
+    // Auto-open advanced filters if any advanced param is set
+    document.addEventListener("DOMContentLoaded", function () {
+        const urlParams = new URLSearchParams(window.location.search);
+        const advancedKeys = ['activity_type', 'ratio_category', 'is_official', 'scenery_min', 'tag', 'author'];
+        const hasAdvanced = advancedKeys.some(key => urlParams.has(key) && urlParams.get(key) !== '');
+        if (hasAdvanced) {
+            toggleAdvancedFilters();
+        }
+    });
 </script>
 
 <script id="tracks-data" type="application/json">
@@ -692,15 +711,8 @@
                     '70%': 50,  // 0-50km takes 70% of the slider
                     'max': 170
                 },
-                step: 1, // Will apply to the smallest interval, but noUiSlider handles variable steps between ranges automatically if not set broadly
-                tooltips: [{
-                    to: function (value) { return Math.round(value) + 'km'; }
-                }, {
-                    to: function (value) {
-                        if (value >= 170) return '170km ➚';
-                        return Math.round(value) + 'km';
-                    }
-                }],
+                step: 1,
+                tooltips: false, // Changed from custom tooltips to false for cleaner look
                 format: {
                     to: v => Math.round(v),
                     from: v => Number(v)
@@ -710,6 +722,12 @@
             sliderDist.noUiSlider.on('update', function (values, handle) {
                 document.getElementById('input-min-dist').value = values[0];
                 document.getElementById('input-max-dist').value = (values[1] >= 170) ? 999999 : values[1];
+
+                // Update Text Display
+                const v1 = Math.round(values[0]);
+                const v2 = Math.round(values[1]);
+                const maxStr = (v2 >= 170) ? '170+' : v2;
+                document.getElementById('dist-display').textContent = `${v1}-${maxStr} km`;
             });
         }
 
@@ -723,18 +741,11 @@
                 range: {
                     'min': 0,
                     '40%': 1000,
-                    '70%': 2000, // 0-2000m takes 70% of the slider
+                    '70%': 2000,
                     'max': 10000
                 },
                 step: 10,
-                tooltips: [{
-                    to: function (value) { return Math.round(value) + 'm'; }
-                }, {
-                    to: function (value) {
-                        if (value >= 10000) return '10000m ➚';
-                        return Math.round(value) + 'm';
-                    }
-                }],
+                tooltips: false, // Changed from custom tooltips to false for cleaner look
                 format: {
                     to: v => Math.round(v),
                     from: v => Number(v)
@@ -744,6 +755,12 @@
             sliderElev.noUiSlider.on('update', function (values, handle) {
                 document.getElementById('input-min-elev').value = values[0];
                 document.getElementById('input-max-elev').value = (values[1] >= 10000) ? 999999 : values[1];
+
+                // Update Text Display
+                const v1 = Math.round(values[0]);
+                const v2 = Math.round(values[1]);
+                const maxStr = (v2 >= 10000) ? '10000+' : v2;
+                document.getElementById('elev-display').textContent = `${v1}-${maxStr} m`;
             });
         }
 
@@ -792,7 +809,7 @@
                     wptIconUrls: ""
                 },
                 polyline_options: {
-                    color: '#cbd5e1', // Slate-300 (Neutral fallback)
+                    color: '#94a3b8', // Slate-400
                     weight: 3,
                     opacity: 1,
                     lineCap: 'round'
