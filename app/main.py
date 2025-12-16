@@ -7,7 +7,12 @@ from . import models, database
 from .version import __version__ as app_version
 from .routers import auth, pages, tracks, users, races, admin, strava_auth
 
-# ... (lines omitted)
+load_dotenv()
+
+models.Base.metadata.create_all(bind=database.engine)
+
+app = FastAPI(title="Kairn", version=app_version)
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Include Routers
 app.include_router(auth.router)
