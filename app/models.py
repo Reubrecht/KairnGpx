@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Enum, JSON, Text, ForeignKey, Date
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Enum, JSON, Text, ForeignKey, Date, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.types import TypeDecorator, TEXT
@@ -303,6 +303,16 @@ class TrackRequest(Base):
 
 # --- Race Hierarchy ---
 
+
+# Association table for Event Owners
+event_owners = Table(
+    "event_owners",
+    Base.metadata,
+    Column("event_id", Integer, ForeignKey("race_events.id"), primary_key=True),
+    Column("user_id", Integer, ForeignKey("users.id"), primary_key=True)
+)
+
+
 class RaceEvent(Base):
     """The brand / Recurring Event (e.g. 'UTMB Mont-Blanc')"""
     __tablename__ = "race_events"
@@ -319,9 +329,16 @@ class RaceEvent(Base):
     massif = Column(String, nullable=True)
     city = Column(String, nullable=True)
     circuit = Column(String, nullable=True) # "UTMB World Series", "Golden Trail"
+    
+    # New Fields
+    profile_picture = Column(String, nullable=True) # URL or path
+    contact_link = Column(String, nullable=True)
 
     editions = relationship("RaceEdition", back_populates="event")
     media_items = relationship("Media", back_populates="event")
+    
+    # Owners relationship
+    owners = relationship("User", secondary=event_owners, backref="managed_events")
 
 
 class RaceEdition(Base):

@@ -201,3 +201,35 @@ async def reset_prediction_settings(
     user.prediction_config = None
     db.commit()
     return RedirectResponse(url="/profile/prediction?success=Reset", status_code=303)
+
+
+@router.get("/user/{username}", response_class=HTMLResponse)
+async def public_profile(
+    username: str, 
+    request: Request, 
+    db: Session = Depends(get_db)
+):
+    target_user = db.query(models.User).filter(models.User.username == username).first()
+    
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    # Get public tracks
+    # Logic: Public visibility AND verified? Or just public?
+    # Usually public profile shows whatever user set to 'public'.
+    # Filter by user_id AND visibility=PUBLIC
+    
+    public_tracks = db.query(models.Track).filter(
+        models.Track.user_id == target_user.id,
+        models.Track.visibility == models.Visibility.PUBLIC
+    ).order_by(models.Track.created_at.desc()).all()
+    
+    from ..dependencies import get_current_user_optional
+    viewer = await get_current_user_optional(request, db)
+    
+    return templates.TemplateResponse("user_public_profile.html", {
+        "request": request,
+        "user": target_user, # The profile owner
+        "viewer": viewer, # The person watching (can be None)
+        "tracks": public_tracks
+    })

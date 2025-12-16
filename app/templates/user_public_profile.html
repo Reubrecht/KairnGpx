@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-5xl mx-auto space-y-8">
+
+        <!-- Profile Header -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="h-32 bg-gradient-to-r from-brand-600 to-indigo-600"></div>
+            <div class="px-8 pb-8">
+                <div class="relative flex justify-between items-end -mt-12 mb-6">
+                    <div class="flex items-end gap-6">
+                        <div class="relative">
+                            {% if user.profile_picture %}
+                            <img src="{{ user.profile_picture }}" alt="{{ user.username }}"
+                                class="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover bg-slate-100">
+                            {% else %}
+                            <div
+                                class="w-32 h-32 rounded-full border-4 border-white shadow-lg bg-slate-100 flex items-center justify-center text-slate-300">
+                                <i class="ph-fill ph-user text-6xl"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-2">
+                            <h1 class="text-3xl font-black text-slate-900">{{ user.full_name or user.username }}</h1>
+                            <div class="flex items-center gap-2 text-slate-500">
+                                <span class="text-lg">@{{ user.username }}</span>
+                                {% if user.is_premium %}
+                                <span
+                                    class="bg-brand-100 text-brand-700 text-xs px-2 py-0.5 rounded-full font-bold border border-brand-200">
+                                    PREMIUM
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if viewer and viewer.id == user.id %}
+                    <a href="/profile"
+                        class="mb-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl font-bold transition-colors text-sm">
+                        <i class="ph-bold ph-pencil-simple"></i> Éditer mon profil
+                    </a>
+                    {% endif %}
+                </div>
+
+                <!-- Bio & Details -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="md:col-span-2 space-y-6">
+                        {% if user.bio %}
+                        <div>
+                            <h3 class="font-bold text-slate-900 mb-2">À propos</h3>
+                            <p class="text-slate-600 leading-relaxed max-w-2xl">
+                                {{ user.bio }}
+                            </p>
+                        </div>
+                        {% endif %}
+
+                        <!-- Location -->
+                        {% if user.location_city or user.location_country or user.location %}
+                        <div class="flex items-center gap-2 text-slate-600">
+                            <i class="ph-fill ph-map-pin text-brand-500"></i>
+                            <span>
+                                {% if user.location_city %}{{ user.location_city }}{% endif %}
+                                {% if user.location_city and user.location_country %}, {% endif %}
+                                {% if user.location_country %}{{ user.location_country }}{% endif %}
+                                {% if not user.location_city and not user.location_country and user.location %}
+                                {{ user.location }}
+                                {% endif %}
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Links & Social -->
+                    <div class="space-y-4">
+                        <h3 class="font-bold text-slate-900 text-sm uppercase tracking-wider">Liens</h3>
+                        <div class="flex flex-col gap-3">
+                            {% if user.website %}
+                            <a href="{{ user.website }}" target="_blank" rel="noopener noreferrer"
+                                class="flex items-center gap-3 text-slate-600 hover:text-brand-600 transition-colors group p-3 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100">
+                                <div
+                                    class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center group-hover:bg-brand-100 group-hover:text-brand-600 transition-colors">
+                                    <i class="ph-bold ph-globe"></i>
+                                </div>
+                                <span class="font-medium truncate">{{ user.website }}</span>
+                            </a>
+                            {% endif %}
+
+                            {% if user.strava_url %}
+                            <a href="{{ user.strava_url }}" target="_blank" rel="noopener noreferrer"
+                                class="flex items-center gap-3 text-slate-600 hover:text-[#fc4c02] transition-colors group p-3 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100">
+                                <div
+                                    class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center group-hover:bg-[#fc4c02]/10 group-hover:text-[#fc4c02] transition-colors">
+                                    <i class="ph-bold ph-sneaker-move"></i>
+                                </div>
+                                <span class="font-medium">Profil Strava</span>
+                            </a>
+                            {% endif %}
+
+                            {% if user.club_affiliation %}
+                            <div class="flex items-center gap-3 text-slate-600 p-3">
+                                <div
+                                    class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center">
+                                    <i class="ph-bold ph-users-three"></i>
+                                </div>
+                                <span class="font-medium">{{ user.club_affiliation }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                {% if user.utra_score or user.utmb_index or user.betrail_score or user.tracks|length > 0 %}
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 pt-8 border-t border-slate-100">
+                    <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 text-center">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Traces Publiques
+                        </div>
+                        <div class="text-2xl font-black text-slate-900">{{ tracks|length }}</div>
+                    </div>
+                    {% if user.utmb_index %}
+                    <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 text-center">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">UTMB Index</div>
+                        <div class="text-2xl font-black text-slate-900">{{ user.utmb_index }}</div>
+                    </div>
+                    {% endif %}
+                    {% if user.itra_score %}
+                    <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 text-center">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">ITRA Score</div>
+                        <div class="text-2xl font-black text-slate-900">{{ user.itra_score }}</div>
+                    </div>
+                    {% endif %}
+                    {% if user.betrail_score %}
+                    <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 text-center">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Betrail</div>
+                        <div class="text-2xl font-black text-slate-900">{{ user.betrail_score }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Public Tracks Section -->
+        {% if tracks %}
+        <div class="space-y-4">
+            <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                <i class="ph-fill ph-path text-brand-500"></i> Traces Publiques
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for track in tracks %}
+                <a href="/track/{{ track.id }}"
+                    class="group bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md hover:border-brand-200 transition-all">
+                    <!-- Map/Placeholder -->
+                    <div class="aspect-video bg-slate-100 relative overflow-hidden">
+                        <div class="absolute inset-0 flex items-center justify-center text-slate-300">
+                            <i class="ph-fill ph-map-trifold text-4xl"></i>
+                        </div>
+                        <!-- If map previews supported, insert here -->
+                    </div>
+
+                    <div class="p-4">
+                        <h3 class="font-bold text-slate-900 group-hover:text-brand-600 transition-colors truncate mb-1">
+                            {{ track.title }}</h3>
+
+                        <div class="flex items-center gap-4 text-sm text-slate-500 mb-3">
+                            <span class="flex items-center gap-1">
+                                <i class="ph-bold ph-ruler"></i> {{ "%.1f"|format(track.distance_km) }} km
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <i class="ph-bold ph-trend-up"></i> {{ track.elevation_gain }} m+
+                            </span>
+                        </div>
+
+                        <div
+                            class="flex items-center justify-between text-xs text-slate-400 border-t border-slate-50 pt-3">
+                            <span class="flex items-center gap-1">
+                                <i class="ph-fill ph-map-pin"></i>
+                                {% if track.location_city %}{{ track.location_city }}{% else %}{{ track.location_region
+                                or 'Inconnu' }}{% endif %}
+                            </span>
+                            <span>{{ track.created_at.strftime('%d %b %Y') }}</span>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

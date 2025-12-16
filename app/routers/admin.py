@@ -1,5 +1,6 @@
 import os
 import json
+import uuid
 from typing import Optional
 from fastapi import APIRouter, Depends, Request, Form, File, UploadFile, HTTPException, status
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -236,6 +237,8 @@ async def create_event(
     city: str = Form(None),
     country: str = Form(None),
     circuit: str = Form(None),
+    contact_link: str = Form(None),
+    image_file: UploadFile = File(None),
     request_id: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_super_admin)
@@ -243,16 +246,29 @@ async def create_event(
     try:
         existing_event = db.query(models.RaceEvent).filter(models.RaceEvent.slug == slug).first()
         if existing_event:
-             # Event exists, redirect to it instead of crashing
              return RedirectResponse(url=f"/superadmin#event-{existing_event.id}", status_code=303)
 
         new_event = models.RaceEvent(
             name=name, slug=slug, website=website, description=description,
-            region=region, circuit=circuit, city=city, country=country
+            region=region, circuit=circuit, city=city, country=country,
+            contact_link=contact_link
         )
+        
+        # Handle Image
+        if image_file and image_file.filename:
+            import shutil
+            from pathlib import Path
+            upload_dir = Path("app/media/events")
+            upload_dir.mkdir(parents=True, exist_ok=True)
+            ext = image_file.filename.split('.')[-1].lower()
+            filename = f"{slug}_{uuid.uuid4().hex[:6]}.{ext}"
+            file_path = upload_dir / filename
+            with open(file_path, "wb") as buffer:
+                shutil.copyfileobj(image_file.file, buffer)
+            new_event.profile_picture = f"/media/events/{filename}"
+
         db.add(new_event)
         
-        # If created from a request, mark it as approved
         if request_id and request_id.strip():
             try:
                 rid = int(request_id)
@@ -279,6 +295,8 @@ async def update_event(
     city: str = Form(None),
     country: str = Form(None),
     circuit: str = Form(None),
+    contact_link: str = Form(None),
+    image_file: UploadFile = File(None),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_super_admin)
 ):
@@ -294,8 +312,63 @@ async def update_event(
     event.city = city
     event.country = country
     event.circuit = circuit
+    event.contact_link = contact_link
+    
+    # Handle Image
+    if image_file and image_file.filename:
+        import shutil
+        from pathlib import Path
+        upload_dir = Path("app/media/events")
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        ext = image_file.filename.split('.')[-1].lower()
+        filename = f"{slug}_{uuid.uuid4().hex[:6]}.{ext}"
+        file_path = upload_dir / filename
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(image_file.file, buffer)
+        event.profile_picture = f"/media/events/{filename}"
+
     db.commit()
     return RedirectResponse(url=f"/superadmin#event-{event_id}", status_code=303)
+
+@router.post("/superadmin/events/{event_id}/owners/add")
+async def add_event_owner(
+    event_id: int,
+    username_or_email: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_super_admin)
+):
+    event = db.query(models.RaceEvent).filter(models.RaceEvent.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+        
+    user = db.query(models.User).filter(
+        (models.User.username == username_or_email) | (models.User.email == username_or_email)
+    ).first()
+    
+    if user:
+        if user not in event.owners:
+            event.owners.append(user)
+            db.commit()
+            
+    return RedirectResponse(url=f"/superadmin/event/{event_id}/edit", status_code=303)
+
+@router.post("/superadmin/events/{event_id}/owners/remove")
+async def remove_event_owner(
+    event_id: int,
+    user_id: int = Form(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_super_admin)
+):
+    event = db.query(models.RaceEvent).filter(models.RaceEvent.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+        
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if user and user in event.owners:
+        event.owners.remove(user)
+        db.commit()
+            
+    return RedirectResponse(url=f"/superadmin/event/{event_id}/edit", status_code=303)
 
 @router.post("/superadmin/events/{event_id}/delete")
 async def delete_event(
