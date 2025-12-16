@@ -15,6 +15,9 @@ services:
       - DATABASE_URL=postgresql://kairn:kairn_password@db/kairn
       - INVITATION_CODE=${INVITATION_CODE}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - STRAVA_CLIENT_ID=${STRAVA_CLIENT_ID}
+      - STRAVA_CLIENT_SECRET=${STRAVA_CLIENT_SECRET}
+      - STRAVA_REDIRECT_URI=${STRAVA_REDIRECT_URI}
     ports:
       - "8000:8000"
     depends_on:
