@@ -133,9 +133,10 @@ async def create_event(
     current_user: models.User = Depends(get_current_super_admin)
 ):
     try:
-        if db.query(models.RaceEvent).filter(models.RaceEvent.slug == slug).first():
-             # Basic conflict check
-             pass 
+        existing_event = db.query(models.RaceEvent).filter(models.RaceEvent.slug == slug).first()
+        if existing_event:
+             # Event exists, redirect to it instead of crashing
+             return RedirectResponse(url=f"/superadmin#event-{existing_event.id}", status_code=303)
 
         new_event = models.RaceEvent(
             name=name, slug=slug, website=website, description=description,
@@ -234,6 +235,16 @@ async def add_route(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_super_admin)
 ):
+    # Check for duplicate route in this edition
+    existing_route = db.query(models.RaceRoute).filter(
+        models.RaceRoute.edition_id == edition_id, 
+        models.RaceRoute.name == name
+    ).first()
+    
+    if existing_route:
+        # Avoid duplicate, just redirect
+        return RedirectResponse(url=f"/superadmin#events", status_code=303)
+
     new_route = models.RaceRoute(
         edition_id=edition_id,
         name=name,
