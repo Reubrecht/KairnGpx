@@ -15,6 +15,22 @@ from ..services.ai_analyzer import AiAnalyzer
 
 router = APIRouter()
 
+# Helper to get model by name
+def get_model_by_name(name: str):
+    name = name.lower()
+    mapping = {
+        "user": models.User,
+        "track": models.Track,
+        "raceevent": models.RaceEvent,
+        "raceedition": models.RaceEdition,
+        "raceroute": models.RaceRoute,
+        "eventrequest": models.EventRequest,
+        "trackrequest": models.TrackRequest,
+        "oauthconnection": models.OAuthConnection,
+        "media": models.Media
+    }
+    return mapping.get(name)
+
 @router.post("/api/admin/normalize_event")
 async def api_normalize_event(
     name: str = Form(...),
@@ -26,6 +42,69 @@ async def api_normalize_event(
     analyzer = AiAnalyzer()
     normalized = analyzer.normalize_event(name, region, website, description)
     return normalized
+
+# --- SUPER ADMIN : DB TOOL ---
+
+@router.get("/api/admin/db/tables")
+async def api_get_db_tables(current_user: models.User = Depends(get_current_super_admin)):
+    """Return list of available table names for the admin inspector"""
+    return [
+        "User", "Track", "RaceEvent", "RaceEdition", "RaceRoute", 
+        "EventRequest", "TrackRequest", "OAuthConnection", "Media"
+    ]
+
+@router.get("/api/admin/db/table/{table_name}")
+async def api_get_table_data(
+    table_name: str, 
+    limit: int = 100, 
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_super_admin)
+):
+    """Return raw data for a specific table"""
+    model = get_model_by_name(table_name)
+    if not model:
+         raise HTTPException(status_code=404, detail="Table not found")
+    
+    # Fetch data
+    items = db.query(model).limit(limit).all()
+    
+    # Serialize simplistic data
+    # (Complex relationships might render as strings or need specific handling, 
+    # but for a 'light' tool, returning dicts is usually fine with FastAPI's encoder,
+    # though circular refs in relationships could be an issue if we returned ORM objects directly.
+    # We should return a list of dicts safely.)
+    
+    results = []
+    for item in items:
+        # inspect columns
+        data = {}
+        for col in item.__table__.columns:
+            val = getattr(item, col.name)
+            # data[col.name] = str(val) if val is not None else None
+            # Actually FastAPI handles most basic types. 
+            # We might want to handle Enum or UUID to string explicitly if needed, but let's try direct.
+            data[col.name] = val
+        results.append(data)
+        
+    return {"data": results, "columns": [c.name for c in model.__table__.columns]}
+
+@router.delete("/api/admin/db/table/{table_name}/{id}")
+async def api_delete_table_row(
+    table_name: str, 
+    id: int, 
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_super_admin)
+):
+    model = get_model_by_name(table_name)
+    if not model:
+         raise HTTPException(status_code=404, detail="Table not found")
+         
+    item = db.query(model).filter(model.id == id).first()
+    if item:
+        db.delete(item)
+        db.commit()
+        return {"status": "deleted"}
+    raise HTTPException(status_code=404, detail="Item not found")
 
 @router.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request, db: Session = Depends(get_db)):

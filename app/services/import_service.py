@@ -37,6 +37,12 @@ def process_race_import(db: Session, content: bytes) -> int:
                 # Routes list
                 raw_routes = item.get('courses', [])
                 
+                # Clean Event Name (Strip Year if present)
+                # e.g. "UTMB 2024" -> "UTMB"
+                if year and evt_name.strip().endswith(str(year)):
+                    evt_name = evt_name.replace(str(year), "").strip().rstrip("-")
+                    evt_slug = slugify(evt_name)
+
                 # A. Upsert Event
                 event = db.query(models.RaceEvent).filter_by(slug=evt_slug).first()
                 if not event:

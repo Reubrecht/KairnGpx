@@ -70,6 +70,33 @@
                     pending_count }}</span>
                 {% endif %}
             </button>
+
+            <div class="pt-4 pb-2">
+                <div class="px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider mb-2">Outils Techniques
+                </div>
+                <button @click="currentTab = 'database'; window.location.hash = 'database'; mobileMenuOpen = false"
+                    :class="{ 'bg-slate-800 text-white': currentTab === 'database', 'text-slate-400 hover:bg-slate-800/50 hover:text-white': currentTab !== 'database' }"
+                    class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200 text-left">
+                    <i class="ph-fill ph-database text-lg"></i>
+                    Base de Données
+                </button>
+                <button
+                    @click="currentTab = 'route_builder'; window.location.hash = 'route_builder'; mobileMenuOpen = false"
+                    :class="{ 'bg-slate-800 text-white': currentTab === 'route_builder', 'text-slate-400 hover:bg-slate-800/50 hover:text-white': currentTab !== 'route_builder' }"
+                    class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200 text-left">
+                    <i class="ph-fill ph-path text-lg"></i>
+                    Création Itinéraire
+                    <span class="ml-auto bg-amber-500 text-white text-[10px] px-1.5 py-0.5 rounded">WIP</span>
+                </button>
+                <button
+                    @click="currentTab = 'strava_upload'; window.location.hash = 'strava_upload'; mobileMenuOpen = false"
+                    :class="{ 'bg-slate-800 text-white': currentTab === 'strava_upload', 'text-slate-400 hover:bg-slate-800/50 hover:text-white': currentTab !== 'strava_upload' }"
+                    class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200 text-left">
+                    <i class="ph-bold ph-strava-logo text-lg"></i>
+                    Upload Strava
+                    <span class="ml-auto bg-amber-500 text-white text-[10px] px-1.5 py-0.5 rounded">WIP</span>
+                </button>
+            </div>
         </nav>
 
         <div class="p-4 border-t border-slate-800">
@@ -585,7 +612,165 @@
             {% endif %}
         </div>
 
-        <!-- PREDICTION CALIBRATION -->
+        <!-- DATABASE INSPECTOR -->
+        <div x-show="currentTab === 'database'" class="animate-fade-in-up" x-data="{
+            tables: [],
+            currentTable: '',
+            tableData: [],
+            tableColumns: [],
+            loading: false,
+            async loadTables() {
+                this.tables = await (await fetch('/api/admin/db/tables')).json();
+            },
+            async loadData(table) {
+                this.loading = true;
+                this.currentTable = table;
+                try {
+                    const res = await (await fetch(`/api/admin/db/table/${table}`)).json();
+                    this.tableData = res.data;
+                    this.tableColumns = res.columns;
+                } catch(e) {
+                    alert('Erreur chargement données');
+                }
+                this.loading = false;
+            },
+            async deleteRow(id) {
+                if(!confirm('Supprimer cette ligne ? Irréversible.')) return;
+                const res = await fetch(`/api/admin/db/table/${this.currentTable}/${id}`, {method: 'DELETE'});
+                if(res.ok) {
+                    this.loadData(this.currentTable); 
+                } else {
+                    alert('Erreur suppression');
+                }
+            }
+        }" x-init="loadTables()">
+            <h2 class="text-3xl font-black text-slate-900 mb-8 flex items-center gap-3">
+                <i class="ph-duotone ph-database text-brand-600"></i> Explorateur BDD
+            </h2>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 min-h-[500px]">
+                <!-- Toolbar -->
+                <div class="flex gap-4 mb-6 items-center">
+                    <select x-model="currentTable" @change="loadData($event.target.value)"
+                        class="rounded-xl border-slate-200 bg-slate-50 font-bold text-slate-700 focus:border-brand-500 focus:ring-brand-500">
+                        <option value="">-- Choisir une table --</option>
+                        <template x-for="t in tables">
+                            <option :value="t" x-text="t"></option>
+                        </template>
+                    </select>
+
+                    <button @click="loadData(currentTable)" x-show="currentTable"
+                        class="p-2 text-slate-500 hover:text-brand-600 hover:bg-slate-100 rounded-lg transition-colors">
+                        <i class="ph-bold ph-arrows-clockwise" :class="{'animate-spin': loading}"></i>
+                    </button>
+
+                    <span x-show="tableData.length > 0" class="text-xs font-mono text-slate-400">
+                        <span x-text="tableData.length"></span> enregistrements (max 100)
+                    </span>
+                </div>
+
+                <!-- Table -->
+                <div class="overflow-x-auto border border-slate-100 rounded-xl">
+                    <table class="w-full text-left text-xs whitespace-nowrap" x-show="currentTable && !loading">
+                        <thead class="bg-slate-50 text-slate-500 font-bold uppercase">
+                            <tr>
+                                <th class="px-4 py-3 sticky left-0 bg-slate-50 z-10 w-10">#</th>
+                                <template x-for="col in tableColumns">
+                                    <th class="px-4 py-3 border-b border-slate-200" x-text="col"></th>
+                                </template>
+                                <th class="px-4 py-3 text-right sticky right-0 bg-slate-50 z-10">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 font-mono text-slate-600">
+                            <template x-for="row in tableData">
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="px-4 py-2 font-bold sticky left-0 bg-white group-hover:bg-slate-50 z-10"
+                                        x-text="row.id"></td>
+                                    <template x-for="col in tableColumns">
+                                        <td class="px-4 py-2 border-r border-slate-50"
+                                            x-text="(row[col] !== null && typeof row[col] === 'object') ? JSON.stringify(row[col]).substring(0,30)+'...' : row[col]">
+                                        </td>
+                                    </template>
+                                    <td
+                                        class="px-4 py-2 text-right sticky right-0 bg-white group-hover:bg-slate-50 z-10">
+                                        <button @click="deleteRow(row.id)" class="text-red-400 hover:text-red-600 p-1">
+                                            <i class="ph-bold ph-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                            <tr x-show="tableData.length === 0">
+                                <td :colspan="tableColumns.length + 2" class="p-8 text-center text-slate-400 italic">
+                                    Aucune donnée trouvée ou table vide.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Loading State -->
+                    <div x-show="loading" class="p-12 flex justify-center text-brand-500">
+                        <i class="ph-duotone ph-spinner animate-spin text-3xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROUTE BUILDER (WIP) -->
+        <div x-show="currentTab === 'route_builder'" class="animate-fade-in-up">
+            <h2 class="text-3xl font-black text-slate-900 mb-8 flex items-center gap-3">
+                <i class="ph-duotone ph-path text-brand-600"></i> Création d'Itinéraire
+            </h2>
+
+            <div
+                class="bg-white rounded-3xl border border-slate-200 p-12 flex flex-col items-center justify-center text-center min-h-[400px] shadow-sm relative overflow-hidden">
+                <div class="absolute inset-0 bg-[url('/static/img/pattern_topo.svg')] opacity-5"></div>
+
+                <div class="bg-amber-50 rounded-full p-6 mb-6 animate-bounce shadow-lg shadow-amber-500/20 z-10">
+                    <i class="ph-duotone ph-barricade text-4xl text-amber-500"></i>
+                </div>
+
+                <h3 class="text-2xl font-black text-slate-900 mb-2 z-10">Module en Construction</h3>
+                <p class="text-slate-500 max-w-md z-10">
+                    Nous développons un outil puissant pour tracer vos itinéraires directement sur la carte.
+                    Revenez bientôt !
+                </p>
+
+                <div class="mt-8 flex gap-2 z-10">
+                    <span
+                        class="px-3 py-1 bg-slate-100 rounded-lg text-xs font-mono text-slate-500 border border-slate-200">v0.1
+                        planned</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- STRAVA UPLOAD (WIP) -->
+        <div x-show="currentTab === 'strava_upload'" class="animate-fade-in-up">
+            <h2 class="text-3xl font-black text-slate-900 mb-8 flex items-center gap-3">
+                <i class="ph-bold ph-strava-logo text-[#FC4C02]"></i> Synchronisation Strava
+            </h2>
+
+            <div
+                class="bg-white rounded-3xl border border-slate-200 p-12 flex flex-col items-center justify-center text-center min-h-[400px] shadow-sm relative overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-br from-[#FC4C02]/5 to-transparent"></div>
+
+                <div class="bg-[#FC4C02]/10 rounded-full p-6 mb-6 shadow-lg shadow-[#FC4C02]/20 z-10">
+                    <i class="ph-duotone ph-arrows-left-right text-4xl text-[#FC4C02]"></i>
+                </div>
+
+                <h3 class="text-2xl font-black text-slate-900 mb-2 z-10">Connexion API Strava</h3>
+                <p class="text-slate-500 max-w-md z-10">
+                    Bientôt, vous pourrez importer vos activités directement depuis votre compte Strava.
+                    L'intégration de l'API est en cours de développement.
+                </p>
+
+                <div class="mt-8 z-10">
+                    <button disabled
+                        class="bg-slate-100 text-slate-400 px-6 py-2 rounded-xl font-bold cursor-not-allowed flex items-center gap-2">
+                        <i class="ph-bold ph-plugs"></i> Connecter (Bientôt)
+                    </button>
+                </div>
+            </div>
+        </div>
         <div x-show="currentTab === 'prediction'" class="animate-fade-in-up"
             x-data='predictionEditor({{ prediction_config_json | safe }})'>
             <form action="/api/admin/prediction_config" method="POST" class="max-w-4xl mx-auto">
