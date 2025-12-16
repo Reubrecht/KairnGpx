@@ -84,13 +84,16 @@ def register(
                 
                 ext = profile_picture.filename.split('.')[-1].lower()
                 if ext in ['jpg', 'jpeg', 'png', 'webp', 'gif']:
-                    filename = f"{user.id}.{ext}"
-                    file_path = upload_dir / filename
+                if ext in ['jpg', 'jpeg', 'png', 'webp', 'gif']:
+                    # Use UUID for filename to avoid caching issues
+                    import uuid
+                    new_filename = f"{uuid.uuid4()}.{ext}"
+                    file_path = upload_dir / new_filename
                     
                     with open(file_path, "wb") as buffer:
                         shutil.copyfileobj(profile_picture.file, buffer)
                     
-                    user.profile_picture = f"/media/profiles/{filename}"
+                    user.profile_picture = f"/media/profiles/{new_filename}"
                     db.commit()
             except Exception as e:
                 print(f"Profile Pic Error: {e}")

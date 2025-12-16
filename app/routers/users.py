@@ -62,14 +62,16 @@ async def update_profile(
             if ext not in ['jpg', 'jpeg', 'png', 'webp', 'gif']:
                 pass # validation could go here
                 
-            filename = f"{user.id}.{ext}"
-            file_path = upload_dir / filename
+            # Simple naming strategy: use UUID to avoid caching
+            import uuid
+            new_filename = f"{uuid.uuid4()}.{ext}"
+            file_path = upload_dir / new_filename
             
             with open(file_path, "wb") as buffer:
                 shutil.copyfileobj(profile_picture.file, buffer)
                 
             # Update DB with web path
-            user.profile_picture = f"/media/profiles/{filename}"
+            user.profile_picture = f"/media/profiles/{new_filename}"
         except Exception as e:
             print(f"Error uploading profile picture: {e}")
             # Continue updating other fields
