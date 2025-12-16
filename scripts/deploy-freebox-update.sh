@@ -18,6 +18,12 @@ docker compose -f docker-compose.freebox.yml down
 # On relance avec build pour intégrer les modifs de code (Python)
 docker compose -f docker-compose.freebox.yml up -d --build
 
+# 3. Appliquer les migrations légères (DB Schema Update)
+echo "🛠️ Vérification et application des migrations..."
+# On attend quelques secondes que la DB soit prête
+sleep 5
+docker compose -f docker-compose.freebox.yml exec -T kairn python scripts/simple_migration.py
+
 echo ""
 echo "✅ Mise à jour terminée avec succès !"
 echo "📊 Vos données (kairn.db et uploads) sont conservées."
