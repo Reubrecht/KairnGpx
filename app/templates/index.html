@@ -385,8 +385,11 @@
                         </div>
                         <div>
                             <span class="block text-[10px] text-gray-400 uppercase tracking-wide">Auteur</span>
-                            <span class="font-bold text-slate-700 text-sm truncate px-1">{{
-                                track.uploader_name|truncate(8, True) }}</span>
+                            <a href="/user/{{ track.user_obj.username if track.user_obj else track.uploader_name }}"
+                                class="font-bold text-slate-700 text-sm truncate px-1 hover:text-brand-600 transition-colors">
+                                {{ (track.user_obj.username if track.user_obj else track.uploader_name)|truncate(10,
+                                True) }}
+                            </a>
                         </div>
                     </div>
 

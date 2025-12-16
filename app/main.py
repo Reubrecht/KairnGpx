@@ -24,5 +24,6 @@ app.include_router(tracks.router)
 app.include_router(users.router)
 app.include_router(races.router)
 app.include_router(admin.router)
+app.include_router(webhooks.router)
 
 # Note: Templates are configured in dependencies.py and used in routers

@@ -36,6 +36,20 @@ def get_location_info(lat: float, lon: float):
         print(f"Geocoding error: {e}")
     return "Unknown", "Unknown", "Unknown"
 
+def geocode_location(query: str):
+    """
+    Geocode a location string (e.g. 'Chamonix, France') to (lat, lon).
+    Returns (None, None) on failure.
+    """
+    geolocator = Nominatim(user_agent="kairn_trail_app_v1")
+    try:
+        location = geolocator.geocode(query, timeout=5)
+        if location:
+            return location.latitude, location.longitude
+    except Exception as e:
+        print(f"Forward Geocoding error: {e}")
+    return None, None
+
 def markdown_filter(text):
     if text:
         return markdown.markdown(text)

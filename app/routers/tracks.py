@@ -579,6 +579,7 @@ async def upload_track(
         slug=slug,
         description=description,
         user_id=current_user.id,
+        uploader_name=current_user.username,
         activity_type=models.ActivityType(activity_type),
         is_official_route=is_official,
         distance_km=metrics["distance_km"],
