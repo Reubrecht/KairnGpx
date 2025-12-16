@@ -7,6 +7,8 @@ from . import models, database
 from .version import __version__ as app_version
 from .routers import auth, pages, tracks, users, races, admin, strava_auth
 
+if os.path.exists("local.env"):
+    load_dotenv("local.env")
 load_dotenv()
 
 models.Base.metadata.create_all(bind=database.engine)
