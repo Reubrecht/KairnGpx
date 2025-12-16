@@ -121,6 +121,7 @@ class AiAnalyzer:
                 "ai_description": data.get("description"),
                 "ai_tags": data.get("tags", [])
             }
+        except Exception as e:
             print(f"AI Analysis failed: {e}")
             return {
                 "ai_title": None,
