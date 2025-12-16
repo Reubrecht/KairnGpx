@@ -341,10 +341,15 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             {% for track in tracks %}
             <!-- Standard Track Card -->
-            <a href="/track/{{ track.id }}"
-                class="group block bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 hover:border-brand-200 hover:-translate-y-1">
+            <div
+                class="group relative block bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 hover:border-brand-200 hover:-translate-y-1">
+                <!-- Main Card Link (Stretched Overlay) -->
+                <a href="/track/{{ track.id }}" class="absolute inset-0 z-0 text-[0px]"
+                    aria-label="{{ track.title }}">View Track</a>
+
                 <!-- Map Thumbnail with Overlay -->
-                <div class="h-48 bg-slate-100 relative overflow-hidden flex items-center justify-center isolate">
+                <div
+                    class="h-48 bg-slate-100 relative overflow-hidden flex items-center justify-center isolate pointer-events-none">
                     <div id="map-{{ track.id }}" class="absolute inset-0 z-0 settings-map"></div>
                     <!-- Gradient Overlay -->
                     <div
@@ -370,7 +375,7 @@
                     {% endif %}
                 </div>
 
-                <div class="p-4">
+                <div class="p-4 relative z-10 pointer-events-none">
                     <!-- Stats Grid -->
                     <div class="grid grid-cols-3 gap-2 pb-3 border-b border-gray-50 text-center">
                         <div>
@@ -383,10 +388,10 @@
                             <span class="font-bold text-slate-700 text-sm">{{ track.elevation_gain|int }}<span
                                     class="text-xs font-normal text-gray-400">m</span></span>
                         </div>
-                        <div>
+                        <div class="pointer-events-auto">
                             <span class="block text-[10px] text-gray-400 uppercase tracking-wide">Auteur</span>
                             <a href="/user/{{ track.user_obj.username if track.user_obj else track.uploader_name }}"
-                                class="font-bold text-slate-700 text-sm truncate px-1 hover:text-brand-600 transition-colors">
+                                class="font-bold text-slate-700 text-sm truncate px-1 hover:text-brand-600 transition-colors relative z-20">
                                 {{ (track.user_obj.username if track.user_obj else track.uploader_name)|truncate(10,
                                 True) }}
                             </a>
@@ -410,7 +415,7 @@
                         {% endif %}
                     </div>
                 </div>
-            </a>
+            </div>
             {% endfor %}
         </div>
 
