@@ -261,6 +261,7 @@ async def explore(
                 if ev_key not in current_level["_events"]:
                      current_level["_events"][ev_key] = {
                         "id": ev_key,
+                        "event_id": event.id,
                         "slug": event.slug,
                         "title": f"{event.name} {edition.year}",
                         "location_city": event.city or event.region,

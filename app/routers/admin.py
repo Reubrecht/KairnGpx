@@ -108,9 +108,10 @@ async def api_delete_table_row(
 
 @router.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request, db: Session = Depends(get_db)):
-    user = await get_current_user(request, db)
-    if not user.is_admin:
-        return RedirectResponse(url="/", status_code=303)
+    from ..dependencies import get_current_user_optional
+    user = await get_current_user_optional(request, db)
+    if not user or not user.is_admin:
+        return RedirectResponse(url="/login?next=/admin", status_code=303)
         
     all_users = db.query(models.User).all()
     all_tracks = db.query(models.Track).order_by(models.Track.created_at.desc()).all()
@@ -123,7 +124,17 @@ async def admin_page(request: Request, db: Session = Depends(get_db)):
     })
 
 @router.get("/superadmin", response_class=HTMLResponse)
-async def super_admin_dashboard(request: Request, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_super_admin)):
+async def super_admin_dashboard(request: Request, db: Session = Depends(get_db)):
+    from ..dependencies import get_current_user_optional
+    user = await get_current_user_optional(request, db)
+    
+    if not user:
+        return RedirectResponse(url="/login?next=/superadmin", status_code=303)
+        
+    if user.role != models.Role.SUPER_ADMIN:
+        return RedirectResponse(url="/", status_code=303)
+    
+    current_user = user # Alias for template context
     
     events = db.query(models.RaceEvent).all()
     users = db.query(models.User).all()
