@@ -131,6 +131,23 @@ async def super_admin_dashboard(request: Request, db: Session = Depends(get_db),
     event_requests = db.query(models.EventRequest).filter(models.EventRequest.status == "PENDING").all()
     pending_count = len(pending_tracks) + len(event_requests)
     
+    # Serialize pending tracks for map preview (similar to explore page)
+    # We only need basic info + path if available (or endpoints if path is heavy/missing)
+    # For simplicity/performance in admin, we might just load file path or check if we have geometry columns.
+    # Logic adapted from 'explore' page map approach
+    pending_tracks_data = []
+    
+    for t in pending_tracks:
+        # Basic serialization
+        t_data = {
+            "id": t.id,
+            "title": t.title,
+            "distance_km": t.distance_km,
+            "elevation_gain": t.elevation_gain,
+            "geojson_url": f"/api/tracks/{t.id}/geojson" # Assuming this endpoint exists or similar
+        }
+        pending_tracks_data.append(t_data)
+        
     return templates.TemplateResponse("super_admin.html", {
         "request": request, 
         "user": current_user,
@@ -138,6 +155,7 @@ async def super_admin_dashboard(request: Request, db: Session = Depends(get_db),
         "users": users,
         "pending_count": pending_count,
         "pending_tracks": pending_tracks,
+        "pending_tracks_json": json.dumps(pending_tracks_data), # JSON for JS
         "event_requests": event_requests,
         "prediction_config": PredictionConfigManager.get_config(),
         "prediction_config_json": json.dumps(PredictionConfigManager.get_config()),

@@ -32,6 +32,9 @@
             <button @click="mobileMenuOpen = false" class="md:hidden text-slate-400 hover:text-white">
                 <i class="ph-bold ph-x text-xl"></i>
             </button>
+            <button @click="mobileMenuOpen = false" class="md:hidden text-slate-400 hover:text-white">
+                <i class="ph-bold ph-x text-xl"></i>
+            </button>
         </div>
 
         <nav class="flex-1 px-4 space-y-2">
@@ -114,7 +117,8 @@
         <div x-show="currentTab === 'overview'" class="animate-fade-in-up">
             <h2 class="text-3xl font-black text-slate-900 mb-8">Vue d'ensemble</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <div @click="currentTab = 'users'; window.location.hash = 'users'"
+                    class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 cursor-pointer hover:shadow-md transition-all hover:-translate-y-1">
                     <div class="flex justify-between items-start mb-4">
                         <div class="p-3 bg-blue-50 text-blue-600 rounded-xl"><i class="ph-fill ph-users text-2xl"></i>
                         </div>
@@ -122,7 +126,8 @@
                     </div>
                     <h3 class="font-bold text-slate-500 uppercase text-xs tracking-wider">Utilisateurs inscrits</h3>
                 </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <div @click="currentTab = 'events'; window.location.hash = 'events'"
+                    class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 cursor-pointer hover:shadow-md transition-all hover:-translate-y-1">
                     <div class="flex justify-between items-start mb-4">
                         <div class="p-3 bg-brand-50 text-brand-600 rounded-xl"><i
                                 class="ph-fill ph-trophy text-2xl"></i></div>
@@ -130,7 +135,8 @@
                     </div>
                     <h3 class="font-bold text-slate-500 uppercase text-xs tracking-wider">Événements officiels</h3>
                 </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <div @click="currentTab = 'moderation'; window.location.hash = 'moderation'"
+                    class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 cursor-pointer hover:shadow-md transition-all hover:-translate-y-1">
                     <div class="flex justify-between items-start mb-4">
                         <div class="p-3 bg-orange-50 text-orange-600 rounded-xl"><i
                                 class="ph-fill ph-map-trifold text-2xl"></i></div>
@@ -523,13 +529,17 @@
                 <!-- ... Track Cards ... -->
                 <div
                     class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col md:flex-row">
-                    <!-- Map Preview (Left) - Placeholder for simplicity or mini static map -->
+                    <!-- Map Preview (Left) -->
                     <div
-                        class="w-full md:w-1/3 bg-slate-100 flex items-center justify-center p-6 border-b md:border-b-0 md:border-r border-slate-200">
-                        <div class="text-center">
-                            <div class="text-4xl mb-2">🗺️</div>
-                            <div class="text-xs font-bold text-slate-500 uppercase">{{ t.distance_km }}km • {{
-                                t.elevation_gain }}d+</div>
+                        class="w-full md:w-1/3 bg-slate-100 h-64 md:h-auto border-b md:border-b-0 md:border-r border-slate-200 relative isolate">
+                        <div id="map-{{ t.id }}" class="absolute inset-0 z-0"></div>
+                        <!-- Overlays -->
+                        <div
+                            class="absolute inset-0 pointer-events-none bg-gradient-to-t from-gray-900/10 to-transparent z-10">
+                        </div>
+                        <div
+                            class="absolute bottom-2 left-2 z-20 bg-white/90 backdrop-blur px-2 py-1 rounded text-[10px] font-mono font-bold text-slate-600 shadow-sm border border-slate-200">
+                            {{ t.distance_km }}km • {{ t.elevation_gain }}d+
                         </div>
                     </div>
 
@@ -1176,4 +1186,78 @@
     }
 </script>
 
+<script id="pending-tracks-data" type="application/json">
+        {{ pending_tracks_json | safe }}
+    </script>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Initialize Maps for Pending Tracks
+        const pendingDataEl = document.getElementById('pending-tracks-data');
+        const pendingTracks = pendingDataEl ? JSON.parse(pendingDataEl.textContent) : [];
+
+        pendingTracks.forEach(t => {
+            const mapId = `map-${t.id}`;
+            const container = document.getElementById(mapId);
+
+            // Only init if container exists (meaning we are on the page)
+            // Note: The tab might be hidden (display:none) initially. 
+            // Leaflet requires container to have size. We might need to invalidateSize when tab is shown.
+            // However, since we use x-show, elements exist.
+
+            if (container) {
+                const map = L.map(mapId, {
+                    zoomControl: false,
+                    attributionControl: false,
+                    dragging: false,
+                    scrollWheelZoom: false,
+                    doubleClickZoom: false,
+                    boxZoom: false,
+                    keyboard: false,
+                    tap: false,
+                    interaction: false
+                });
+
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+                    opacity: 0.8
+                }).addTo(map);
+
+                if (t.geojson_url) {
+                    fetch(t.geojson_url)
+                        .then(res => res.json())
+                        .then(data => {
+                            const layer = L.geoJSON(data, {
+                                style: { color: '#ef4444', weight: 4, opacity: 0.8 } // Red for pending
+                            }).addTo(map);
+                            map.fitBounds(layer.getBounds(), { padding: [10, 10] });
+                        })
+                        .catch(e => console.error("Map load error", e));
+                }
+            }
+        });
+
+        // Fix Leaflet sizing when switching tabs
+        // We can hook into Alpine or just use a MutationObserver, or simple interval check?
+        // Alpine x-effect is best if we can access it, but pure JS:
+        // Let's rely on the user clicking the tab which triggers layout repaint. 
+        // Ideally we re-call invalidatesize. 
+
+        // Simple hack: when hash changes or click on moderation tab
+        window.addEventListener('hashchange', () => {
+            if (window.location.hash === '#moderation') {
+                setTimeout(() => {
+                    window.dispatchEvent(new Event('resize')); // Trigger map resize
+                    // Force invalidate all maps
+                    pendingTracks.forEach(t => {
+                        // Access map instance if stored? simpler to just trigger resize event which leaflet listens to often
+                    });
+                }, 100);
+            }
+        });
+    });
+</script>
 {% endblock %}
