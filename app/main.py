@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 from . import models, database
 from .version import __version__ as app_version
-from .routers import auth, pages, tracks, users, races, admin, strava_auth
+from .routers import auth, pages, tracks, users, races, admin, strava_auth, webhooks
 
 if os.path.exists("local.env"):
     load_dotenv("local.env")
