@@ -39,6 +39,9 @@ async def strava_callback(request: Request, code: str = Query(None), error: str 
 
     # 1. Exchange code for token
     async with httpx.AsyncClient() as client:
+        # Debug: Print what we are sending
+        print(f"DEBUG: Exchanging code for token. ClientID={STRAVA_CLIENT_ID}, Code={code}, Redirect={STRAVA_REDIRECT_URI}")
+        
         token_resp = await client.post(
             "https://www.strava.com/oauth/token",
             data={
@@ -46,11 +49,14 @@ async def strava_callback(request: Request, code: str = Query(None), error: str 
                 "client_secret": STRAVA_CLIENT_SECRET,
                 "code": code,
                 "grant_type": "authorization_code",
+                # Important: Strava sometimes validates that this matches the auth request
+                "redirect_uri": STRAVA_REDIRECT_URI, 
             }
         )
         
     if token_resp.status_code != 200:
-         return RedirectResponse(url="/login?error=TokenExchangeFailed", status_code=status.HTTP_303_SEE_OTHER)
+         print(f"ERROR: Strava Token Exchange Failed: {token_resp.status_code} - {token_resp.text}")
+         return RedirectResponse(url=f"/login?error=TokenExchangeFailed_{token_resp.status_code}", status_code=status.HTTP_303_SEE_OTHER)
          
     token_data = token_resp.json()
     access_token = token_data.get("access_token")
