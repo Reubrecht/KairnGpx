@@ -466,15 +466,15 @@
     function deg2rad(deg) { return deg * (Math.PI / 180) }
 
     window.getSlopeColor = function (grade) {
-        // Gradient: Green (0%) -> Red (20%+)
+        // Gradient: Green (0%) -> Red (25%+)
         // Downhill (<0): kept Green for "easy/recovery"
 
-        // Clamp grade between 0 and 20 for changes
+        // Clamp grade between 0 and 25 for changes
         let effectiveGrade = Math.max(0, grade);
-        effectiveGrade = Math.min(20, effectiveGrade);
+        effectiveGrade = Math.min(25, effectiveGrade);
 
         // Ratio 0..1
-        const ratio = effectiveGrade / 20;
+        const ratio = effectiveGrade / 25;
 
         // Hue 120 (Green) -> 0 (Red)
         const hue = 120 * (1 - ratio);
