@@ -64,6 +64,21 @@
                             <span id="file-name" class="text-sm font-medium text-green-800"></span>
                         </div>
                     </div>
+
+                    <!-- Strava Import Option -->
+                    <div class="relative flex py-5 items-center">
+                        <div class="flex-grow border-t border-slate-200"></div>
+                        <span class="flex-shrink-0 mx-4 text-slate-400 text-sm">OU</span>
+                        <div class="flex-grow border-t border-slate-200"></div>
+                    </div>
+
+                    <button type="button" onclick="openStravaModal()"
+                        class="w-full flex justify-center items-center gap-3 py-4 px-4 shadow-sm text-sm font-bold rounded-xl text-white bg-[#FC4C02] hover:bg-[#E34402] transition-all group">
+                        <img src="/static/img/strava_logo.png"
+                            onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/c/cb/Strava_Logo.png'"
+                            alt="Strava" class="h-6 brightness-0 invert">
+                        <span class="text-base">Importer un itinéraire depuis Strava</span>
+                    </button>
                 </div>
 
                 <!-- 2. Core Info -->
@@ -684,5 +699,133 @@
         }
     }
 
+
+    // Strava Import
+    const stravaModal = document.getElementById('strava-modal');
+    const stravaList = document.getElementById('strava-routes-list');
+
+    function openStravaModal() {
+        stravaModal.classList.remove('hidden');
+        loadStravaRoutes();
+    }
+
+    function closeStravaModal() {
+        stravaModal.classList.add('hidden');
+    }
+
+    let stravaRoutes = [];
+
+    function loadStravaRoutes() {
+        stravaList.innerHTML = `
+            <div class="text-center py-10">
+                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-[#FC4C02] mx-auto"></div>
+                <p class="mt-4 text-slate-500">Connexion à Strava...</p>
+            </div>
+        `;
+
+        fetch('/auth/strava/routes')
+            .then(res => {
+                if (res.status === 401) {
+                    window.location.href = '/auth/strava/login';
+                    return;
+                }
+                if (!res.ok) throw new Error('Erreur Strava');
+                return res.json();
+            })
+            .then(data => {
+                if (Array.isArray(data)) {
+                    stravaRoutes = data;
+                    renderStravaRoutes();
+                } else {
+                    throw new Error("Format de réponse invalide");
+                }
+            })
+            .catch(err => {
+                stravaList.innerHTML = `
+                    <div class="text-center py-10 text-red-500">
+                        <p class="font-bold">Erreur de chargement</p>
+                        <p class="text-sm">${err.message}</p>
+                        <a href="/auth/strava/login" class="mt-4 inline-block px-4 py-2 bg-[#FC4C02] text-white rounded-lg text-sm font-bold">Reconnecter Strava</a>
+                    </div>
+                `;
+            });
+    }
+
+    function renderStravaRoutes() {
+        if (!stravaRoutes || stravaRoutes.length === 0) {
+            stravaList.innerHTML = `<p class="text-center text-slate-500 py-10">Aucun itinéraire trouvé sur ce compte Strava.</p>`;
+            return;
+        }
+
+        stravaList.innerHTML = stravaRoutes.map(route => `
+            <div onclick="importStravaRoute('${route.id_str || route.id}')" 
+                 class="group cursor-pointer p-4 rounded-xl border border-slate-200 hover:border-[#FC4C02] hover:bg-orange-50 transition-all flex justify-between items-center">
+                <div>
+                    <h4 class="font-bold text-slate-900 group-hover:text-[#FC4C02] transition-colors">${route.name}</h4>
+                    <p class="text-xs text-slate-500 mt-1">
+                        ${(route.distance / 1000).toFixed(1)}km • ${Math.round(route.elevation_gain)}m+ 
+                        ${route.sub_type_name ? '• ' + route.sub_type_name : ''}
+                    </p>
+                </div>
+                <div class="h-8 w-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-300 group-hover:border-[#FC4C02] group-hover:text-[#FC4C02]">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function importStravaRoute(routeId) {
+        stravaList.innerHTML = `
+            <div class="text-center py-10">
+                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-[#FC4C02] mx-auto"></div>
+                <p class="mt-4 text-slate-500">Importation en cours...</p>
+                <p class="text-xs text-slate-400">Cela peut prendre quelques secondes</p>
+            </div>
+        `;
+
+        fetch(`/auth/strava/routes/${routeId}/import`, { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'imported' || data.status === 'duplicate') {
+                    window.location.href = `/tracks/${data.id}/edit`;
+                } else {
+                    throw new Error(data.detail || 'Erreur inconnue');
+                }
+            })
+            .catch(err => {
+                alert('Erreur: ' + err.message);
+                loadStravaRoutes();
+            });
+    }
 </script>
+<!-- Strava Import Modal -->
+<div id="strava-modal"
+    class="fixed inset-0 bg-slate-900/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+            <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                <img src="/static/img/strava_logo.png"
+                    onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/c/cb/Strava_Logo.png'" class="h-6"
+                    alt="Strava">
+                Mes Itinéraires
+            </h3>
+            <button onclick="closeStravaModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <div id="strava-routes-list" class="flex-1 overflow-y-auto p-6 space-y-4">
+            <!-- Content loaded via JS -->
+        </div>
+
+        <div class="p-6 border-t border-slate-100 bg-slate-50 rounded-b-2xl">
+            <p class="text-xs text-center text-slate-500">
+                Seuls les itinéraires créés sur Strava ("Mes Itinéraires") sont disponibles.
+            </p>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
