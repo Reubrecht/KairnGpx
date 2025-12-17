@@ -814,17 +814,48 @@
                 "line-join": "bevel"
             },
             "paint": {
-                "line-color": "#fff",
+                "line-color": [
+                    "match",
+                    [
+                        "get",
+                        "class"
+                    ],
+                    "track",
+                    "#ffffff",
+                    "#737373"
+                ],
                 "line-dasharray": [
-                    1,
-                    1
+                    "match",
+                    [
+                        "get",
+                        "class"
+                    ],
+                    "track",
+                    [
+                        "literal",
+                        [
+                            1,
+                            0
+                        ]
+                    ],
+                    [
+                        "literal",
+                        [
+                            1,
+                            2
+                        ]
+                    ]
                 ],
                 "line-width": {
                     "base": 1.55,
                     "stops": [
                         [
                             4,
-                            0.25
+                            0.5
+                        ],
+                        [
+                            14,
+                            2
                         ],
                         [
                             20,
