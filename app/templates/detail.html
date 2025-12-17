@@ -791,20 +791,41 @@
     function initElevationChart(coords) {
         if (!coords || coords.length === 0) return;
 
-        // Calculate cumulative distance for X axis
+        // Calculate cumulative distance for X axis and Slope for coloring
         const labels = [];
         const data = [];
+        const grades = []; // Store pre-calculated grades
         let totalDist = 0;
-
-
 
         for (let i = 0; i < coords.length; i++) {
             if (i > 0) {
-                totalDist += window.getDistKm(coords[i - 1][1], coords[i - 1][0], coords[i][1], coords[i][0]);
+                const distKm = window.getDistKm(coords[i - 1][1], coords[i - 1][0], coords[i][1], coords[i][0]);
+                totalDist += distKm;
+
+                // Calculate Slope for the segment leading TO this point (i-1 -> i)
+                // We'll store it at index i-1 effectively for the segment starting at i-1
+                const distM = distKm * 1000;
+                let grade = 0;
+                if (distM > 0.001) {
+                    const eleDiff = (coords[i][2] || 0) - (coords[i - 1][2] || 0);
+                    grade = (eleDiff / distM) * 100;
+                }
+                grades.push(grade);
+            } else {
+                // First point has no previous segment, so no grade to push yet? 
+                // ChartJS segment uses p0DataIndex. Segment 0 connects point 0 and 1.
+                // So grades[0] should be slope of 0->1.
+                // WAIT: The loop calculates 0->1 when i=1.
+                // So when i=1, we push grade. grades[0] = slope(0->1).
+                // Perfect.
             }
             labels.push(totalDist.toFixed(1));
             data.push(coords[i][2]);
         }
+        // Last point (i=length-1) creates segment (length-2 -> length-1). 
+        // We have N points, N-1 segments. 
+        // grades array will have N-1 items.
+        // segment callback for segment starting at index k (p0DataIndex=k) uses grades[k].
 
         const ctx = document.getElementById('elevationChart').getContext('2d');
 
@@ -812,7 +833,6 @@
         const verticalLinePlugin = {
             id: 'verticalLine',
             afterDraw: (chart) => {
-                // Check if there is an active tooltip/hover
                 if (chart.getActiveElements().length) {
                     const activePoint = chart.getActiveElements()[0];
                     const ctx = chart.ctx;
@@ -825,8 +845,8 @@
                     ctx.moveTo(x, topY);
                     ctx.lineTo(x, bottomY);
                     ctx.lineWidth = 1.5;
-                    ctx.strokeStyle = '#475569'; // slate-600
-                    ctx.setLineDash([4, 2]); // Dashed line
+                    ctx.strokeStyle = '#475569';
+                    ctx.setLineDash([4, 2]);
                     ctx.stroke();
                     ctx.restore();
                 }
@@ -844,10 +864,7 @@
                     borderWidth: 2,
                     pointRadius: 0,
                     pointHoverRadius: 0,
-                    // Remove default colors as we use segment styling
-                    borderColor: '#10b981',
-                    // Gradient Fill (Keep a subtle green fill for context, or neutral?)
-                    // Let's keep the fill subtle
+                    borderColor: '#10b981', // Fallback color
                     backgroundColor: function (context) {
                         const chart = context.chart;
                         const { ctx, chartArea } = chart;
@@ -862,24 +879,12 @@
                     // SEGMENT STYLING for SLOPE
                     segment: {
                         borderColor: ctx => {
-                            // ctx.p0 and ctx.p1 are the points
+                            // Use pre-calculated grade
                             const i = ctx.p0DataIndex;
-                            const nextI = ctx.p1DataIndex;
-                            // Ensure we have coords
-                            if (i === undefined || !coords[i] || !coords[nextI]) return '#10b981';
+                            // Safety check
+                            if (i === undefined || i >= grades.length) return '#10b981';
 
-                            const p1 = coords[i];
-                            const p2 = coords[nextI];
-
-                            const distKm = window.getDistKm(p1[1], p1[0], p2[1], p2[0]);
-                            const distM = distKm * 1000;
-
-                            if (distM <= 0.001) return '#10b981'; // Prevent Div0
-
-                            const eleDiff = (p2[2] || 0) - (p1[2] || 0);
-                            const grade = (eleDiff / distM) * 100;
-
-                            return window.getSlopeColor(grade);
+                            return window.getSlopeColor(grades[i]);
                         }
                     }
                 }]
