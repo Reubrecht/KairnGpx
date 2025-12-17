@@ -572,10 +572,21 @@
             }, 500); */
 
             // Fit Bounds
+            // Fit Bounds with Cinematic Effect
             const bounds = new maplibregl.LngLatBounds();
             coords.forEach(coord => bounds.extend(coord));
+
+            // Calculate dynamic bottom padding (approx 50% of screen height for card overlay)
+            const bottomPadding = window.innerHeight < 768 ? window.innerHeight * 0.45 : window.innerHeight * 0.55;
+
             map.fitBounds(bounds, {
-                padding: { top: 50, bottom: 250, left: 50, right: 50 }
+                padding: { top: 80, bottom: bottomPadding, left: 50, right: 50 },
+                duration: 2500, // 2.5s fly-in
+                start: {
+                    zoom: 11, // Start slightly zoomed out
+                    bearing: 15 // Slight rotation start
+                },
+                essential: true
             });
 
             // 2. Setup Chart.js
@@ -587,12 +598,13 @@
             const cityName = trackData.city;
 
             if (cityName) {
-                const cityEl = document.createElement('div');
+                cityTextEl = document.createElement('div');
                 // Minimalist Design: moved further right (translate-x-6) to avoid start pin overlap
-                cityEl.className = 'text-[10px] font-black tracking-widest uppercase text-slate-500/90 mix-blend-multiply drop-shadow-sm select-none pointer-events-none transform -translate-y-1/2 translate-x-6';
-                cityEl.innerText = cityName;
+                // Default: Trail Mode (Slate/Multiply)
+                cityTextEl.className = 'text-[10px] font-black tracking-widest uppercase text-slate-500/90 mix-blend-multiply drop-shadow-sm select-none pointer-events-none transform -translate-y-1/2 translate-x-6 transition-colors duration-300';
+                cityTextEl.innerText = cityName;
 
-                new maplibregl.Marker({ element: cityEl, anchor: 'left' })
+                new maplibregl.Marker({ element: cityTextEl, anchor: 'left' })
                     .setLngLat([trackData.startLon, trackData.startLat])
                     .addTo(map);
             }
@@ -609,12 +621,13 @@
                 }
 
                 if (maxCoord) {
-                    const summitEl = document.createElement('div');
+                    summitTextEl = document.createElement('div');
                     // Minimalist Design: Text only for Summit
-                    summitEl.className = 'text-[10px] font-bold text-slate-500/90 mix-blend-multiply drop-shadow-sm select-none pointer-events-none transform -translate-y-full';
-                    summitEl.innerHTML = `▲ ${Math.round(maxElev)}m`;
+                    // Default: Trail Mode (Slate/Multiply)
+                    summitTextEl.className = 'text-[10px] font-bold text-slate-500/90 mix-blend-multiply drop-shadow-sm select-none pointer-events-none transform -translate-y-full transition-colors duration-300';
+                    summitTextEl.innerHTML = `▲ ${Math.round(maxElev)}m`;
 
-                    new maplibregl.Marker({ element: summitEl, anchor: 'bottom' })
+                    new maplibregl.Marker({ element: summitTextEl, anchor: 'bottom' })
                         .setLngLat(maxCoord)
                         .setOffset([0, -5])
                         .addTo(map);
@@ -737,6 +750,15 @@
             }
         }
 
+
+        // --- MAP CONTROLS LOGIC & STYLING ---
+        window.is3D = false;
+        window.currentLayer = 'trail';
+
+        // Marker References for dynamic styling
+        let cityTextEl = null;
+        let summitTextEl = null;
+
         window.setMapLayer = (layer) => {
             if (layer === window.currentLayer) return;
 
@@ -753,6 +775,15 @@
                 btnSat.classList.add('bg-slate-100', 'text-brand-600', 'font-bold');
                 btnSat.classList.remove('text-slate-400', 'hover:text-brand-600');
 
+                // Update Markers to Light Mode (White text with shadow)
+                const updateMarkerToLight = (el) => {
+                    if (!el) return;
+                    el.classList.remove('text-slate-500/90', 'mix-blend-multiply');
+                    el.classList.add('text-white', 'drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]');
+                };
+                updateMarkerToLight(cityTextEl);
+                updateMarkerToLight(summitTextEl);
+
             } else {
                 map.setPaintProperty('satellite-layer', 'raster-opacity', 0);
 
@@ -762,6 +793,15 @@
 
                 btnTrail.classList.add('bg-slate-100', 'text-slate-700', 'font-bold');
                 btnTrail.classList.remove('text-slate-400');
+
+                // Update Markers to Dark Mode (Slate text, multiply blend)
+                const updateMarkerToDark = (el) => {
+                    if (!el) return;
+                    el.classList.remove('text-white', 'drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]');
+                    el.classList.add('text-slate-500/90', 'mix-blend-multiply');
+                };
+                updateMarkerToDark(cityTextEl);
+                updateMarkerToDark(summitTextEl);
             }
             window.currentLayer = layer;
         };
