@@ -7,7 +7,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Request, UploadFile, File, Form, HTTPException, status, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, between
+from sqlalchemy import or_, between, cast, String
 
 from .. import models
 from ..dependencies import get_db, get_current_user, get_current_user_optional, templates
@@ -130,7 +130,7 @@ async def explore(
         
         # 7. Tags (JSON array contains)
         if tag:
-            query = query.filter(models.Track.tags.ilike(f'%"{tag}"%'))
+            query = query.filter(cast(models.Track.tags, String).ilike(f'%"{tag}"%'))
             
         # Visibility
         if user:
