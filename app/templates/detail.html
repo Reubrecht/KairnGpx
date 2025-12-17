@@ -466,11 +466,19 @@
     function deg2rad(deg) { return deg * (Math.PI / 180) }
 
     window.getSlopeColor = function (grade) {
-        if (grade < -2) return '#3b82f6'; // Blue (Down)
-        if (grade < 2) return '#10b981'; // Green (Flat)
-        if (grade < 6) return '#eab308'; // Yellow (Moderate)
-        if (grade < 12) return '#f97316'; // Orange (Steep)
-        return '#ef4444'; // Red (Very Steep)
+        // Gradient: Green (0%) -> Red (20%+)
+        // Downhill (<0): kept Green for "easy/recovery"
+
+        // Clamp grade between 0 and 20 for changes
+        let effectiveGrade = Math.max(0, grade);
+        effectiveGrade = Math.min(20, effectiveGrade);
+
+        // Ratio 0..1
+        const ratio = effectiveGrade / 20;
+
+        // Hue 120 (Green) -> 0 (Red)
+        const hue = 120 * (1 - ratio);
+        return `hsl(${hue}, 90%, 45%)`;
     }
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -558,10 +566,10 @@
             // Initial Render (Slope by default)
             updateTrackStyle('slope');
 
-            // Set 3D by default
-            setTimeout(() => {
+            // Disabled automatic 3D toggle (reverting to 2D default)
+            /* setTimeout(() => {
                 if (!window.is3D) toggle3D();
-            }, 500);
+            }, 500); */
 
             // Fit Bounds
             const bounds = new maplibregl.LngLatBounds();
