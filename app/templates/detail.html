@@ -10,26 +10,42 @@
 
         <!-- MAP CONTROLS (Top Right) -->
         <div class="absolute top-4 right-4 z-20 flex flex-col gap-2">
-            <!-- Layers -->
+            <!-- Unified Control Group -->
             <div
-                class="bg-white/90 backdrop-blur-sm border border-slate-200 rounded-lg shadow-sm p-1 flex flex-col gap-1">
+                class="bg-white/90 backdrop-blur-sm border border-slate-200 rounded-lg shadow-sm p-1.5 flex flex-col gap-1.5">
+
+                <!-- Layer: Trail -->
                 <button onclick="setMapLayer('trail')" id="btn-layer-trail"
-                    class="w-9 h-9 flex items-center justify-center rounded hover:bg-slate-100 transition-colors text-slate-700 bg-slate-100 font-bold"
-                    title="Vue Standard">
-                    <i class="ph-fill ph-map-trifold text-lg"></i>
+                    class="w-9 h-9 flex items-center justify-center rounded-md transition-all text-slate-700 bg-slate-100 font-bold hover:bg-slate-200"
+                    title="Vue Plan">
+                    <i class="ph-fill ph-map-trifold text-xl"></i>
                 </button>
+
+                <!-- Layer: Satellite -->
                 <button onclick="setMapLayer('satellite')" id="btn-layer-satellite"
-                    class="w-9 h-9 flex items-center justify-center rounded hover:bg-slate-100 transition-colors text-slate-500 hover:text-brand-600"
+                    class="w-9 h-9 flex items-center justify-center rounded-md transition-all text-slate-400 hover:text-brand-600 hover:bg-slate-50"
                     title="Vue Satellite">
-                    <i class="ph-fill ph-globe-hemisphere-west text-lg"></i>
+                    <i class="ph-fill ph-globe-hemisphere-west text-xl"></i>
+                </button>
+
+                <div class="h-px bg-slate-200 mx-1"></div>
+
+                <!-- Toggle: 3D -->
+                <button onclick="toggle3D()" id="btn-3d"
+                    class="w-9 h-9 flex items-center justify-center rounded-md transition-all text-slate-500 font-black text-[10px] hover:text-brand-600 hover:bg-slate-50"
+                    title="Vue 3D">
+                    3D
+                </button>
+
+                <div class="h-px bg-slate-200 mx-1"></div>
+
+                <!-- Toggle: Style -->
+                <button onclick="cycleTrackStyle()" id="btn-style"
+                    class="w-9 h-9 flex items-center justify-center rounded-md transition-all text-brand-600 hover:bg-brand-50"
+                    title="Style: Dénivelé">
+                    <i id="btn-style-icon" class="ph-fill ph-chart-bar text-xl"></i>
                 </button>
             </div>
-
-            <!-- 3D Toggle -->
-            <button onclick="toggle3D()" id="btn-3d"
-                class="bg-white/90 backdrop-blur-sm border border-slate-200 rounded-lg shadow-sm w-9 h-9 flex items-center justify-center text-slate-700 font-black text-xs hover:bg-slate-50 transition-colors">
-                3D
-            </button>
         </div>
 
         <!-- Gradient overlay for desktop to make text readable if overlapping -->
@@ -435,6 +451,28 @@
 </script>
 
 <script>
+    // --- Global Helpers ---
+    window.getDistKm = function (lat1, lon1, lat2, lon2) {
+        var R = 6371; // Radius of the earth in km
+        var dLat = deg2rad(lat2 - lat1);
+        var dLon = deg2rad(lon2 - lon1);
+        var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        var d = R * c;
+        return d;
+    }
+    function deg2rad(deg) { return deg * (Math.PI / 180) }
+
+    window.getSlopeColor = function (grade) {
+        if (grade < -2) return '#3b82f6'; // Blue (Down)
+        if (grade < 2) return '#10b981'; // Green (Flat)
+        if (grade < 6) return '#eab308'; // Yellow (Moderate)
+        if (grade < 12) return '#f97316'; // Orange (Steep)
+        return '#ef4444'; // Red (Very Steep)
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         const trackDataElement = document.getElementById('track-data');
         if (!trackDataElement) return;
@@ -497,58 +535,9 @@
             }); // Added on top of existing layers (but will be below track-line which is added later)
 
             // 1. Add Track Source
-            // breakdown to segments for elevation gradient
-            const coords = trackGeoJSON.geometry.coordinates;
-            const segments = [];
-            let minElev = Infinity, maxElev = -Infinity;
-
-            // First pass: Find min/max elevation
-            coords.forEach(c => {
-                const ele = c[2];
-                if (ele !== null) {
-                    if (ele < minElev) minElev = ele;
-                    if (ele > maxElev) maxElev = ele;
-                }
-            });
-            const elevRange = maxElev - minElev;
-
-            // Second pass: Create segments
-            for (let i = 0; i < coords.length - 1; i++) {
-                const p1 = coords[i];
-                const p2 = coords[i + 1];
-                const avgElev = ((p1[2] || 0) + (p2[2] || 0)) / 2;
-
-                // Calculate Color (Green to Red or specific gradient)
-                // Kairn Gradient: Green(Low) -> Red(High) or similar? 
-                // Previous was: hue = (1 - ratio) * 120 (Green=120 low, Red=0 high)
-                // Actually usually Low=Green, High=Red is common for effort, but for altitude:
-                // Let's stick to the previous logic: Green (120) -> Red (0) based on relative altitude? 
-                // Or maybe Brand Color (#10b981) to Darker? 
-                // Let's use the HSL logic from before: 
-                const ratio = elevRange === 0 ? 0 : (avgElev - minElev) / elevRange;
-                const hue = (1 - ratio) * 120;
-                const color = `hsl(${hue}, 90%, 45%)`;
-
-                segments.push({
-                    type: "Feature",
-                    geometry: {
-                        type: "LineString",
-                        coordinates: [p1, p2]
-                    },
-                    properties: {
-                        color: color
-                    }
-                });
-            }
-
-            const segmentGeoJSON = {
-                type: "FeatureCollection",
-                features: segments
-            };
-
             map.addSource('track-segments', {
                 type: 'geojson',
-                data: segmentGeoJSON
+                data: { type: "FeatureCollection", features: [] }
             });
 
             map.addLayer({
@@ -565,6 +554,14 @@
                     'line-opacity': 0.9
                 }
             });
+
+            // Initial Render (Slope by default)
+            updateTrackStyle('slope');
+
+            // Set 3D by default
+            setTimeout(() => {
+                if (!window.is3D) toggle3D();
+            }, 500);
 
             // Fit Bounds
             const bounds = new maplibregl.LngLatBounds();
@@ -583,8 +580,8 @@
 
             if (cityName) {
                 const cityEl = document.createElement('div');
-                // Minimalist Design: Text only, slightly blurred bg for readability, no borders/pins
-                cityEl.className = 'text-[10px] font-black tracking-widest uppercase text-slate-500/90 mix-blend-multiply drop-shadow-sm select-none pointer-events-none transform -translate-y-1/2 translate-x-1';
+                // Minimalist Design: moved further right (translate-x-6) to avoid start pin overlap
+                cityEl.className = 'text-[10px] font-black tracking-widest uppercase text-slate-500/90 mix-blend-multiply drop-shadow-sm select-none pointer-events-none transform -translate-y-1/2 translate-x-6';
                 cityEl.innerText = cityName;
 
                 new maplibregl.Marker({ element: cityEl, anchor: 'left' })
@@ -639,9 +636,98 @@
             };
         });
 
-        // --- MAP CONTROLS LOGIC ---
+        // --- MAP CONTROLS LOGIC & STYLING ---
         window.is3D = false;
         window.currentLayer = 'trail';
+        window.currentStyle = 'elevation'; // elevation, slope, solid
+
+
+
+        // Logic to update track style
+        window.updateTrackStyle = (style) => {
+            const coords = trackGeoJSON.geometry.coordinates;
+            const segments = [];
+
+            // Pre-calculation for ranges
+            let minElev = Infinity, maxElev = -Infinity;
+            if (style === 'elevation') {
+                coords.forEach(c => {
+                    if (c[2] !== null) {
+                        if (c[2] < minElev) minElev = c[2];
+                        if (c[2] > maxElev) maxElev = c[2];
+                    }
+                });
+            }
+            const elevRange = maxElev - minElev;
+
+            for (let i = 0; i < coords.length - 1; i++) {
+                const p1 = coords[i];
+                const p2 = coords[i + 1];
+                let color = '#10b981'; // Default
+
+                if (style === 'elevation') {
+                    const avgElev = ((p1[2] || 0) + (p2[2] || 0)) / 2;
+                    const ratio = elevRange <= 0 ? 0 : (avgElev - minElev) / elevRange;
+                    const hue = (1 - ratio) * 120; // Green (Low) -> Red (High)
+                    color = `hsl(${hue}, 90%, 45%)`;
+                } else if (style === 'slope') {
+                    const distKm = window.getDistKm(p1[1], p1[0], p2[1], p2[0]);
+                    const distM = distKm * 1000;
+                    if (distM > 0) {
+                        const eleDiff = (p2[2] || 0) - (p1[2] || 0);
+                        const grade = (eleDiff / distM) * 100;
+                        color = window.getSlopeColor(grade);
+                    }
+                } else if (style === 'solid') {
+                    color = '#10b981'; // Brand Emerald
+                }
+
+                segments.push({
+                    type: "Feature",
+                    geometry: { type: "LineString", coordinates: [p1, p2] },
+                    properties: { color: color }
+                });
+            }
+
+            // Update Source
+            const source = map.getSource('track-segments');
+            if (source) {
+                source.setData({
+                    type: "FeatureCollection",
+                    features: segments
+                });
+            }
+            window.currentStyle = style;
+            updateStyleButtonUI();
+        };
+
+        window.cycleTrackStyle = () => {
+            const modes = ['elevation', 'slope', 'solid'];
+            const nextIndex = (modes.indexOf(window.currentStyle) + 1) % modes.length;
+            window.updateTrackStyle(modes[nextIndex]);
+        };
+
+        function updateStyleButtonUI() {
+            const btn = document.getElementById('btn-style');
+            const icon = document.getElementById('btn-style-icon');
+
+            if (window.currentStyle === 'elevation') {
+                btn.title = "Style: Dénivelé";
+                icon.className = "ph-fill ph-chart-bar text-xl";
+                btn.classList.add('text-brand-600');
+                btn.classList.remove('text-amber-600', 'text-slate-600');
+            } else if (window.currentStyle === 'slope') {
+                btn.title = "Style: Pente";
+                icon.className = "ph-fill ph-trend-up text-xl";
+                btn.classList.add('text-amber-600');
+                btn.classList.remove('text-brand-600', 'text-slate-600');
+            } else { // solid
+                btn.title = "Style: Uni";
+                icon.className = "ph-fill ph-paint-brush text-xl";
+                btn.classList.add('text-slate-600');
+                btn.classList.remove('text-brand-600', 'text-amber-600');
+            }
+        }
 
         window.setMapLayer = (layer) => {
             if (layer === window.currentLayer) return;
@@ -650,30 +736,24 @@
             const btnSat = document.getElementById('btn-layer-satellite');
 
             if (layer === 'satellite') {
-                // Show Satellite
                 map.setPaintProperty('satellite-layer', 'raster-opacity', 1);
 
                 // UI Updates
                 btnTrail.classList.remove('bg-slate-100', 'text-slate-700', 'font-bold');
-                btnTrail.classList.add('text-slate-500');
+                btnTrail.classList.add('text-slate-400'); // Dimmed
 
                 btnSat.classList.add('bg-slate-100', 'text-brand-600', 'font-bold');
-                btnSat.classList.remove('text-slate-500');
-
-                // Optional: Hide some vector layers to reduce clutter? 
-                // For now, let's keep it simple. If satellite is opaque, it covers 'background' and likely other layers z-ordered below it.
-                // We added it with 'background' as "beforeId" reference? No, we used 'background' as ID.
+                btnSat.classList.remove('text-slate-400', 'hover:text-brand-600');
 
             } else {
-                // Show Trail (Hide Satellite)
                 map.setPaintProperty('satellite-layer', 'raster-opacity', 0);
 
                 // UI Updates
                 btnSat.classList.remove('bg-slate-100', 'text-brand-600', 'font-bold');
-                btnSat.classList.add('text-slate-500');
+                btnSat.classList.add('text-slate-400', 'hover:text-brand-600');
 
                 btnTrail.classList.add('bg-slate-100', 'text-slate-700', 'font-bold');
-                btnTrail.classList.remove('text-slate-500');
+                btnTrail.classList.remove('text-slate-400');
             }
             window.currentLayer = layer;
         };
@@ -683,21 +763,19 @@
             const btn3d = document.getElementById('btn-3d');
 
             if (window.is3D) {
-                // Enable 3D
                 map.setTerrain({ 'source': 'terrain-dem', 'exaggeration': 1.5 });
                 map.easeTo({ pitch: 70, duration: 1000 });
 
                 btn3d.classList.add('bg-brand-600', 'text-white', 'border-brand-600');
-                btn3d.classList.remove('bg-white/90', 'text-slate-700', 'border-slate-200');
+                btn3d.classList.remove('text-slate-500');
             } else {
-                // Disable 3D
                 map.easeTo({ pitch: 0, bearing: 0, duration: 1000 });
                 setTimeout(() => {
                     if (!window.is3D) map.setTerrain(null);
                 }, 1000);
 
                 btn3d.classList.remove('bg-brand-600', 'text-white', 'border-brand-600');
-                btn3d.classList.add('bg-white/90', 'text-slate-700', 'border-slate-200');
+                btn3d.classList.add('text-slate-500');
             }
         };
     });
@@ -710,23 +788,11 @@
         const data = [];
         let totalDist = 0;
 
-        // Helper to calc distance between two points in km
-        function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-            var R = 6371;
-            var dLat = deg2rad(lat2 - lat1);
-            var dLon = deg2rad(lon2 - lon1);
-            var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            var d = R * c;
-            return d;
-        }
-        function deg2rad(deg) { return deg * (Math.PI / 180) }
+
 
         for (let i = 0; i < coords.length; i++) {
             if (i > 0) {
-                totalDist += getDistanceFromLatLonInKm(coords[i - 1][1], coords[i - 1][0], coords[i][1], coords[i][0]);
+                totalDist += window.getDistKm(coords[i - 1][1], coords[i - 1][0], coords[i][1], coords[i][0]);
             }
             labels.push(totalDist.toFixed(1));
             data.push(coords[i][2]);
@@ -759,6 +825,7 @@
             }
         };
 
+        // Initialize Chart
         new Chart(ctx, {
             type: 'line',
             data: {
@@ -766,21 +833,47 @@
                 datasets: [{
                     label: 'Altitude (m)',
                     data: data,
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    pointHoverRadius: 0,
+                    // Remove default colors as we use segment styling
                     borderColor: '#10b981',
+                    // Gradient Fill (Keep a subtle green fill for context, or neutral?)
+                    // Let's keep the fill subtle
                     backgroundColor: function (context) {
                         const chart = context.chart;
                         const { ctx, chartArea } = chart;
                         if (!chartArea) return null;
                         const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
                         gradient.addColorStop(0, 'rgba(16, 185, 129, 0.05)');
-                        gradient.addColorStop(1, 'rgba(16, 185, 129, 0.4)');
+                        gradient.addColorStop(1, 'rgba(16, 185, 129, 0.2)');
                         return gradient;
                     },
                     fill: true,
-                    tension: 0.2, // Slightly sharper than 0.3
-                    pointRadius: 0,
-                    pointHoverRadius: 0, // Hide point on hover since we have the line
-                    borderWidth: 2
+                    tension: 0.2,
+                    // SEGMENT STYLING for SLOPE
+                    segment: {
+                        borderColor: ctx => {
+                            // ctx.p0 and ctx.p1 are the points
+                            const i = ctx.p0DataIndex;
+                            const nextI = ctx.p1DataIndex;
+                            // Ensure we have coords
+                            if (i === undefined || !coords[i] || !coords[nextI]) return '#10b981';
+
+                            const p1 = coords[i];
+                            const p2 = coords[nextI];
+
+                            const distKm = window.getDistKm(p1[1], p1[0], p2[1], p2[0]);
+                            const distM = distKm * 1000;
+
+                            if (distM <= 0.001) return '#10b981'; // Prevent Div0
+
+                            const eleDiff = (p2[2] || 0) - (p1[2] || 0);
+                            const grade = (eleDiff / distM) * 100;
+
+                            return window.getSlopeColor(grade);
+                        }
+                    }
                 }]
             },
             options: {
@@ -788,7 +881,7 @@
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { display: false },
-                    tooltip: { enabled: false } // Disable default tooltip
+                    tooltip: { enabled: false }
                 },
                 interaction: {
                     mode: 'index',
