@@ -1,13 +1,8 @@
 {
     "version": 8,
-    "name": "Basic",
+    "name": "Kairn OpenTrailMap Style",
     "metadata": {
-        "mapbox:autocomposite": false,
-        "mapbox:type": "template",
-        "maputnik:renderer": "mbgljs",
-        "openmaptiles:version": "3.x",
-        "openmaptiles:mapbox:owner": "openmaptiles",
-        "openmaptiles:mapbox:source:url": "mapbox://openmaptiles.4qljc88t"
+        "openmaptiles:version": "3.x"
     },
     "sources": {
         "openmaptiles": {
@@ -20,7 +15,8 @@
         },
         "hillshade": {
             "type": "raster",
-            "url": "https://tiles.openstreetmap.us/raster/hillshade.json"
+            "url": "https://tiles.openstreetmap.us/raster/hillshade.json",
+            "tileSize": 256
         },
         "contours": {
             "type": "vector",
@@ -818,17 +814,48 @@
                 "line-join": "bevel"
             },
             "paint": {
-                "line-color": "#fff",
+                "line-color": [
+                    "match",
+                    [
+                        "get",
+                        "class"
+                    ],
+                    "track",
+                    "#ffffff",
+                    "#737373"
+                ],
                 "line-dasharray": [
-                    1,
-                    1
+                    "match",
+                    [
+                        "get",
+                        "class"
+                    ],
+                    "track",
+                    [
+                        "literal",
+                        [
+                            1,
+                            0
+                        ]
+                    ],
+                    [
+                        "literal",
+                        [
+                            1,
+                            2
+                        ]
+                    ]
                 ],
                 "line-width": {
                     "base": 1.55,
                     "stops": [
                         [
                             4,
-                            0.25
+                            0.5
+                        ],
+                        [
+                            14,
+                            2
                         ],
                         [
                             20,
@@ -1798,348 +1825,6 @@
                 "text-halo-color": "rgba(255,255,255,1)",
                 "text-halo-width": 1
             }
-        },
-        {
-            "id": "airport-label",
-            "type": "symbol",
-            "source": "openmaptiles",
-            "source-layer": "aerodrome_label",
-            "minzoom": 10,
-            "filter": [
-                "all",
-                [
-                    "has",
-                    "iata"
-                ]
-            ],
-            "layout": {
-                "icon-size": 1,
-                "text-anchor": "top",
-                "text-field": "{name:latin}\n{name:nonlatin}",
-                "text-font": [
-                    "Americana-Regular"
-                ],
-                "text-max-width": 8,
-                "text-offset": [
-                    0,
-                    0.5
-                ],
-                "text-size": 11,
-                "visibility": "visible"
-            },
-            "paint": {
-                "text-color": "#666",
-                "text-halo-blur": 1,
-                "text-halo-color": "rgba(255,255,255,0.75)",
-                "text-halo-width": 1
-            }
-        },
-        {
-            "id": "road_major_label",
-            "type": "symbol",
-            "source": "openmaptiles",
-            "source-layer": "transportation_name",
-            "filter": [
-                "all",
-                [
-                    "==",
-                    "$type",
-                    "LineString"
-                ],
-                [
-                    "!in",
-                    "class",
-                    "path",
-                    "track"
-                ]
-            ],
-            "layout": {
-                "symbol-placement": "line",
-                "text-field": "{name:latin} {name:nonlatin}",
-                "text-font": [
-                    "Americana-Regular"
-                ],
-                "text-letter-spacing": 0.1,
-                "text-rotation-alignment": "map",
-                "text-size": {
-                    "base": 1.4,
-                    "stops": [
-                        [
-                            10,
-                            8
-                        ],
-                        [
-                            20,
-                            14
-                        ]
-                    ]
-                },
-                "text-transform": "uppercase",
-                "visibility": "visible"
-            },
-            "paint": {
-                "text-color": "#000",
-                "text-halo-color": "hsl(0, 0%, 100%)",
-                "text-halo-width": 2
-            }
-        },
-        {
-            "id": "park-label",
-            "type": "symbol",
-            "source": "openmaptiles",
-            "source-layer": "park",
-            "minzoom": 8,
-            "layout": {
-                "symbol-placement": "line",
-                "icon-size": 1,
-                "text-anchor": "top",
-                "text-field": "{name:latin}\n{name:nonlatin}",
-                "text-font": [
-                    "Americana-Regular"
-                ],
-                "text-max-width": 8,
-                "text-offset": [
-                    0,
-                    0.5
-                ],
-                "text-size": 12,
-                "visibility": "visible"
-            },
-            "paint": {
-                "text-color": "#666",
-                "text-halo-blur": 1,
-                "text-halo-color": "rgba(255,255,255,1)",
-                "text-halo-width": 1
-            }
-        },
-        {
-            "id": "place_label_other",
-            "type": "symbol",
-            "source": "openmaptiles",
-            "source-layer": "place",
-            "minzoom": 8,
-            "filter": [
-                "all",
-                [
-                    "==",
-                    "$type",
-                    "Point"
-                ],
-                [
-                    "!in",
-                    "class",
-                    "city",
-                    "state",
-                    "country",
-                    "continent"
-                ]
-            ],
-            "layout": {
-                "text-anchor": "center",
-                "text-field": "{name:latin}\n{name:nonlatin}",
-                "text-font": [
-                    "Americana-Regular"
-                ],
-                "text-max-width": 6,
-                "text-size": {
-                    "stops": [
-                        [
-                            6,
-                            10
-                        ],
-                        [
-                            12,
-                            14
-                        ]
-                    ]
-                },
-                "visibility": "visible"
-            },
-            "paint": {
-                "text-color": "hsl(0, 0%, 25%)",
-                "text-halo-blur": 0,
-                "text-halo-color": "hsl(0, 0%, 100%)",
-                "text-halo-width": 2
-            }
-        },
-        {
-            "id": "place_label_city",
-            "type": "symbol",
-            "source": "openmaptiles",
-            "source-layer": "place",
-            "maxzoom": 16,
-            "filter": [
-                "all",
-                [
-                    "==",
-                    "$type",
-                    "Point"
-                ],
-                [
-                    "==",
-                    "class",
-                    "city"
-                ]
-            ],
-            "layout": {
-                "text-field": "{name:latin}\n{name:nonlatin}",
-                "text-font": [
-                    "Americana-Regular"
-                ],
-                "text-max-width": 10,
-                "text-size": {
-                    "stops": [
-                        [
-                            3,
-                            12
-                        ],
-                        [
-                            8,
-                            16
-                        ]
-                    ]
-                }
-            },
-            "paint": {
-                "text-color": "hsl(0, 0%, 0%)",
-                "text-halo-blur": 0,
-                "text-halo-color": "hsla(0, 0%, 100%, 0.75)",
-                "text-halo-width": 2
-            }
-        },
-        {
-            "id": "country_label-other",
-            "type": "symbol",
-            "source": "openmaptiles",
-            "source-layer": "place",
-            "maxzoom": 12,
-            "filter": [
-                "all",
-                [
-                    "==",
-                    "$type",
-                    "Point"
-                ],
-                [
-                    "==",
-                    "class",
-                    "country"
-                ],
-                [
-                    "!has",
-                    "iso_a2"
-                ]
-            ],
-            "layout": {
-                "text-field": "{name:latin}",
-                "text-font": [
-                    "Americana-Regular"
-                ],
-                "text-max-width": 10,
-                "text-size": {
-                    "stops": [
-                        [
-                            3,
-                            12
-                        ],
-                        [
-                            8,
-                            22
-                        ]
-                    ]
-                },
-                "visibility": "visible"
-            },
-            "paint": {
-                "text-color": "hsl(0, 0%, 13%)",
-                "text-halo-blur": 0,
-                "text-halo-color": "rgba(255,255,255,0.75)",
-                "text-halo-width": 2
-            }
-        },
-        {
-            "id": "country_label",
-            "type": "symbol",
-            "source": "openmaptiles",
-            "source-layer": "place",
-            "maxzoom": 12,
-            "filter": [
-                "all",
-                [
-                    "==",
-                    "$type",
-                    "Point"
-                ],
-                [
-                    "==",
-                    "class",
-                    "country"
-                ],
-                [
-                    "has",
-                    "iso_a2"
-                ]
-            ],
-            "layout": {
-                "text-field": "{name:latin}",
-                "text-font": [
-                    "Americana-Bold"
-                ],
-                "text-max-width": 10,
-                "text-size": {
-                    "stops": [
-                        [
-                            3,
-                            12
-                        ],
-                        [
-                            8,
-                            22
-                        ]
-                    ]
-                },
-                "visibility": "visible"
-            },
-            "paint": {
-                "text-color": "hsl(0, 0%, 13%)",
-                "text-halo-blur": 0,
-                "text-halo-color": "rgba(255,255,255,0.75)",
-                "text-halo-width": 2
-            }
-        },
-        {
-            "id": "paths",
-            "source": "trails",
-            "source-layer": "trail",
-            "type": "line",
-            "layout": {
-                "line-cap": "round",
-                "line-join": "round"
-            },
-            "paint": {
-                "line-width": 2,
-                "line-color": "#4f2e28"
-            }
-        },
-        {
-            "id": "trails-labels",
-            "source": "trails",
-            "source-layer": "trail",
-            "type": "symbol",
-            "layout": {
-                "text-field": "{name}",
-                "text-font": [
-                    "Americana-Regular"
-                ],
-                "text-size": 12,
-                "symbol-placement": "line"
-            },
-            "paint": {
-                "text-color": "#333",
-                "text-halo-width": 1.5,
-                "text-halo-color": "rgba(255, 255, 255, 1)"
-            }
         }
-    ],
-    "id": "basic"
+    ]
 }
