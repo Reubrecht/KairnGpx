@@ -7,8 +7,10 @@ echo "🚀 Mise à jour de Kairn (Update Mode)"
 echo "======================================"
 
 # 1. Récupérer les changements git
-echo "📥 Git Pull..."
-git pull
+# 1. Récupérer les changements git (Force Sync)
+echo "📥 Git Fetch & Reset..."
+git fetch origin
+git reset --hard origin/master
 
 # 2. Redémarrer les conteneurs (Sans effacer les volumes)
 echo "🔄 Redémarrage des conteneurs..."
