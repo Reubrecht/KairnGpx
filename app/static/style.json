@@ -30,7 +30,7 @@
             "id": "background",
             "type": "background",
             "paint": {
-                "background-color": "#F2EADA"
+                "background-color": "#eff6ff"
             }
         },
         {
@@ -821,8 +821,8 @@
                         "class"
                     ],
                     "track",
-                    "#ffffff",
-                    "#737373"
+                    "#cbd5e1",
+                    "#475569"
                 ],
                 "line-dasharray": [
                     "match",
@@ -841,8 +841,8 @@
                     [
                         "literal",
                         [
-                            1,
-                            2
+                            2,
+                            1.5
                         ]
                     ]
                 ],

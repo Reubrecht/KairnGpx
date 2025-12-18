@@ -548,14 +548,26 @@
             });
 
             // --- 0.5 Add Satellite Layer (Hidden by default) ---
+            // Find the first symbol layer to place satellite below labels
+            let firstSymbolId = null;
+            const layers = map.getStyle().layers;
+            for (let i = 0; i < layers.length; i++) {
+                if (layers[i].type === 'symbol') {
+                    firstSymbolId = layers[i].id;
+                    break;
+                }
+            }
+
             map.addLayer({
                 'id': 'satellite-layer',
                 'type': 'raster',
                 'source': 'satellite-source',
                 'paint': {
-                    'raster-opacity': 0
+                    'raster-opacity': 0,
+                    'raster-fade-duration': 300
                 }
-            }); // Added on top of existing layers (but will be below track-line which is added later)
+            }, firstSymbolId); // Insert BEFORE labels
+
 
             // 1. Add Track Source
             map.addSource('track-segments', {
@@ -578,10 +590,9 @@
                 }
             });
 
-            // Initial Render (Slope by default)
-            updateTrackStyle('slope');
+            // Initial Render (Solid by default for cleaner look)
+            updateTrackStyle('solid');
 
-            // Disabled automatic 3D toggle (reverting to 2D default)
             /* setTimeout(() => {
                 if (!window.is3D) toggle3D();
             }, 500); */
@@ -908,7 +919,7 @@
             }
         };
 
-        // Initialize Chart
+        // Initialize Chart (Simple Area Chart)
         new Chart(ctx, {
             type: 'line',
             data: {
@@ -918,22 +929,18 @@
                     data: data,
                     borderWidth: 2,
                     pointRadius: 0,
-                    pointHoverRadius: 0,
-                    borderColor: '#10b981', // Fallback color
-                    backgroundColor: 'rgba(16, 185, 129, 0.2)',
-                    fill: true,
-                    tension: 0.2,
-                    // SEGMENT STYLING for SLOPE
-                    segment: {
-                        borderColor: ctx => {
-                            // Use pre-calculated grade
-                            const i = ctx.p0DataIndex;
-                            // Safety check
-                            if (i === undefined || i >= grades.length) return '#10b981';
-
-                            return window.getSlopeColor(grades[i]);
-                        }
-                    }
+                    pointHoverRadius: 4,
+                    pointBackgroundColor: '#10b981',
+                    borderColor: '#10b981',
+                    backgroundColor: (context) => {
+                        const ctx = context.chart.ctx;
+                        const gradient = ctx.createLinearGradient(0, 0, 0, context.chart.height);
+                        gradient.addColorStop(0, 'rgba(16, 185, 129, 0.4)');
+                        gradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+                        return gradient;
+                    },
+                    fill: 'start',
+                    tension: 0.2
                 }]
             },
             options: {
@@ -941,32 +948,48 @@
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { display: false },
-                    tooltip: { enabled: false }
+                    tooltip: {
+                        enabled: true,
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        titleColor: '#1e293b',
+                        bodyColor: '#10b981',
+                        borderColor: '#e2e8f0',
+                        borderWidth: 1,
+                        displayColors: false,
+                        callbacks: {
+                            title: (items) => `${items[0].label} km`,
+                            label: (item) => `${Math.round(item.raw)} m`
+                        }
+                    }
                 },
                 interaction: {
-                    mode: 'index',
-                    intersect: false,
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
                 },
                 scales: {
                     x: {
                         grid: { display: false },
                         ticks: {
-                            maxTicksLimit: window.innerWidth < 768 ? 4 : 8, // 4 graduation on mobile portrait, more on desktop
-                            maxRotation: 0, // No slanted labels
-                            minRotation: 0,
+                            maxTicksLimit: 6,
+                            maxRotation: 0,
                             callback: function (val, index) {
-                                return this.getLabelForValue(val) + 'km';
+                                return this.getLabelForValue(val) + ' km';
                             },
-                            font: { size: 10 }
+                            font: { size: 10, family: "'Inter', sans-serif" },
+                            color: '#94a3b8'
                         }
                     },
                     y: {
                         grid: { color: '#f1f5f9' },
-                        position: 'right', // Move Y axis to right to avoid overlap with left headers if any
+                        position: 'right',
                         ticks: {
-                            maxTicksLimit: 5, // Reduced ticks
+                            maxTicksLimit: 5,
                             callback: (value) => value,
-                            font: { size: 10 }
+                            font: { size: 10, family: "'Inter', sans-serif" },
+                            color: '#94a3b8'
                         }
                     }
                 },
@@ -975,7 +998,6 @@
 
                     if (elements && elements.length) {
                         const index = elements[0].index;
-
                         // Sync Map Marker
                         if (window.updateMapMarker) window.updateMapMarker(index);
 
