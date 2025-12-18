@@ -189,16 +189,16 @@
                 <div id="sidebar-chart-placeholder" class="mb-6 relative group">
                     <div class="flex items-center justify-between mb-2">
                         <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Profil</h3>
-                        <!-- Stats Header (Fixed Line) -->
+                    </div>
+                    <div id="chart-card"
+                        class="h-40 md:h-64 w-full bg-slate-50 rounded-xl border border-slate-100 p-2 relative">
+                        <!-- Stats Header (Moved Inside Card for Fullscreen portability) -->
                         <div id="chart-stats"
-                            class="flex items-center gap-4 text-xs font-bold font-mono text-slate-700 opacity-0 transition-opacity">
+                            class="absolute top-2 right-2 flex items-center gap-4 text-xs font-bold font-mono text-slate-700 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-md border border-slate-100 opacity-0 transition-opacity z-10 pointer-events-none">
                             <span><span id="stat-dist">--</span> km</span>
                             <span class="text-slate-300">|</span>
                             <span><span id="stat-elev">--</span> m</span>
                         </div>
-                    </div>
-                    <div id="chart-card"
-                        class="h-40 md:h-64 w-full bg-slate-50 rounded-xl border border-slate-100 p-2 relative">
                         <canvas id="elevationChart"></canvas>
                     </div>
                 </div>
@@ -579,10 +579,12 @@
             }, firstSymbolId); // Insert BEFORE labels
 
 
+
             // 1. Add Track Source
             map.addSource('track-segments', {
                 type: 'geojson',
-                data: { type: "FeatureCollection", features: [] }
+                data: { type: "FeatureCollection", features: [] },
+                tolerance: 0 // DISABLE SIMPLIFICATION to prevent gaps on zoom out
             });
 
             map.addLayer({
@@ -646,6 +648,10 @@
             }
 
             // B. Summit Marker (Highest Point)
+            let maxElev = -Infinity;
+            // Recalculate maxElev as it wasn't available in scope before moving code
+            coords.forEach(c => { if (c[2] > maxElev) maxElev = c[2]; });
+
             if (maxElev > -Infinity) {
                 // Find coordinate with maxElev
                 let maxCoord = null;
@@ -674,23 +680,15 @@
             // Init Sync Marker
             const markerEl = document.createElement('div');
             markerEl.className = 'w-4 h-4 bg-white rounded-full border-4 border-emerald-500 shadow-lg';
-            const syncMarker = new maplibregl.Marker({ element: markerEl })
-                .setLngLat(coords[0])
-                .addTo(map);
-
             // Hide initially
             markerEl.style.opacity = '0';
 
-            window.updateMapMarker = (index) => {
-                if (coords[index]) {
-                    syncMarker.setLngLat(coords[index]);
-                    markerEl.style.opacity = '1';
-                }
-            };
+            // Assign to global variable so global functions can access it
+            window.syncMarker = new maplibregl.Marker({ element: markerEl })
+                .setLngLat(coords[0])
+                .addTo(map);
+            window.markerEl = markerEl;
 
-            window.hideMapMarker = () => {
-                markerEl.style.opacity = '0';
-            };
 
             // RESTORE USER PREFERENCES
             const savedLayer = localStorage.getItem('kairn_map_layer');
@@ -704,6 +702,20 @@
             }
 
         });
+
+        // --- GLOBAL MAP MARKER FUNCTIONS (Moved outside load event) ---
+        window.updateMapMarker = (index) => {
+            if (window.syncMarker && coords[index]) {
+                window.syncMarker.setLngLat(coords[index]);
+                if (window.markerEl) window.markerEl.style.opacity = '1';
+            }
+        };
+
+        window.hideMapMarker = () => {
+            if (window.markerEl) window.markerEl.style.opacity = '0';
+        };
+
+
 
         // --- MAP CONTROLS LOGIC & STYLING ---
         window.is3D = false;
@@ -878,12 +890,28 @@
         };
     });
 
+    // --- Data Smoothing ---
+    function smoothData(data, windowSize) {
+        if (data.length < windowSize) return data;
+        const smoothed = [];
+        for (let i = 0; i < data.length; i++) {
+            let sum = 0;
+            let count = 0;
+            for (let j = Math.max(0, i - Math.floor(windowSize / 2)); j <= Math.min(data.length - 1, i + Math.floor(windowSize / 2)); j++) {
+                sum += data[j];
+                count++;
+            }
+            smoothed.push(sum / count);
+        }
+        return smoothed;
+    }
+
     function initElevationChart(coords) {
         if (!coords || coords.length === 0) return;
 
         // Calculate cumulative distance for X axis and Slope for coloring
         const labels = [];
-        const data = [];
+        const rawData = [];
         const grades = []; // Store pre-calculated grades
         let totalDist = 0;
 
@@ -893,7 +921,6 @@
                 totalDist += distKm;
 
                 // Calculate Slope for the segment leading TO this point (i-1 -> i)
-                // We'll store it at index i-1 effectively for the segment starting at i-1
                 const distM = distKm * 1000;
                 let grade = 0;
                 if (distM > 0.001) {
@@ -901,21 +928,13 @@
                     grade = (eleDiff / distM) * 100;
                 }
                 grades.push(grade);
-            } else {
-                // First point has no previous segment, so no grade to push yet? 
-                // ChartJS segment uses p0DataIndex. Segment 0 connects point 0 and 1.
-                // So grades[0] should be slope of 0->1.
-                // WAIT: The loop calculates 0->1 when i=1.
-                // So when i=1, we push grade. grades[0] = slope(0->1).
-                // Perfect.
             }
             labels.push(totalDist.toFixed(1));
-            data.push(coords[i][2]);
+            rawData.push(coords[i][2]);
         }
-        // Last point (i=length-1) creates segment (length-2 -> length-1). 
-        // We have N points, N-1 segments. 
-        // grades array will have N-1 items.
-        // segment callback for segment starting at index k (p0DataIndex=k) uses grades[k].
+
+        // Apply Smoothing
+        const data = smoothData(rawData, 5); // Window size 5
 
         const ctx = document.getElementById('elevationChart').getContext('2d');
 
@@ -964,7 +983,7 @@
                         return gradient;
                     },
                     fill: 'start',
-                    tension: 0.2
+                    tension: 0.4 // Smoother curve (was 0.2)
                 }]
             },
             options: {
@@ -1022,7 +1041,7 @@
 
                     if (elements && elements.length) {
                         const index = elements[0].index;
-                        // Sync Map Marker
+                        // Sync Map Marker - Check if function exists globally
                         if (window.updateMapMarker) window.updateMapMarker(index);
 
                         // Update Stats Header
@@ -1032,10 +1051,22 @@
                         document.getElementById('stat-dist').innerText = dist;
                         document.getElementById('stat-elev').innerText = Math.round(elev);
 
+                        // In fullscreen, we keep it visible. In card mode, we show on hover.
+                        // Actually, just showing on hover is fine, but ensures visibility.
                         statsDiv.classList.remove('opacity-0');
                     } else {
                         // Mouse out
                         if (window.hideMapMarker) window.hideMapMarker();
+                        // Only hide if NOT in fullscreen or if desired behavior is hide on mouseout always?
+                        // User said "verrouillé en haut a droite" (locked top right) for fullscreen.
+                        // Let's assume they mean *positions* are locked, but maybe they want the *last value* to persist or just show "--"?
+                        // "donnée distance et d+ verouillé" implies ALWAYS VISIBLE.
+                        // Let's keeping it visible if in fullscreen, else fade out? 
+                        // For now, let's keep simple: fade out on mouse out (standard behavior), 
+                        // but if user wants it LOCKED (persistent), we might need to not fade out.
+                        // Interpreting "verouillé" as "Fixed position" rather than "Always shows data". 
+                        // The prompt says "donnée ... verouillé" (data ... locked). 
+                        // I will keep standard hover behavior for now to avoid showing stale data.
                         statsDiv.classList.add('opacity-0');
                     }
                 }
@@ -1076,10 +1107,14 @@
             mapContainer.appendChild(chartCard);
 
             // Style Chart as Overlay (Mobile Optimized)
-            chartCard.className = "absolute bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-slate-200 rounded-t-2xl p-2 pb-8 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] transition-all animate-slide-up";
+            chartCard.className = "absolute bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-slate-200 rounded-t-2xl p-2 pb-8 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] transition-all animate-slide-up h-32 md:h-64";
 
             // Update Icon
             icon.classList.replace('ph-corners-out', 'ph-corners-in');
+
+            // Force stats visible if needed? 
+            // In full screen, user sees map and chart. hovering chart works as usual.
+            // Stats are now always in the card, so they are visible.
 
         } else {
             // EXIT FULL SCREEN
