@@ -1112,8 +1112,8 @@
             // Sync Chart Hover -> Map Marker
             // Init Sync Marker
             const markerEl = document.createElement('div');
-            // z-[40] ensures it is BELOW the city label (z-[60])
-            markerEl.className = 'w-4 h-4 bg-white rounded-full border-4 border-emerald-500 shadow-lg z-[40] relative';
+            // z-[100] to ensure visibility, pointer-events-none to avoid blocking interaction
+            markerEl.className = 'w-4 h-4 bg-white rounded-full border-4 border-emerald-500 shadow-lg z-[100] pointer-events-none transition-opacity duration-150';
             // Hide initially
             markerEl.style.opacity = '0';
 
