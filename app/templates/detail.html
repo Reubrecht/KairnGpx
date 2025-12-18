@@ -691,6 +691,18 @@
             window.hideMapMarker = () => {
                 markerEl.style.opacity = '0';
             };
+
+            // RESTORE USER PREFERENCES
+            const savedLayer = localStorage.getItem('kairn_map_layer');
+            if (savedLayer && savedLayer === 'satellite') {
+                setTimeout(() => setMapLayer('satellite'), 500); // Slight delay to ensure style load
+            }
+
+            const saved3D = localStorage.getItem('kairn_map_3d');
+            if (saved3D === 'true') {
+                setTimeout(() => toggle3D(), 800);
+            }
+
         });
 
         // --- MAP CONTROLS LOGIC & STYLING ---
@@ -840,10 +852,12 @@
                 updateMarkerToDark(summitTextEl);
             }
             window.currentLayer = layer;
+            localStorage.setItem('kairn_map_layer', layer);
         };
 
         window.toggle3D = () => {
             window.is3D = !window.is3D;
+            localStorage.setItem('kairn_map_3d', window.is3D);
             const btn3d = document.getElementById('btn-3d');
 
             if (window.is3D) {
