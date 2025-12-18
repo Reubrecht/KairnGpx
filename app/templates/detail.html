@@ -181,6 +181,14 @@
                                 <i class="ph ph-pencil-simple text-lg"></i>
                             </a>
                             {% endif %}
+
+                            <!-- More Features Button -->
+                            <button onclick="toggleFeaturesModal()"
+                                class="flex-1 md:flex-none justify-center inline-flex items-center px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
+                                title="Plus de caractéristiques">
+                                <i class="ph ph-list-plus mr-2 text-slate-400 text-lg"></i>
+                                Détails
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -428,6 +436,182 @@
         </div>
     </div>
 </div>
+</div>
+<!-- MORE FEATURES MODAL -->
+<div id="features-modal" class="fixed inset-0 z-[100] hidden" aria-labelledby="modal-title" role="dialog"
+    aria-modal="true">
+    <!-- Backdrop -->
+    <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity" onclick="toggleFeaturesModal()">
+    </div>
+
+    <!-- Panel -->
+    <div class="fixed inset-0 z-10 overflow-y-auto">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div
+                class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-4xl border border-slate-100">
+
+                <!-- Header -->
+                <div class="bg-slate-50 px-4 py-3 sm:px-6 border-b border-slate-100 flex justify-between items-center">
+                    <h3 class="text-base font-bold leading-6 text-slate-900" id="modal-title">
+                        Caractéristiques Détaillées
+                    </h3>
+                    <button type="button" onclick="toggleFeaturesModal()"
+                        class="rounded-md bg-slate-50 text-slate-400 hover:text-slate-500 focus:outline-none">
+                        <span class="sr-only">Fermer</span>
+                        <i class="ph ph-x text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Content -->
+                <div class="px-4 py-5 sm:p-6 max-h-[70vh] overflow-y-auto">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+                        <!-- 1. PHYSIQUE -->
+                        <div>
+                            <h4
+                                class="text-xs font-bold text-brand-600 uppercase tracking-wider mb-4 border-b border-brand-100 pb-2">
+                                Physique & Terrain</h4>
+                            <dl class="grid grid-cols-2 gap-x-4 gap-y-4 text-sm">
+                                <div>
+                                    <dt class="text-slate-500 font-medium">Altitude Moy.</dt>
+                                    <dd class="text-slate-900 font-bold">{{ track.avg_altitude }} m</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-slate-500 font-medium">Altitude Min.</dt>
+                                    <dd class="text-slate-900 font-bold">{{ track.min_altitude }} m</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-slate-500 font-medium">Pente Max.</dt>
+                                    <dd class="text-slate-900 font-bold">{{ track.max_slope }} %</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-slate-500 font-medium">Pente Moy. (Montée)</dt>
+                                    <dd class="text-slate-900 font-bold">{{ track.avg_slope_uphill }} %</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-slate-500 font-medium">Plus Longue Montée</dt>
+                                    <dd class="text-slate-900 font-bold">{{ track.longest_climb }} m</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-slate-500 font-medium">Dénivelé Négatif</dt>
+                                    <dd class="text-slate-900 font-bold text-red-500">-{{ track.elevation_loss }}
+                                        m</dd>
+                                </div>
+                            </dl>
+                        </div>
+
+                        <!-- 2. INDICES & CONTEXTE -->
+                        <div>
+                            <h4
+                                class="text-xs font-bold text-brand-600 uppercase tracking-wider mb-4 border-b border-brand-100 pb-2">
+                                Indices & Technique</h4>
+                            <dl class="grid grid-cols-2 gap-x-4 gap-y-4 text-sm">
+                                <div>
+                                    <dt class="text-slate-500 font-medium">Indice IBP</dt>
+                                    <dd class="text-slate-900 font-bold">{{ track.ibp_index or '--' }}</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-slate-500 font-medium">Score Technicité</dt>
+                                    <dd class="text-slate-900 font-bold">{{ track.technicity_score or '--' }} / 5
+                                    </dd>
+                                </div>
+                                <div>
+                                    <dt class="text-slate-500 font-medium">Indice Boue</dt>
+                                    <dd class="text-slate-900 font-bold">{{ track.mud_index or '--' }}</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-slate-500 font-medium">Exposition</dt>
+                                    <dd class="text-slate-900 font-bold">{{ track.exposure or '--' }}</dd>
+                                </div>
+                            </dl>
+
+                            <div class="mt-6">
+                                <h5 class="text-xs font-bold text-slate-400 uppercase mb-2">Environnement</h5>
+                                <div class="flex flex-wrap gap-2">
+                                    {% for env in track.environment %}
+                                    <span
+                                        class="inline-flex items-center px-2 py-1 rounded bg-slate-100 text-xs font-medium text-slate-600">
+                                        {{ env }}
+                                    </span>
+                                    {% else %}
+                                    <span class="text-slate-400 italic text-xs">Non spécifié</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. LOGISTIQUE -->
+                        <div>
+                            <h4
+                                class="text-xs font-bold text-brand-600 uppercase tracking-wider mb-4 border-b border-brand-100 pb-2">
+                                Logistique</h4>
+                            <dl class="space-y-3 text-sm">
+                                <div>
+                                    <dt class="text-slate-500 font-medium mb-1">Villes Traversées</dt>
+                                    <dd class="text-slate-900">
+                                        {% if track.cities_crossed %}
+                                        {{ track.cities_crossed | join(', ') }}
+                                        {% else %}
+                                        <span class="text-slate-400 italic">Non spécifié</span>
+                                        {% endif %}
+                                    </dd>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4 pt-2">
+                                    <div>
+                                        <dt class="text-slate-500 font-medium">Accessibilité</dt>
+                                        <dd class="text-slate-900 font-bold text-xs">
+                                            {% if track.accessibility and track.accessibility.parking %}🅿️ Parking
+                                            {% endif %}
+                                            {% if track.accessibility and track.accessibility.public_transport %}🚌
+                                            Transport{% endif %}
+                                        </dd>
+                                    </div>
+                                </div>
+                            </dl>
+                        </div>
+
+                        <!-- 4. META & FICHIER -->
+                        <div>
+                            <h4
+                                class="text-xs font-bold text-brand-600 uppercase tracking-wider mb-4 border-b border-brand-100 pb-2">
+                                Méta-données</h4>
+                            <dl class="space-y-2 text-xs">
+                                <div class="flex justify-between">
+                                    <dt class="text-slate-500">Créé le</dt>
+                                    <dd class="text-slate-700 font-mono">{{ track.created_at.strftime('%Y-%m-%d') }}
+                                    </dd>
+                                </div>
+                                <div class="flex justify-between">
+                                    <dt class="text-slate-500">Source</dt>
+                                    <dd class="text-slate-700 font-mono">{{ track.source_type.value }}</dd>
+                                </div>
+                                <div class="flex justify-between">
+                                    <dt class="text-slate-500">UUID</dt>
+                                    <dd class="text-slate-400 font-mono text-[10px] truncate w-32"
+                                        title="{{ track.uuid }}">{{ track.uuid }}</dd>
+                                </div>
+                                <div class="flex justify-between">
+                                    <dt class="text-slate-500">Hash Fichier</dt>
+                                    <dd class="text-slate-400 font-mono text-[10px] truncate w-32"
+                                        title="{{ track.file_hash }}">{{ track.file_hash }}</dd>
+                                </div>
+                            </dl>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="bg-slate-50 px-4 py-3 sm:px-6 flex flex-row-reverse">
+                    <button type="button" onclick="toggleFeaturesModal()"
+                        class="inline-flex w-full justify-center rounded-xl bg-white px-3 py-2 text-sm font-bold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:mt-0 sm:w-auto">
+                        Fermer
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
@@ -1189,6 +1373,17 @@
         setTimeout(() => {
             btnText.innerText = "Partager";
         }, 2000);
+    }
+
+    function toggleFeaturesModal() {
+        const modal = document.getElementById('features-modal');
+        if (modal.classList.contains('hidden')) {
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Prevent scroll
+        } else {
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
     }
 </script>
 {% endblock %}
