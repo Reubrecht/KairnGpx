@@ -6,7 +6,7 @@
     <!-- Map Container -->
     <!-- Mobile: Top 40-50% height. Desktop: Fixed full background -->
     <div id="map-container"
-        class="relative w-full h-[50vh] md:fixed md:inset-x-0 md:bottom-0 md:top-[64px] md:h-auto md:z-0 bg-slate-200">
+        class="relative w-full h-[50vh] md:fixed md:inset-x-0 md:bottom-0 md:top-[64px] md:h-auto md:z-0 bg-slate-50">
         <div id="map" class="h-full w-full"></div>
 
         <!-- MAP CONTROLS (Top Right) -->
@@ -509,12 +509,16 @@
         // Initialize MapLibre
         const map = new maplibregl.Map({
             container: 'map',
-            style: '/static/style.json', // OpenTrailMap style
+            style: '/static/style.json?v=' + Date.now(), // OpenTrailMap style + cache buster
             center: [trackData.startLon, trackData.startLat],
             zoom: 13,
-            attributionControl: false
+            attributionControl: false,
+            fadeDuration: 0 // Faster load perception
         });
         window.map = map;
+
+        // Force resize after short delay to ensure container sizing
+        setTimeout(() => map.resize(), 100);
 
         // Initialize Chart
         try {
