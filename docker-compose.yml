@@ -6,6 +6,7 @@ services:
     ports:
       - "8090:8000"
     volumes:
+      - ./app:/app/app
       - ./app/data:/app/data
       - ./app/uploads:/app/uploads
     environment:

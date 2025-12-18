@@ -504,6 +504,8 @@
             return;
         }
 
+        const coords = trackGeoJSON.geometry.coordinates;
+
         // Initialize MapLibre
         const map = new maplibregl.Map({
             container: 'map',
@@ -515,7 +517,11 @@
         window.map = map;
 
         // Initialize Chart
-        initElevationChart(coords);
+        try {
+            initElevationChart(coords);
+        } catch (e) {
+            console.error("Chart init failed", e);
+        }
 
         // Add controls
         map.addControl(new maplibregl.NavigationControl({ showCompass: true, showZoom: true }), 'top-left'); // Moved to top-left to avoid conflict
