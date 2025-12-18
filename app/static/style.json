@@ -12,6 +12,15 @@
         "trails": {
             "type": "vector",
             "url": "https://tiles.openstreetmap.us/vector/trails.json"
+        },
+        "hillshade": {
+            "type": "raster",
+            "url": "https://tiles.openstreetmap.us/raster/hillshade.json",
+            "tileSize": 256
+        },
+        "contours": {
+            "type": "vector",
+            "url": "https://tiles.openstreetmap.us/vector/contours-feet.json"
         }
     },
     "glyphs": "https://font.americanamap.org/{fontstack}/{range}.pbf",
@@ -21,7 +30,7 @@
             "id": "background",
             "type": "background",
             "paint": {
-                "background-color": "#eff6ff"
+                "background-color": "#F2EADA"
             }
         },
         {
@@ -68,6 +77,126 @@
                     "restricted-zone"
                 ],
                 "fill-opacity": 1
+            }
+        },
+        {
+            "id": "hillshade-background",
+            "type": "background",
+            "paint": {
+                "background-color": "#fff",
+                "background-opacity": [
+                    "interpolate",
+                    [
+                        "linear"
+                    ],
+                    [
+                        "zoom"
+                    ],
+                    12,
+                    0.0,
+                    18,
+                    0.3
+                ]
+            }
+        },
+        {
+            "id": "hillshade",
+            "type": "raster",
+            "source": "hillshade",
+            "paint": {
+                "raster-opacity": [
+                    "interpolate",
+                    [
+                        "linear"
+                    ],
+                    [
+                        "zoom"
+                    ],
+                    12,
+                    0.5,
+                    18,
+                    0.1
+                ]
+            }
+        },
+        {
+            "id": "contours",
+            "type": "line",
+            "source": "contours",
+            "source-layer": "contours",
+            "paint": {
+                "line-color": "#000000",
+                "line-opacity": [
+                    "case",
+                    [
+                        "get",
+                        "idx"
+                    ],
+                    0.2,
+                    0.1
+                ],
+                "line-width": 0.5
+            },
+            "filter": [
+                "!=",
+                [
+                    "get",
+                    "ele"
+                ],
+                0
+            ]
+        },
+        {
+            "id": "contours-labels",
+            "type": "symbol",
+            "source": "contours",
+            "source-layer": "contours",
+            "minzoom": 12,
+            "filter": [
+                "all",
+                [
+                    "==",
+                    [
+                        "get",
+                        "idx"
+                    ],
+                    true
+                ],
+                [
+                    "!=",
+                    [
+                        "get",
+                        "ele"
+                    ],
+                    0
+                ]
+            ],
+            "layout": {
+                "text-field": "{ele} ft",
+                "text-font": [
+                    "Americana-Regular"
+                ],
+                "text-size": 8,
+                "symbol-placement": "line",
+                "symbol-spacing": [
+                    "interpolate",
+                    [
+                        "linear"
+                    ],
+                    [
+                        "zoom"
+                    ],
+                    12,
+                    150,
+                    16,
+                    600
+                ]
+            },
+            "paint": {
+                "text-color": "#666",
+                "text-halo-color": "hsla(0, 0%, 100%, 0.5)",
+                "text-halo-width": 1.5,
+                "text-halo-blur": 1
             }
         },
         {
@@ -685,48 +814,17 @@
                 "line-join": "bevel"
             },
             "paint": {
-                "line-color": [
-                    "match",
-                    [
-                        "get",
-                        "class"
-                    ],
-                    "track",
-                    "#cbd5e1",
-                    "#475569"
-                ],
+                "line-color": "#fff",
                 "line-dasharray": [
-                    "match",
-                    [
-                        "get",
-                        "class"
-                    ],
-                    "track",
-                    [
-                        "literal",
-                        [
-                            1,
-                            0
-                        ]
-                    ],
-                    [
-                        "literal",
-                        [
-                            2,
-                            1.5
-                        ]
-                    ]
+                    1,
+                    1
                 ],
                 "line-width": {
                     "base": 1.55,
                     "stops": [
                         [
                             4,
-                            0.5
-                        ],
-                        [
-                            14,
-                            2
+                            0.25
                         ],
                         [
                             20,
