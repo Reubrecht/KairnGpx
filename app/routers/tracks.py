@@ -719,14 +719,111 @@ async def track_detail(track_identifier: str, request: Request, db: Session = De
         except Exception as e:
             print(f"Prediction Error: {e}")
             
+    # Calculate average rating
+    avg_rating = 0
+    if track.reviews:
+        total = sum([r.rating for r in track.reviews])
+        if len(track.reviews) > 0:
+            avg_rating = round(total / len(track.reviews), 1)
+
     return templates.TemplateResponse("detail.html", {
         "request": request,
         "track": track,
         "tags_list": tags_list,
         "user": user,
         "track_geojson": json.dumps(track_geojson) if track_geojson else "null",
-        "user_prediction": user_prediction
+        "user_prediction": user_prediction,
+        "reviews": sorted(track.reviews, key=lambda x: x.created_at, reverse=True),
+        "executions": sorted(track.executions, key=lambda x: x.execution_date, reverse=True),
+        "avg_rating": avg_rating
     })
+
+
+@router.post("/track/{track_id}/review")
+async def add_track_review(
+    track_id: int,
+    request: Request,
+    rating: int = Form(...),
+    comment: str = Form(None),
+    db: Session = Depends(get_db)
+):
+    user = await get_current_user(request, db)
+    if not user:
+        return RedirectResponse(url=f"/track/{track_id}?login_required=true", status_code=status.HTTP_303_SEE_OTHER)
+
+    track = db.query(models.Track).filter(models.Track.id == track_id).first()
+    if not track:
+        raise HTTPException(status_code=404, detail="Track not found")
+
+    new_review = models.TrackReview(
+        track_id=track.id,
+        user_id=user.id,
+        rating=rating,
+        comment=comment
+    )
+    db.add(new_review)
+    db.commit()
+    
+    return RedirectResponse(url=f"/track/{track_id}#community", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/track/{track_id}/execution")
+async def add_track_execution(
+    track_id: int,
+    request: Request,
+    duration_str: str = Form(...), # Format hh:mm:ss or just minutes
+    execution_date: str = Form(...), # YYYY-MM-DD
+    comment: str = Form(None),
+    db: Session = Depends(get_db)
+):
+    user = await get_current_user(request, db)
+    if not user:
+        return RedirectResponse(url=f"/track/{track_id}?login_required=true", status_code=status.HTTP_303_SEE_OTHER)
+
+    track = db.query(models.Track).filter(models.Track.id == track_id).first()
+    if not track:
+        raise HTTPException(status_code=404, detail="Track not found")
+
+    # Parse duration
+    # Expected formats: "1h30", "90", "1:30:00", "01:30"
+    seconds = 0
+    try:
+        d_str = duration_str.strip().lower()
+        if ':' in d_str:
+            parts = d_str.split(':')
+            if len(parts) == 3:
+                seconds = int(parts[0])*3600 + int(parts[1])*60 + int(parts[2])
+            elif len(parts) == 2:
+                seconds = int(parts[0])*3600 + int(parts[1])*60
+        elif 'h' in d_str:
+            parts = d_str.split('h')
+            h = int(parts[0]) if parts[0] else 0
+            m = int(parts[1]) if len(parts)>1 and parts[1] else 0
+            seconds = h*3600 + m*60
+        else:
+            # Assume minutes if just number
+            seconds = int(d_str) * 60
+    except:
+        pass # Handle error gracefully or redirect with error? For now accept 0 or fallback
+
+    # Parse Date
+    try:
+        exec_dt = datetime.strptime(execution_date, "%Y-%m-%d")
+    except:
+        exec_dt = datetime.utcnow()
+
+    new_exec = models.TrackExecution(
+        track_id=track.id,
+        user_id=user.id,
+        duration_seconds=seconds,
+        execution_date=exec_dt,
+        comment=comment
+    )
+    db.add(new_exec)
+    db.commit()
+
+    return RedirectResponse(url=f"/track/{track_id}#community", status_code=status.HTTP_303_SEE_OTHER)
+
 
 @router.get("/raw_gpx/{track_id}")
 def get_raw_gpx(track_id: int, db: Session = Depends(get_db)):

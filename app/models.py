@@ -151,6 +151,8 @@ class User(Base):
     media_items = relationship("Media", back_populates="user")
     track_requests = relationship("TrackRequest", back_populates="user")
     event_requests = relationship("EventRequest", back_populates="user")
+    reviews = relationship("TrackReview", back_populates="user")
+    executions = relationship("TrackExecution", back_populates="user")
 
 
 class OAuthConnection(Base):
@@ -266,6 +268,8 @@ class Track(Base):
     # Links
     race_route = relationship("RaceRoute", back_populates="official_track", uselist=False)
     media_items = relationship("Media", back_populates="track")
+    reviews = relationship("TrackReview", back_populates="track")
+    executions = relationship("TrackExecution", back_populates="track")
 
 
 class Media(Base):
@@ -393,3 +397,31 @@ class EventRequest(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="event_requests")
+
+
+class TrackReview(Base):
+    __tablename__ = "track_reviews"
+    id = Column(Integer, primary_key=True, index=True)
+    track_id = Column(Integer, ForeignKey("tracks.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    rating = Column(Integer) # 1-5
+    comment = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    track = relationship("Track", back_populates="reviews")
+    user = relationship("User", back_populates="reviews")
+
+
+class TrackExecution(Base):
+    __tablename__ = "track_executions"
+    id = Column(Integer, primary_key=True, index=True)
+    track_id = Column(Integer, ForeignKey("tracks.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    duration_seconds = Column(Integer)
+    execution_date = Column(DateTime)
+    comment = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    track = relationship("Track", back_populates="executions")
+    user = relationship("User", back_populates="executions")
+

@@ -193,250 +193,502 @@
                     </div>
                 </div>
 
-                <!-- CHART (Moved Top) -->
-                <div id="sidebar-chart-placeholder" class="mb-6 relative group">
-                    <div class="flex items-center justify-between mb-2">
-                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Profil</h3>
-                    </div>
-                    <div id="chart-card"
-                        class="h-40 md:h-64 w-full bg-slate-50 rounded-xl border border-slate-100 p-2 relative">
-                        <!-- Stats Header (Moved Inside Card for Fullscreen portability) -->
-                        <div id="chart-stats"
-                            class="absolute top-2 right-2 flex items-center gap-4 text-xs font-bold font-mono text-slate-700 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-md border border-slate-100 opacity-0 transition-opacity z-10 pointer-events-none">
-                            <span><span id="stat-dist">--</span> km</span>
-                            <span class="text-slate-300">|</span>
-                            <span><span id="stat-elev">--</span> m</span>
-                        </div>
-                        <canvas id="elevationChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- KEY METRICS (Mobile Grid) -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
-                    <!-- Distance -->
-                    <div
-                        class="bg-slate-50 rounded-2xl p-3 md:p-4 border border-slate-100 flex flex-col items-center justify-center text-center">
-                        <span
-                            class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Distance</span>
-                        <div class="flex items-baseline text-slate-900">
-                            <span class="text-2xl md:text-3xl font-black">{{ track.distance_km }}</span>
-                            <span class="text-sm md:text-lg font-bold ml-0.5 text-slate-500">km</span>
-                        </div>
-                    </div>
-                    <!-- D+ -->
-                    <div
-                        class="bg-slate-50 rounded-2xl p-3 md:p-4 border border-slate-100 flex flex-col items-center justify-center text-center">
-                        <span
-                            class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Dénivelé
-                            +</span>
-                        <div class="flex items-baseline text-slate-900">
-                            <span class="text-2xl md:text-3xl font-black">+{{ track.elevation_gain }}</span>
-                            <span class="text-sm md:text-lg font-bold ml-0.5 text-slate-500">m</span>
-                        </div>
-                    </div>
-                    <!-- Max Alt -->
-                    <div
-                        class="bg-slate-50 rounded-2xl p-3 md:p-4 border border-slate-100 flex flex-col items-center justify-center text-center">
-                        <span class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Alt.
-                            Max</span>
-                        <div class="flex items-baseline text-slate-900">
-                            <span class="text-2xl md:text-3xl font-black">{{ track.max_altitude }}</span>
-                            <span class="text-sm md:text-lg font-bold ml-0.5 text-slate-500">m</span>
-                        </div>
-                    </div>
-                    <!-- Effort -->
-                    <div
-                        class="bg-slate-50 rounded-2xl p-3 md:p-4 border border-slate-100 flex flex-col items-center justify-center text-center">
-                        <span
-                            class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Effort
-                            KM</span>
-                        <div class="flex flex-col items-center">
-                            <span class="text-2xl md:text-3xl font-black text-slate-900">{{ track.km_effort | int
-                                }}</span>
-                            {% if track.itra_points_estim > 0 %}
-                            <span class="text-[10px] font-bold text-brand-600 bg-brand-50 px-1.5 rounded mt-1">{{
-                                track.itra_points_estim }} pts ITRA</span>
+                <!-- TABS NAVIGATION -->
+                <div class="mb-6 border-b border-slate-200">
+                    <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                        <button onclick="switchTab('details')" id="tab-details"
+                            class="border-brand-500 text-brand-600 whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm transition-colors">
+                            Détails
+                        </button>
+                        <button onclick="switchTab('community')" id="tab-community"
+                            class="border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors">
+                            Communauté
+                            {% if reviews or executions %}
+                            <span class="bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs font-bold">{{
+                                (reviews|length) + (executions|length) }}</span>
                             {% endif %}
-                        </div>
-                    </div>
+                        </button>
+                    </nav>
                 </div>
 
-                <!-- PERFORMANCE & PREDICTION -->
-                <!-- PERFORMANCE & PREDICTION (Compact Version) -->
-                {% if user_prediction and user_prediction.prediction_available %}
-                <div class="mb-6 bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
-                    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                <!-- TAB CONTENT: DETAILS -->
+                <div id="content-details" class="block animate-in fade-in duration-300">
 
-                        <!-- Header / Context -->
-                        <div class="flex items-center gap-3 w-full md:w-auto">
-                            <div
-                                class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center shrink-0">
-                                <i class="ph-fill ph-timer text-xl"></i>
+                    <!-- CHART -->
+                    <div id="sidebar-chart-placeholder" class="mb-6 relative group">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Profil</h3>
+                        </div>
+                        <div id="chart-card"
+                            class="h-40 md:h-64 w-full bg-slate-50 rounded-xl border border-slate-100 p-2 relative">
+                            <!-- Stats Header -->
+                            <div id="chart-stats"
+                                class="absolute top-2 right-2 flex items-center gap-4 text-xs font-bold font-mono text-slate-700 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-md border border-slate-100 opacity-0 transition-opacity z-10 pointer-events-none">
+                                <span><span id="stat-dist">--</span> km</span>
+                                <span class="text-slate-300">|</span>
+                                <span><span id="stat-elev">--</span> m</span>
                             </div>
-                            <div>
-                                <h3 class="font-bold text-slate-900 text-sm leading-tight">Estimations de temps</h3>
-                                <div class="flex items-center gap-1.5 text-xs text-slate-500">
-                                    <span>Index {{ user_prediction.user_index }}</span>
-                                    <span class="w-1 h-1 rounded-full bg-slate-300"></span>
-                                    <span
-                                        class="text-[10px] bg-slate-100 px-1.5 rounded border border-slate-200 uppercase tracking-widest font-bold">Scientific
-                                        Method</span>
+                            <canvas id="elevationChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- KEY METRICS -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
+                        <!-- Distance -->
+                        <div
+                            class="bg-slate-50 rounded-2xl p-3 md:p-4 border border-slate-100 flex flex-col items-center justify-center text-center">
+                            <span
+                                class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Distance</span>
+                            <div class="flex items-baseline text-slate-900">
+                                <span class="text-2xl md:text-3xl font-black">{{ track.distance_km }}</span>
+                                <span class="text-sm md:text-lg font-bold ml-0.5 text-slate-500">km</span>
+                            </div>
+                        </div>
+                        <!-- D+ -->
+                        <div
+                            class="bg-slate-50 rounded-2xl p-3 md:p-4 border border-slate-100 flex flex-col items-center justify-center text-center">
+                            <span
+                                class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Dénivelé
+                                +</span>
+                            <div class="flex items-baseline text-slate-900">
+                                <span class="text-2xl md:text-3xl font-black">+{{ track.elevation_gain }}</span>
+                                <span class="text-sm md:text-lg font-bold ml-0.5 text-slate-500">m</span>
+                            </div>
+                        </div>
+                        <!-- Max Alt -->
+                        <div
+                            class="bg-slate-50 rounded-2xl p-3 md:p-4 border border-slate-100 flex flex-col items-center justify-center text-center">
+                            <span
+                                class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Alt.
+                                Max</span>
+                            <div class="flex items-baseline text-slate-900">
+                                <span class="text-2xl md:text-3xl font-black">{{ track.max_altitude }}</span>
+                                <span class="text-sm md:text-lg font-bold ml-0.5 text-slate-500">m</span>
+                            </div>
+                        </div>
+                        <!-- Effort -->
+                        <div
+                            class="bg-slate-50 rounded-2xl p-3 md:p-4 border border-slate-100 flex flex-col items-center justify-center text-center">
+                            <span
+                                class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Effort
+                                KM</span>
+                            <div class="flex flex-col items-center">
+                                <span class="text-2xl md:text-3xl font-black text-slate-900">{{ track.km_effort | int
+                                    }}</span>
+                                {% if track.itra_points_estim > 0 %}
+                                <span class="text-[10px] font-bold text-brand-600 bg-brand-50 px-1.5 rounded mt-1">{{
+                                    track.itra_points_estim }} pts ITRA</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PERFORMANCE & PREDICTION -->
+                    {% if user_prediction and user_prediction.prediction_available %}
+                    <div class="mb-6 bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+                        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+
+                            <!-- Header / Context -->
+                            <div class="flex items-center gap-3 w-full md:w-auto">
+                                <div
+                                    class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center shrink-0">
+                                    <i class="ph-fill ph-timer text-xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-slate-900 text-sm leading-tight">Estimations de temps</h3>
+                                    <div class="flex items-center gap-1.5 text-xs text-slate-500">
+                                        <span>Index {{ user_prediction.user_index }}</span>
+                                        <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+                                        <span
+                                            class="text-[10px] bg-slate-100 px-1.5 rounded border border-slate-200 uppercase tracking-widest font-bold">Scientific
+                                            Method</span>
+                                    </div>
                                 </div>
                             </div>
+
+                            <!-- Times Grid -->
+                            <div
+                                class="flex items-center gap-2 md:gap-8 w-full md:w-auto justify-between md:justify-end">
+
+                                <!-- Endurance -->
+                                <div class="flex flex-col items-center">
+                                    <span
+                                        class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Endurance</span>
+                                    <span class="text-lg md:text-xl font-bold font-mono text-slate-600">{{
+                                        user_prediction.times.endurance }}</span>
+                                </div>
+
+                                <!-- Divider -->
+                                <div class="hidden md:block w-px h-8 bg-slate-100"></div>
+
+                                <!-- Course (Main) -->
+                                <div class="flex flex-col items-center relative">
+                                    <span
+                                        class="text-[10px] font-bold text-brand-600 uppercase tracking-wider mb-0.5">Course</span>
+                                    <span class="text-xl md:text-2xl font-black font-mono text-brand-600">{{
+                                        user_prediction.times.push }}</span>
+                                </div>
+
+                                <!-- Divider -->
+                                <div class="hidden md:block w-px h-8 bg-slate-100"></div>
+
+                                <!-- Seuil -->
+                                <div class="flex flex-col items-center">
+                                    <span
+                                        class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Seuil</span>
+                                    <span class="text-lg md:text-xl font-bold font-mono text-slate-600">{{
+                                        user_prediction.times.race }}</span>
+                                </div>
+
+                            </div>
                         </div>
 
-                        <!-- Times Grid -->
-                        <div class="flex items-center gap-2 md:gap-8 w-full md:w-auto justify-between md:justify-end">
-
-                            <!-- Endurance -->
-                            <div class="flex flex-col items-center">
-                                <span
-                                    class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Endurance</span>
-                                <span class="text-lg md:text-xl font-bold font-mono text-slate-600">{{
-                                    user_prediction.times.endurance }}</span>
-                            </div>
-
-                            <!-- Divider -->
-                            <div class="hidden md:block w-px h-8 bg-slate-100"></div>
-
-                            <!-- Course (Main) -->
-                            <div class="flex flex-col items-center relative">
-                                <span
-                                    class="text-[10px] font-bold text-brand-600 uppercase tracking-wider mb-0.5">Course</span>
-                                <span class="text-xl md:text-2xl font-black font-mono text-brand-600">{{
-                                    user_prediction.times.push }}</span>
-                            </div>
-
-                            <!-- Divider -->
-                            <div class="hidden md:block w-px h-8 bg-slate-100"></div>
-
-                            <!-- Seuil -->
-                            <div class="flex flex-col items-center">
-                                <span
-                                    class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Seuil</span>
-                                <span class="text-lg md:text-xl font-bold font-mono text-slate-600">{{
-                                    user_prediction.times.race }}</span>
-                            </div>
-
-                        </div>
+                        {% if user_prediction.user_index < 420 %} <div
+                            class="mt-3 pt-2 border-t border-slate-50 flex items-center gap-2 text-[10px] text-amber-600 font-medium">
+                            <i class="ph-fill ph-warning-circle"></i> Index faible détecté, l'estimation peut être
+                            imprécise.
                     </div>
-
-                    {% if user_prediction.user_index < 420 %} <div
-                        class="mt-3 pt-2 border-t border-slate-50 flex items-center gap-2 text-[10px] text-amber-600 font-medium">
-                        <i class="ph-fill ph-warning-circle"></i> Index faible détecté, l'estimation peut être
-                        imprécise.
+                    {% endif %}
                 </div>
                 {% endif %}
-            </div>
-            {% endif %}
 
 
-
-
-            <!-- TAGS & DESC -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-
-                <!-- Metadata Column -->
-                <div class="md:col-span-1 space-y-6">
-                    <!-- Tags -->
-                    {% if tags_list %}
-                    <div>
-                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Tags & Ambiance
-                        </h3>
-                        <div class="flex flex-wrap gap-2">
-                            <!-- Custom Tags -->
-                            {% if tags_list %}
-                            {% for tag in tags_list %}
-                            <span
-                                class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-600">
-                                #{{ tag }}
-                            </span>
-                            {% endfor %}
-                            {% endif %}
-
-                            <!-- Fallback if empty -->
-                            {% if not track.best_season and not tags_list %}
-                            <span class="text-xs text-gray-400 italic">Aucune étiquette spécifique</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    <!-- User Ratings & Info -->
-                    {% if track.scenery_rating or track.water_points_count > 0 %}
-                    <div>
-                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Conditions &
-                            Infos</h3>
-                        <div class="space-y-3">
-                            {% if track.scenery_rating %}
-                            <div class="flex justify-between items-center text-sm">
-                                <span class="text-slate-600 font-medium">Paysage</span>
-                                <div class="flex text-yellow-400">
-                                    {% for i in range(track.scenery_rating) %}
-                                    <i class="ph-fill ph-star"></i>
-                                    {% endfor %}
-                                    {% for i in range(5 - track.scenery_rating) %}
-                                    <i class="ph ph-star text-slate-200"></i>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                            {% endif %}
-
-                            {% if track.water_points_count > 0 %}
-                            <div class="flex justify-between items-center text-sm">
-                                <span class="text-slate-600 font-medium">Points d'eau</span>
+                <!-- TAGS & DESC -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Metadata Column -->
+                    <div class="md:col-span-1 space-y-6">
+                        <!-- Tags -->
+                        {% if tags_list %}
+                        <div>
+                            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Tags & Ambiance
+                            </h3>
+                            <div class="flex flex-wrap gap-2">
+                                <!-- Custom Tags -->
+                                {% if tags_list %}
+                                {% for tag in tags_list %}
                                 <span
-                                    class="font-bold text-slate-800 bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                    <i class="ph-fill ph-drop"></i> {{ track.water_points_count }}
+                                    class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-600">
+                                    #{{ tag }}
                                 </span>
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% endif %}
+                                {% endfor %}
+                                {% endif %}
 
-                    <!-- Surfaces -->
-                    {% if track.surface_composition %}
-                    <div>
-                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Surface</h3>
-                        <div class="space-y-2">
-                            {% for k, v in track.surface_composition.items() %}
-                            <div class="flex items-center text-xs">
-                                <div class="w-12 font-bold text-slate-700 text-right mr-2">{{ v }}%</div>
-                                <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden"
-                                    style="--w: {{ v }}%;">
-                                    <div class="h-full bg-slate-400" style="width: var(--w);"></div>
+                                <!-- Fallback if empty -->
+                                {% if not track.best_season and not tags_list %}
+                                <span class="text-xs text-gray-400 italic">Aucune étiquette spécifique</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- User Ratings & Info -->
+                        {% if track.scenery_rating or track.water_points_count > 0 %}
+                        <div>
+                            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Conditions &
+                                Infos</h3>
+                            <div class="space-y-3">
+                                {% if track.scenery_rating %}
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-slate-600 font-medium">Paysage</span>
+                                    <div class="flex text-yellow-400">
+                                        {% for i in range(track.scenery_rating) %}
+                                        <i class="ph-fill ph-star"></i>
+                                        {% endfor %}
+                                        {% for i in range(5 - track.scenery_rating) %}
+                                        <i class="ph ph-star text-slate-200"></i>
+                                        {% endfor %}
+                                    </div>
                                 </div>
-                                <div class="ml-2 text-slate-500 capitalize">{{ k }}</div>
+                                {% endif %}
+
+                                {% if track.water_points_count > 0 %}
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-slate-600 font-medium">Points d'eau</span>
+                                    <span
+                                        class="font-bold text-slate-800 bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                        <i class="ph-fill ph-drop"></i> {{ track.water_points_count }}
+                                    </span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Surfaces -->
+                        {% if track.surface_composition %}
+                        <div>
+                            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Surface</h3>
+                            <div class="space-y-2">
+                                {% for k, v in track.surface_composition.items() %}
+                                <div class="flex items-center text-xs">
+                                    <div class="w-12 font-bold text-slate-700 text-right mr-2">{{ v }}%</div>
+                                    <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden"
+                                        style="--w: {{ v }}%;">
+                                        <div class="h-full bg-slate-400" style="width: var(--w);"></div>
+                                    </div>
+                                    <div class="ml-2 text-slate-500 capitalize">{{ k }}</div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Description Column -->
+                    <div class="md:col-span-2">
+                        {% if track.description %}
+                        <div>
+                            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Description</h3>
+                            <div class="prose prose-slate prose-sm max-w-none text-slate-600">
+                                {{ track.description | markdown | safe }}
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="p-6 text-center border-2 border-dashed border-slate-100 rounded-xl">
+                            <p class="text-sm text-slate-400 italic">Aucune description fournie pour cette trace.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB CONTENT: COMMUNITY -->
+            <div id="content-community" class="hidden animate-in fade-in duration-300">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+                    <!-- REVIEWS SECTION -->
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-bold text-slate-900">Avis & Notes</h3>
+                            <div class="flex items-center gap-1 bg-yellow-50 text-yellow-700 px-3 py-1 rounded-lg">
+                                <span class="font-black text-lg">{{ avg_rating }}</span>
+                                <i class="ph-fill ph-star text-yellow-400"></i>
+                                <span class="text-xs text-yellow-600 ml-1">({{ reviews|length }} avis)</span>
+                            </div>
+                        </div>
+
+                        <!-- Review List -->
+                        <div class="space-y-4 mb-6 max-h-[400px] overflow-y-auto pr-2">
+                            {% for review in reviews %}
+                            <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <a href="/user/{{ review.user.username }}"
+                                            class="font-bold text-sm text-slate-800 hover:text-brand-600 transition-colors">
+                                            {{ review.user.username }}
+                                        </a>
+                                        <span class="text-xs text-slate-400">• {{ review.created_at.strftime('%d/%m/%Y')
+                                            }}</span>
+                                    </div>
+                                    <div class="flex text-yellow-400 text-xs">
+                                        {% for i in range(review.rating) %}<i class="ph-fill ph-star"></i>{% endfor %}
+                                        {% for i in range(5 - review.rating) %}<i
+                                            class="ph ph-star text-slate-200"></i>{% endfor %}
+                                    </div>
+                                </div>
+                                {% if review.comment %}
+                                <div class="text-sm text-slate-600 leading-relaxed">{{ review.comment }}</div>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <div
+                                class="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                                Soyez le premier à donner votre avis !
                             </div>
                             {% endfor %}
                         </div>
-                    </div>
-                    {% endif %}
-                </div>
 
-                <!-- Description Column -->
-                <div class="md:col-span-2">
-                    {% if track.description %}
-                    <div>
-                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Description</h3>
-                        <div class="prose prose-slate prose-sm max-w-none text-slate-600">
-                            {{ track.description | markdown | safe }}
+                        <!-- Add Review Form -->
+                        {% if user %}
+                        <form action="/track/{{ track.id }}/review" method="POST"
+                            class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                            <h4 class="text-sm font-bold text-slate-700 mb-3">Laisser un avis</h4>
+                            <div class="mb-3">
+                                <label class="block text-xs font-medium text-slate-500 mb-1">Note</label>
+                                <div class="flex gap-2 text-2xl text-slate-200 hover:text-yellow-400 cursor-pointer w-fit transition-colors"
+                                    id="star-rating">
+                                    <!-- Simple JS logic needed for interactive stars -->
+                                    <button type="button" onclick="setRating(1)"
+                                        class="focus:outline-none hover:text-yellow-400 text-yellow-400 transition-colors"><i
+                                            class="ph-fill ph-star" id="star-1"></i></button>
+                                    <button type="button" onclick="setRating(2)"
+                                        class="focus:outline-none hover:text-yellow-400 text-yellow-400 transition-colors"><i
+                                            class="ph-fill ph-star" id="star-2"></i></button>
+                                    <button type="button" onclick="setRating(3)"
+                                        class="focus:outline-none hover:text-yellow-400 text-yellow-400 transition-colors"><i
+                                            class="ph-fill ph-star" id="star-3"></i></button>
+                                    <button type="button" onclick="setRating(4)"
+                                        class="focus:outline-none hover:text-yellow-400 text-yellow-400 transition-colors"><i
+                                            class="ph-fill ph-star" id="star-4"></i></button>
+                                    <button type="button" onclick="setRating(5)"
+                                        class="focus:outline-none hover:text-yellow-400 text-yellow-400 transition-colors"><i
+                                            class="ph-fill ph-star" id="star-5"></i></button>
+                                </div>
+                                <input type="hidden" name="rating" id="rating-input" required value="5">
+                            </div>
+                            <div class="mb-3">
+                                <label class="block text-xs font-medium text-slate-500 mb-1">Commentaire</label>
+                                <textarea name="comment" rows="3"
+                                    class="w-full text-sm rounded-lg border-slate-300 focus:border-brand-500 focus:ring-brand-500"
+                                    placeholder="Ton avis sur la trace..."></textarea>
+                            </div>
+                            <button type="submit"
+                                class="w-full bg-slate-900 text-white font-bold py-2 rounded-lg text-sm hover:bg-slate-800 transition-colors">Publier</button>
+                        </form>
+                        {% else %}
+                        <div class="bg-brand-50 rounded-xl p-4 text-center">
+                            <p class="text-sm text-brand-800 font-medium mb-2">Connecte-toi pour donner ton avis</p>
+                            <a href="/login"
+                                class="inline-block bg-brand-600 text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-brand-700">Se
+                                connecter</a>
                         </div>
+                        {% endif %}
                     </div>
-                    {% else %}
-                    <div class="p-6 text-center border-2 border-dashed border-slate-100 rounded-xl">
-                        <p class="text-sm text-slate-400 italic">Aucune description fournie pour cette trace.</p>
-                    </div>
-                    {% endif %}
-                </div>
 
+                    <!-- EXECUTIONS SECTION -->
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-bold text-slate-900">Chronos & Sorties</h3>
+                            <span class="text-xs text-slate-500 font-medium">{{ executions|length }} sorties</span>
+                        </div>
+
+                        <!-- Execution List -->
+                        <div class="space-y-3 mb-6 max-h-[400px] overflow-y-auto pr-2">
+                            {% for exec in executions %}
+                            <div
+                                class="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs">
+                                        {{ exec.user.username[:2] | upper }}
+                                    </div>
+                                    <div>
+                                        <a href="/user/{{ exec.user.username }}"
+                                            class="block text-sm font-bold text-slate-800 hover:text-brand-600 transition-colors">
+                                            {{ exec.user.username }}
+                                        </a>
+                                        <div class="text-[10px] text-slate-500">{{ exec.execution_date.strftime('%d %b
+                                            %Y') }}</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-mono font-black text-lg text-brand-600">
+                                        {% set h = exec.duration_seconds // 3600 %}
+                                        {% set m = (exec.duration_seconds % 3600) // 60 %}
+                                        {% set s = exec.duration_seconds % 60 %}
+                                        {% if h > 0 %}{{h}}h{% endif %}{{ "%02d"|format(m) }}
+                                    </div>
+                                    {% if exec.comment %}
+                                    <div class="text-[10px] text-slate-400 italic truncate w-32"
+                                        title="{{ exec.comment }}">{{ exec.comment }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% else %}
+                            <p class="text-sm text-slate-400 italic">Aucun chrono enregistré.</p>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Add Perf Form -->
+                        {% if user %}
+                        <form action="/track/{{ track.id }}/execution" method="POST"
+                            class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                            <h4 class="text-sm font-bold text-slate-700 mb-3">Ajouter une sortie</h4>
+                            <div class="grid grid-cols-2 gap-3 mb-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-500 mb-1">Temps</label>
+                                    <input type="text" name="duration_str" required placeholder="1h30"
+                                        class="w-full text-sm rounded-lg border-slate-300 focus:border-brand-500 focus:ring-brand-500 font-mono">
+                                    <p class="text-[10px] text-slate-400 mt-0.5">Ex: 1h30, 90 (min), 1:30:00</p>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-500 mb-1">Date</label>
+                                    <input type="date" name="execution_date" required
+                                        class="w-full text-sm rounded-lg border-slate-300 focus:border-brand-500 focus:ring-brand-500">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <textarea name="comment" rows="1"
+                                    class="w-full text-xs rounded-lg border-slate-300 focus:border-brand-500 focus:ring-brand-500"
+                                    placeholder="Petite note..."></textarea>
+                            </div>
+                            <button type="submit"
+                                class="w-full bg-white border border-slate-300 text-slate-700 font-bold py-2 rounded-lg text-sm hover:bg-slate-50 transition-colors">Enregistrer</button>
+                        </form>
+                        {% endif %}
+
+                    </div>
+                </div>
             </div>
 
         </div>
     </div>
 </div>
 </div>
+<!-- Image Modal -->
+<div id="imageModal"
+    class="fixed inset-0 z-50 hidden bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out"
+    onclick="closeImageModal()">
+    <img id="modalImage" src="" alt="Full size"
+        class="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl transition-transform duration-300">
+    <button onclick="closeImageModal()"
+        class="absolute top-4 right-4 text-white hover:text-gray-300 p-2 bg-black/50 rounded-full">
+        <i class="ph-bold ph-x text-2xl"></i>
+    </button>
+</div>
+
+<!-- Tabs & Rating Logic -->
+<script>
+    function switchTab(tabId) {
+        // Hide all content
+        document.getElementById('content-details').classList.add('hidden');
+        document.getElementById('content-details').classList.remove('block');
+        document.getElementById('content-community').classList.add('hidden');
+        document.getElementById('content-community').classList.remove('block');
+
+        // Reset Tab Styles
+        const tabs = ['details', 'community'];
+        tabs.forEach(t => {
+            const btn = document.getElementById('tab-' + t);
+            btn.classList.remove('border-brand-500', 'text-brand-600', 'font-bold');
+            btn.classList.add('border-transparent', 'text-slate-500', 'font-medium');
+        });
+
+        // Show selected content
+        document.getElementById('content-' + tabId).classList.remove('hidden');
+        document.getElementById('content-' + tabId).classList.add('block');
+
+        // Style selected tab
+        const activeBtn = document.getElementById('tab-' + tabId);
+        activeBtn.classList.remove('border-transparent', 'text-slate-500', 'font-medium');
+        activeBtn.classList.add('border-brand-500', 'text-brand-600', 'font-bold');
+
+        // Update URL hash without scroll
+        history.replaceState(null, null, '#' + tabId);
+    }
+
+    // Init Logic on Load
+    document.addEventListener('DOMContentLoaded', () => {
+        const hash = window.location.hash.substring(1);
+        if (hash === 'community') {
+            switchTab('community');
+        }
+    });
+
+    // Rating Logic
+    function setRating(rating) {
+        document.getElementById('rating-input').value = rating;
+        for (let i = 1; i <= 5; i++) {
+            const star = document.getElementById('star-' + i);
+            if (i <= rating) {
+                star.classList.replace('ph', 'ph-fill');
+            } else {
+                star.classList.replace('ph-fill', 'ph');
+            }
+        }
+    }
+</script>
+
 <!-- MORE FEATURES MODAL -->
 <div id="features-modal" class="fixed inset-0 z-[100] hidden" aria-labelledby="modal-title" role="dialog"
     aria-modal="true">
@@ -786,8 +1038,8 @@
                 }
             });
 
-            // Initial Render (Solid by default for cleaner look)
-            updateTrackStyle('solid');
+            // Initial Render (Slope by default)
+            updateTrackStyle('slope');
 
             /* setTimeout(() => {
                 if (!window.is3D) toggle3D();
@@ -803,11 +1055,7 @@
 
             map.fitBounds(bounds, {
                 padding: { top: 80, bottom: bottomPadding, left: 50, right: 50 },
-                duration: 2500, // 2.5s fly-in
-                start: {
-                    zoom: 11, // Start slightly zoomed out
-                    bearing: 15 // Slight rotation start
-                },
+                duration: 2000, // smooth fly-in
                 essential: true
             });
 
@@ -823,7 +1071,8 @@
                 cityTextEl = document.createElement('div');
                 // Minimalist Design: moved further right (translate-x-6) to avoid start pin overlap
                 // Default: Trail Mode (Slate/Multiply)
-                cityTextEl.className = 'text-[10px] font-black tracking-widest uppercase text-slate-500/90 mix-blend-multiply drop-shadow-sm select-none pointer-events-none transform -translate-y-1/2 translate-x-6 transition-colors duration-300';
+                // z-[60] ensures it is ABOVE the tracking cursor (z-[40])
+                cityTextEl.className = 'text-[10px] font-black tracking-widest uppercase text-slate-500/90 mix-blend-multiply drop-shadow-sm select-none pointer-events-none transform -translate-y-1/2 translate-x-6 transition-colors duration-300 z-[60] relative';
                 cityTextEl.innerText = cityName;
 
                 new maplibregl.Marker({ element: cityTextEl, anchor: 'left' })
@@ -863,7 +1112,8 @@
             // Sync Chart Hover -> Map Marker
             // Init Sync Marker
             const markerEl = document.createElement('div');
-            markerEl.className = 'w-4 h-4 bg-white rounded-full border-4 border-emerald-500 shadow-lg';
+            // z-[40] ensures it is BELOW the city label (z-[60])
+            markerEl.className = 'w-4 h-4 bg-white rounded-full border-4 border-emerald-500 shadow-lg z-[40] relative';
             // Hide initially
             markerEl.style.opacity = '0';
 
@@ -1147,7 +1397,8 @@
         };
 
         // Initialize Chart (Simple Area Chart)
-        new Chart(ctx, {
+        // Initialize Chart (Simple Area Chart)
+        window.elevationChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
@@ -1299,6 +1550,10 @@
             // Force stats visible if needed? 
             // In full screen, user sees map and chart. hovering chart works as usual.
             // Stats are now always in the card, so they are visible.
+            if (window.elevationChart) {
+                window.elevationChart.options.plugins.tooltip.enabled = false;
+                window.elevationChart.update();
+            }
 
         } else {
             // EXIT FULL SCREEN
@@ -1320,6 +1575,11 @@
 
             // Update Icon
             icon.classList.replace('ph-corners-in', 'ph-corners-out');
+
+            if (window.elevationChart) {
+                window.elevationChart.options.plugins.tooltip.enabled = true;
+                window.elevationChart.update();
+            }
         }
 
         // Trigger Resize
