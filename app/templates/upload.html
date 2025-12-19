@@ -38,7 +38,8 @@
                     <div class="relative group">
                         <div class="border-2 border-dashed border-slate-300 rounded-xl p-10 text-center hover:border-brand-500 hover:bg-brand-50/30 transition-all cursor-pointer"
                             id="drop-zone">
-                            <input type="file" name="file" id="file" class="hidden" accept=".gpx" required>
+                            <input type="file" name="file" id="file" class="hidden" accept=".gpx">
+                            <input type="hidden" name="strava_activity_id" id="strava-activity-id">
 
                             <div class="space-y-4">
                                 <div
@@ -54,6 +55,23 @@
                                     <p class="text-slate-500 text-sm mt-1">ou cliquez pour parcourir</p>
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- Selected Strava Activity Display -->
+                        <div id="strava-selected-display"
+                            class="hidden border-2 border-[#FC4C02] bg-orange-50 rounded-xl p-6 text-center relative animate-fade-in-up">
+                            <div class="absolute top-4 right-4 cursor-pointer text-slate-400 hover:text-slate-600"
+                                onclick="resetStravaSelection()">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </div>
+                            <img src="/static/img/strava_logo.svg" alt="Strava" class="h-8 mx-auto mb-3">
+                            <p class="text-lg font-bold text-slate-900" id="strava-selected-name">Activité Strava</p>
+                            <p class="text-sm text-slate-600 mt-1" id="strava-selected-details">12.5km • 450m+</p>
+                            <p class="text-xs text-[#FC4C02] font-bold mt-4">Prêt à importer ! Complétez les infos
+                                ci-dessous.</p>
                         </div>
                         <div id="file-feedback"
                             class="hidden mt-4 p-4 bg-green-50 rounded-lg border border-green-100 flex items-center gap-3">
@@ -590,6 +608,8 @@
 
         fileName.textContent = file.name;
         fileFeedback.classList.remove('hidden');
+        resetStravaSelection(); // Ensure Strava selection is cleared if file dropped
+        fileFeedback.classList.remove('hidden');
 
         // Autocomplete Logic
         const reader = new FileReader();
@@ -608,6 +628,7 @@
 
                 // Sample every 5 points for performance if track is huge, but doing all is fine for JS usually
                 for (let i = 0; i < trkpts.length; i++) {
+
                     const pt = trkpts[i];
                     const lat = parseFloat(pt.getAttribute('lat'));
                     const lon = parseFloat(pt.getAttribute('lon'));
@@ -791,7 +812,7 @@
         stravaList.innerHTML = stravaActivities.map(activity => {
             const date = new Date(activity.start_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
             return `
-            <div onclick="importStravaActivity('${activity.id}')" 
+            <div onclick='selectStravaActivity(${JSON.stringify(activity).replace(/'/g, "&apos;")})' 
                  class="group cursor-pointer p-4 rounded-xl border border-slate-200 hover:border-[#FC4C02] hover:bg-orange-50 transition-all flex justify-between items-center">
                 <div>
                     <h4 class="font-bold text-slate-900 group-hover:text-[#FC4C02] transition-colors">${activity.name}</h4>
@@ -808,27 +829,95 @@
         }).join('');
     }
 
-    function importStravaActivity(activityId) {
-        stravaList.innerHTML = `
-            <div class="text-center py-10">
-                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-[#FC4C02] mx-auto"></div>
-                <p class="mt-4 text-slate-500">Importation de l'activité...</p>
-                <p class="text-xs text-slate-400">Construction du fichier GPX en cours</p>
-            </div>
-        `;
+    // Unified Strava Selection Logic
+    const stravaIdInput = document.getElementById('strava-activity-id');
+    const stravaDisplay = document.getElementById('strava-selected-display');
+    const stravaNameDisplay = document.getElementById('strava-selected-name');
+    const stravaDetailsDisplay = document.getElementById('strava-selected-details');
 
-        fetch(`/auth/strava/activities/${activityId}/import`, { method: 'POST' })
-            .then(res => res.json())
+    function selectStravaActivity(activity) {
+        // 1. Fill Hidden ID
+        stravaIdInput.value = activity.id;
+
+        // 2. Update UI (Hide Dropzone, Show Strava Card)
+        dropZone.classList.add('hidden');
+        dropZone.parentElement.querySelector('.relative.flex') && dropZone.parentElement.querySelector('.relative.flex').classList.add('hidden');
+        dropZone.parentElement.querySelector('button') && dropZone.parentElement.querySelector('button').classList.add('hidden');
+
+        stravaDisplay.classList.remove('hidden');
+        stravaNameDisplay.textContent = activity.name;
+        stravaDetailsDisplay.textContent = `${(activity.distance / 1000).toFixed(1)}km • ${Math.round(activity.total_elevation_gain)}m+`;
+
+        // 3. Populate Form Fields
+        titleInput.value = activity.name; // User can edit this
+
+        // Auto-select type
+        const typeMap = {
+            "Run": "RUNNING", "TrailRun": "TRAIL_RUNNING", "Hike": "HIKING",
+            "Ride": "ROAD_CYCLING", "GravelRide": "GRAVEL", "MountainBikeRide": "MTB_CROSS_COUNTRY",
+            "AlpineSki": "SKI_TOURING", "BackcountrySki": "SKI_TOURING"
+        };
+        const mappedType = typeMap[activity.type] || "OTHER";
+        const typeSelect = document.querySelector('select[name="activity_type"]');
+        if (typeSelect) typeSelect.value = mappedType;
+
+        // 4. Close Modal
+        closeStravaModal();
+
+        // 5. Remove "Required" from file input to allow submit
+        fileInput.removeAttribute('required');
+    }
+
+    function resetStravaSelection() {
+        stravaIdInput.value = "";
+        dropZone.classList.remove('hidden');
+        dropZone.parentElement.querySelector('.relative.flex') && dropZone.parentElement.querySelector('.relative.flex').classList.remove('hidden');
+        dropZone.parentElement.querySelector('button') && dropZone.parentElement.querySelector('button').classList.remove('hidden');
+        stravaDisplay.classList.add('hidden');
+        fileInput.setAttribute('required', 'true');
+    }
+
+    // Intercept Form Submit to handle routing
+    form.addEventListener('submit', (e) => {
+        const isStrava = stravaIdInput.value !== "";
+        if (isStrava) {
+            e.preventDefault();
+            submitStravaImport();
+        }
+        // Else standard submit works fine
+    });
+
+    function submitStravaImport() {
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        loadingOverlay.classList.remove('hidden');
+        loadingOverlay.classList.add('flex');
+
+        const formData = new FormData(form);
+        const activityId = stravaIdInput.value;
+
+        fetch(`/auth/strava/activities/${activityId}/import`, {
+            method: 'POST',
+            body: formData
+        })
+            .then(res => {
+                if (res.ok) return res.json();
+                throw new Error('Import Failed');
+            })
             .then(data => {
-                if (data.status === 'imported' || data.status === 'duplicate') {
-                    window.location.href = `/track/${data.id}`;
+                if (data.id) {
+                    window.location.href = `/tracks/${data.id}`;
                 } else {
-                    throw new Error(data.detail || 'Erreur inconnue');
+                    window.location.href = `/`;
                 }
             })
             .catch(err => {
-                alert('Erreur: ' + err.message);
-                loadStravaActivities();
+                alert('Erreur lors de l\'import Strava : ' + err.message);
+                loadingOverlay.classList.add('hidden');
+                loadingOverlay.classList.remove('flex');
             });
     }
 </script>
