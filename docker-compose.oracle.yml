@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  kairn:
+    container_name: kairn
+    build: .
+    restart: unless-stopped
+    volumes:
+      - ./app/uploads:/app/app/uploads
+      # Mapping scripts/migrations might be useful for running commands inside container
+      - ./scripts:/app/scripts
+      - ./migrations:/app/migrations
+    environment:
+      - DATABASE_URL=postgresql://kairn:kairn_password@db/kairn
+      # These should be set in .env file on the server
+      - SECRET_KEY=${SECRET_KEY}
+      - INVITATION_CODE=${INVITATION_CODE}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - STRAVA_CLIENT_ID=${STRAVA_CLIENT_ID}
+      - STRAVA_CLIENT_SECRET=${STRAVA_CLIENT_SECRET}
+      - STRAVA_REDIRECT_URI=${STRAVA_REDIRECT_URI}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-*}
+    depends_on:
+      - db
+
+  db:
+    # Building custom image locally to guarantee ARM64 compatibility if needed (Oracle Cloud often uses ARM Ampere)
+    # or just ensuring we have the right extension installed.
+    build:
+      context: .
+      dockerfile: Dockerfile.postgis
+    container_name: kairn_db
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=kairn
+      - POSTGRES_PASSWORD=kairn_password
+      - POSTGRES_DB=kairn
+
+  caddy:
+    image: caddy:2
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - kairn
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
