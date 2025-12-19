@@ -285,10 +285,109 @@ async def strava_callback(request: Request, code: str = Query(None), error: str 
 
 # --- Route Import Features ---
 
-@router.get("/routes")
-async def list_strava_routes(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
-    """List routes from the authenticated user's Strava account"""
-    # Use helper to get valid token
+# --- Activity Import Features ---
+
+def convert_streams_to_gpx(activity_data: dict, streams: list) -> bytes:
+    """
+    Convert Strava Streams into a GPX file.
+    """
+    # 1. Parse Streams
+    latlng = []
+    altitude = []
+    times = []
+    heartrate = []
+    
+    # Streams is a list of dicts: [{"type": "latlng", "data": [...]}, ...]
+    # Strava API returns wrapper if key_by_type=true is NOT used, but we will use key_by_type=true
+    # Actually client.get params are cleaner if we assume list response or dict response.
+    # Let's handle list response which is default for streams endpoint
+    
+    data_len = 0
+    
+    # We will request with key_by_type=true for easier parsing
+    # Response structure: { "latlng": { "data": [...] }, "time": { "data": [...] } }
+    
+    if isinstance(streams, list): 
+        # Convert list format to dict for easier access if API returns list
+        streams_dict = {s["type"]: s for s in streams}
+    else:
+        streams_dict = streams
+        
+    if "latlng" in streams_dict:
+        latlng = streams_dict["latlng"]["data"]
+        data_len = len(latlng)
+    
+    if "altitude" in streams_dict:
+        altitude = streams_dict["altitude"]["data"]
+        
+    if "time" in streams_dict:
+        times = streams_dict["time"]["data"]
+        
+    if "heartrate" in streams_dict:
+        heartrate = streams_dict["heartrate"]["data"]
+        
+    if data_len == 0:
+        return b""
+
+    # 2. Build GPX String
+    # Simple string build is faster/lighter than full XML lib for this specific structure
+    gpx_lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<gpx version="1.1" creator="Kairn Strava Import" xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1">',
+        ' <metadata>',
+        f'  <name>{activity_data.get("name", "Strava Activity")}</name>',
+        f'  <time>{activity_data.get("start_date")}</time>',
+        ' </metadata>',
+        ' <trk>',
+        f'  <name>{activity_data.get("name", "Activity")}</name>',
+        '  <trkseg>'
+    ]
+    
+    start_time_str = activity_data.get("start_date") # ISO 8601 e.g. 2018-02-16T14:52:54Z
+    # We need strictly formatted timestamps for points if we want to be exact,
+    # but strictly speaking GPX <time> in trkpt is optional, though good for stats.
+    # The 'time' stream is seconds relative to start.
+    
+    try:
+        start_dt = datetime.strptime(start_time_str, "%Y-%m-%dT%H:%M:%SZ")
+    except:
+        start_dt = datetime.utcnow() # Fallback
+
+    for i in range(data_len):
+        lat, lon = latlng[i]
+        ele = altitude[i] if i < len(altitude) else 0
+        
+        # Time calc
+        if i < len(times):
+            offset = times[i]
+            # Simple add (ignoring leap seconds etc)
+            import datetime as dt_mod # avoid conflict
+            pt_time = (start_dt + dt_mod.timedelta(seconds=int(offset))).isoformat() + "Z"
+            time_tag = f"<time>{pt_time}</time>"
+        else:
+            time_tag = ""
+            
+        # HR ext
+        ext_tag = ""
+        if i < len(heartrate):
+             ext_tag = f"<extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>{heartrate[i]}</gpxtpx:hr></gpxtpx:TrackPointExtension></extensions>"
+
+        gpx_lines.append(f'   <trkpt lat="{lat}" lon="{lon}">')
+        gpx_lines.append(f'    <ele>{ele}</ele>')
+        if time_tag: gpx_lines.append(f'    {time_tag}')
+        if ext_tag: gpx_lines.append(f'    {ext_tag}')
+        gpx_lines.append('   </trkpt>')
+        
+    gpx_lines.append('  </trkseg>')
+    gpx_lines.append(' </trk>')
+    gpx_lines.append('</gpx>')
+    
+    return "\n".join(gpx_lines).encode("utf-8")
+
+
+@router.get("/activities")
+async def list_strava_activities(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    """List activities from the authenticated user's Strava account"""
     try:
         token = await get_valid_token(current_user.id, db)
     except HTTPException as e:
@@ -297,67 +396,78 @@ async def list_strava_routes(db: Session = Depends(get_db), current_user = Depen
          print(f"Error getting Strava token: {e}")
          raise HTTPException(status_code=400, detail="Could not connect to Strava")
 
-    # Get Strava connection for athlete_id
     conn = db.query(models.OAuthConnection).filter(
         models.OAuthConnection.user_id == current_user.id,
         models.OAuthConnection.provider == models.OAuthProvider.STRAVA
     ).first()
     
     async with httpx.AsyncClient() as client:
-        # Get routes
-        url = f"https://www.strava.com/api/v3/athletes/{conn.provider_user_id}/routes"
+        # Get Activities
+        url = "https://www.strava.com/api/v3/athlete/activities"
         
         resp = await client.get(
             url,
             headers={"Authorization": f"Bearer {token}"},
-            params={"per_page": 50}
+            params={"per_page": 30} # Last 30 activities
         )
         
-        # If 401 despite check, likely revoked
         if resp.status_code == 401:
             raise HTTPException(status_code=401, detail="Strava session invalid. Please reconnect.")
 
     if resp.status_code != 200:
-        print(f"ERROR: Strava Route List Failed: {resp.text}")
+        print(f"ERROR: Strava Activity List Failed: {resp.text}")
         raise HTTPException(status_code=resp.status_code, detail=f"Strava API error: {resp.text}")
         
     return resp.json()
 
-@router.post("/routes/{route_id}/import")
-async def import_strava_route(route_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
-    """Import a specific Strava route as a Kairn Track"""
+@router.post("/activities/{activity_id}/import")
+async def import_strava_activity(activity_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    """Import a specific Strava Activity as a Kairn Track"""
     
     token = await get_valid_token(current_user.id, db)
 
-    # 1. Fetch Route GPX
-    async with httpx.AsyncClient() as client:
-        export_url = f"https://www.strava.com/api/v3/routes/{route_id}/export_gpx"
-        
-        resp = await client.get(
-            export_url,
-            headers={"Authorization": f"Bearer {token}"},
-            follow_redirects=True
-        )
-        
-        if resp.status_code != 200:
-            raise HTTPException(status_code=resp.status_code, detail="Could not fetch GPX from Strava")
-            
-    gpx_content = resp.content
-    
-    # 2. Get details
+    # 1. Fetch Activity Details
     async with httpx.AsyncClient() as client:
         detail_resp = await client.get(
-            f"https://www.strava.com/api/v3/routes/{route_id}",
+            f"https://www.strava.com/api/v3/activities/{activity_id}",
              headers={"Authorization": f"Bearer {token}"}
         )
     
-    route_details = detail_resp.json() if detail_resp.status_code == 200 else {}
+    if detail_resp.status_code != 200:
+        raise HTTPException(status_code=detail_resp.status_code, detail="Could not fetch activity details")
+        
+    activity_details = detail_resp.json()
     
-    title = route_details.get("name", f"Strava Import {route_id}")
-    description = route_details.get("description", "")
+    # 2. Fetch Streams (LatLng, Alt, Time)
+    # key_by_type=true returns a dict {latlng:.., altitude:..}
+    async with httpx.AsyncClient() as client:
+        streams_resp = await client.get(
+            f"https://www.strava.com/api/v3/activities/{activity_id}/streams",
+            headers={"Authorization": f"Bearer {token}"},
+            params={
+                "keys": "latlng,altitude,time,heartrate",
+                "key_by_type": "true" 
+            }
+        )
+        
+    if streams_resp.status_code != 200:
+         # Some manual activities might not have streams
+         raise HTTPException(status_code=400, detail="This activity has no GPS data to import")
+         
+    streams = streams_resp.json()
+    
+    # 3. Convert to GPX
+    gpx_content = convert_streams_to_gpx(activity_details, streams)
+    
+    if not gpx_content:
+        raise HTTPException(status_code=400, detail="Could not generate GPX (Empty track?)")
+
+    # 4. Save & Create Track
+    title = activity_details.get("name", f"Strava Activity {activity_id}")
+    description = activity_details.get("description", "")
     
     # Save GPX
-    filename = f"strava_{route_id}.gpx"
+    filename = f"strava_activity_{activity_id}.gpx"
     save_path = f"app/uploads/{filename}"
     os.makedirs("app/uploads", exist_ok=True)
     
@@ -378,12 +488,28 @@ async def import_strava_route(route_id: str, db: Session = Depends(get_db), curr
         source_type=models.SourceType.STRAVA_IMPORT,
         file_path=f"app/uploads/{filename}",
         file_hash=file_hash,
-        visibility=models.Visibility.PRIVATE # Default private
+        visibility=models.Visibility.PRIVATE 
     )
     
     # Metrics
-    new_track.distance_km = route_details.get("distance", 0) / 1000.0
-    new_track.elevation_gain = route_details.get("elevation_gain", 0)
+    new_track.distance_km = activity_details.get("distance", 0) / 1000.0
+    new_track.elevation_gain = activity_details.get("total_elevation_gain", 0)
+    
+    # Strava Type Mapping
+    strava_type = activity_details.get("type")
+    # Simple mapping
+    type_map = {
+        "Run": models.ActivityType.RUNNING,
+        "TrailRun": models.ActivityType.TRAIL_RUNNING,
+        "Hike": models.ActivityType.HIKING,
+        "Ride": models.ActivityType.ROAD_CYCLING,
+        "GravelRide": models.ActivityType.GRAVEL,
+        "MountainBikeRide": models.ActivityType.MTB_CROSS_COUNTRY,
+        "AlpineSki": models.ActivityType.SKI_TOURING, # Approx
+        "BackcountrySki": models.ActivityType.SKI_TOURING
+    }
+    if strava_type in type_map:
+        new_track.activity_type = type_map[strava_type]
     
     db.add(new_track)
     db.commit()

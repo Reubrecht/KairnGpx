@@ -704,24 +704,24 @@
 
     function openStravaModal() {
         stravaModal.classList.remove('hidden');
-        loadStravaRoutes();
+        loadStravaActivities();
     }
 
     function closeStravaModal() {
         stravaModal.classList.add('hidden');
     }
 
-    let stravaRoutes = [];
+    let stravaActivities = [];
 
-    function loadStravaRoutes() {
+    function loadStravaActivities() {
         stravaList.innerHTML = `
             <div class="text-center py-10">
                 <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-[#FC4C02] mx-auto"></div>
-                <p class="mt-4 text-slate-500">Connexion à Strava...</p>
+                <p class="mt-4 text-slate-500">Récupération de vos activités...</p>
             </div>
         `;
 
-        fetch('/auth/strava/routes')
+        fetch('/auth/strava/activities')
             .then(res => {
                 if (res.status === 401) {
                     window.location.href = '/auth/strava/login';
@@ -732,8 +732,8 @@
             })
             .then(data => {
                 if (Array.isArray(data)) {
-                    stravaRoutes = data;
-                    renderStravaRoutes();
+                    stravaActivities = data;
+                    renderStravaActivities();
                 } else {
                     throw new Error("Format de réponse invalide");
                 }
@@ -749,39 +749,42 @@
             });
     }
 
-    function renderStravaRoutes() {
-        if (!stravaRoutes || stravaRoutes.length === 0) {
-            stravaList.innerHTML = `<p class="text-center text-slate-500 py-10">Aucun itinéraire trouvé sur ce compte Strava.</p>`;
+    function renderStravaActivities() {
+        if (!stravaActivities || stravaActivities.length === 0) {
+            stravaList.innerHTML = `<p class="text-center text-slate-500 py-10">Aucune activité récente trouvée.</p>`;
             return;
         }
 
-        stravaList.innerHTML = stravaRoutes.map(route => `
-            <div onclick="importStravaRoute('${route.id_str || route.id}')" 
+        stravaList.innerHTML = stravaActivities.map(activity => {
+            const date = new Date(activity.start_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+            return `
+            <div onclick="importStravaActivity('${activity.id}')" 
                  class="group cursor-pointer p-4 rounded-xl border border-slate-200 hover:border-[#FC4C02] hover:bg-orange-50 transition-all flex justify-between items-center">
                 <div>
-                    <h4 class="font-bold text-slate-900 group-hover:text-[#FC4C02] transition-colors">${route.name}</h4>
+                    <h4 class="font-bold text-slate-900 group-hover:text-[#FC4C02] transition-colors">${activity.name}</h4>
                     <p class="text-xs text-slate-500 mt-1">
-                        ${(route.distance / 1000).toFixed(1)}km • ${Math.round(route.elevation_gain)}m+ 
-                        ${route.sub_type_name ? '• ' + route.sub_type_name : ''}
+                        ${date} • ${(activity.distance / 1000).toFixed(1)}km • ${Math.round(activity.total_elevation_gain)}m+ 
+                        ${activity.type ? '• ' + activity.type : ''}
                     </p>
                 </div>
                 <div class="h-8 w-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-300 group-hover:border-[#FC4C02] group-hover:text-[#FC4C02]">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                 </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
-    function importStravaRoute(routeId) {
+    function importStravaActivity(activityId) {
         stravaList.innerHTML = `
             <div class="text-center py-10">
                 <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-[#FC4C02] mx-auto"></div>
-                <p class="mt-4 text-slate-500">Importation en cours...</p>
-                <p class="text-xs text-slate-400">Cela peut prendre quelques secondes</p>
+                <p class="mt-4 text-slate-500">Importation de l'activité...</p>
+                <p class="text-xs text-slate-400">Construction du fichier GPX en cours</p>
             </div>
         `;
 
-        fetch(`/auth/strava/routes/${routeId}/import`, { method: 'POST' })
+        fetch(`/auth/strava/activities/${activityId}/import`, { method: 'POST' })
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'imported' || data.status === 'duplicate') {
@@ -792,7 +795,7 @@
             })
             .catch(err => {
                 alert('Erreur: ' + err.message);
-                loadStravaRoutes();
+                loadStravaActivities();
             });
     }
 </script>
