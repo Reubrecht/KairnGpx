@@ -505,6 +505,34 @@
     }
 </style>
 
+<!-- Strava Import Modal -->
+<div id="strava-modal"
+    class="fixed inset-0 bg-slate-900/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+            <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                <img src="/static/img/strava_logo.svg" class="h-6" alt="Strava">
+                Mes Activités Récentes
+            </h3>
+            <button onclick="closeStravaModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <div id="strava-routes-list" class="flex-1 overflow-y-auto p-6 space-y-4">
+            <!-- Content loaded via JS -->
+        </div>
+
+        <div class="p-6 border-t border-slate-100 bg-slate-50 rounded-b-2xl">
+            <p class="text-xs text-center text-slate-500">
+                Seules les activités récentes avec données GPS sont disponibles.
+            </p>
+        </div>
+    </div>
+</div>
+
 <script>
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file');
@@ -703,6 +731,10 @@
     const stravaList = document.getElementById('strava-routes-list');
 
     function openStravaModal() {
+        if (!stravaModal) {
+            console.error('Strava Modal not found');
+            return;
+        }
         stravaModal.classList.remove('hidden');
         loadStravaActivities();
     }
@@ -714,6 +746,7 @@
     let stravaActivities = [];
 
     function loadStravaActivities() {
+        if (!stravaList) return;
         stravaList.innerHTML = `
             <div class="text-center py-10">
                 <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-[#FC4C02] mx-auto"></div>
@@ -799,32 +832,4 @@
             });
     }
 </script>
-<!-- Strava Import Modal -->
-<div id="strava-modal"
-    class="fixed inset-0 bg-slate-900/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
-        <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-            <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2">
-                <img src="/static/img/strava_logo.svg" class="h-6" alt="Strava">
-                Mes Itinéraires
-            </h3>
-            <button onclick="closeStravaModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
-        </div>
-
-        <div id="strava-routes-list" class="flex-1 overflow-y-auto p-6 space-y-4">
-            <!-- Content loaded via JS -->
-        </div>
-
-        <div class="p-6 border-t border-slate-100 bg-slate-50 rounded-b-2xl">
-            <p class="text-xs text-center text-slate-500">
-                Seuls les itinéraires créés sur Strava ("Mes Itinéraires") sont disponibles.
-            </p>
-        </div>
-    </div>
-</div>
-
 {% endblock %}
