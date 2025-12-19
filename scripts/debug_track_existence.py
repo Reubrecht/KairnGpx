@@ -4,10 +4,13 @@ import sys
 # Ensure app is in path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.database import SessionLocal
+from app.database import engine, SessionLocal
 from app import models
 
 def check_track(track_id):
+    print(f"DEBUG: DATABASE_URL ENV: {os.getenv('DATABASE_URL')}")
+    print(f"DEBUG: Engine URL: {engine.url}")
+
     db = SessionLocal()
     try:
         print(f"Checking Track ID: {track_id}...")
