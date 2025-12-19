@@ -275,7 +275,7 @@
                             <div class="flex flex-col items-center">
                                 <span class="text-2xl md:text-3xl font-black text-slate-900">{{ track.km_effort | int
                                     }}</span>
-                                {% if track.itra_points_estim > 0 %}
+                                {% if track.itra_points_estim and track.itra_points_estim > 0 %}
                                 <span class="text-[10px] font-bold text-brand-600 bg-brand-50 px-1.5 rounded mt-1">{{
                                     track.itra_points_estim }} pts ITRA</span>
                                 {% endif %}
@@ -603,8 +603,15 @@
                                 </div>
                                 <div>
                                     <label class="block text-xs font-medium text-slate-500 mb-1">Date</label>
-                                    <input type="date" name="execution_date" required
+                                    <input type="date" name="execution_date" id="exec-date-input" required
                                         class="w-full text-sm rounded-lg border-slate-300 focus:border-brand-500 focus:ring-brand-500">
+                                </div>
+                                <div class="col-span-2">
+                                    <button type="button" onclick="openStravaExecModal()"
+                                        class="w-full text-xs font-bold text-[#FC4C02] bg-orange-50 border border-orange-200 py-1.5 rounded-lg hover:bg-orange-100 transition-colors flex items-center justify-center gap-1">
+                                        <img src="/static/img/strava_logo.svg" class="h-3 w-auto" alt="Strava">
+                                        Importer depuis Strava
+                                    </button>
                                 </div>
                             </div>
                             <div class="mb-3">
@@ -635,6 +642,26 @@
         class="absolute top-4 right-4 text-white hover:text-gray-300 p-2 bg-black/50 rounded-full">
         <i class="ph-bold ph-x text-2xl"></i>
     </button>
+</div>
+
+<!-- Strava Execution Modal -->
+<div id="strava-exec-modal"
+    class="fixed inset-0 bg-slate-900/80 z-[60] hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col">
+        <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <img src="/static/img/strava_logo.svg" class="h-4" alt="Strava">
+                Sélectionner une activité
+            </h3>
+            <button onclick="closeStravaExecModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <i class="ph ph-x text-lg"></i>
+            </button>
+        </div>
+
+        <div id="strava-exec-list" class="flex-1 overflow-y-auto p-4 space-y-2">
+            <!-- Content loaded via JS -->
+        </div>
+    </div>
 </div>
 
 <!-- Tabs & Rating Logic -->
@@ -686,6 +713,118 @@
                 star.classList.replace('ph-fill', 'ph');
             }
         }
+    }
+
+    // Strava Execution Import
+    const stravaExecModal = document.getElementById('strava-exec-modal');
+    const stravaExecList = document.getElementById('strava-exec-list');
+    const durationInput = document.querySelector('input[name="duration_str"]');
+    const dateInput = document.getElementById('exec-date-input');
+    const commentInput = document.querySelector('textarea[name="comment"]');
+
+    function openStravaExecModal() {
+        stravaExecModal.classList.remove('hidden');
+        loadStravaExecActivities();
+    }
+
+    function closeStravaExecModal() {
+        stravaExecModal.classList.add('hidden');
+    }
+
+    function loadStravaExecActivities() {
+        stravaExecList.innerHTML = `
+            <div class="text-center py-8">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FC4C02] mx-auto"></div>
+                <p class="mt-2 text-xs text-slate-500">Chargement...</p>
+            </div>
+        `;
+
+        fetch('/auth/strava/activities')
+            .then(res => {
+                if (res.status === 401) {
+                    // Open login in new window or redirect? Redirect loses context. 
+                    // Let's assume user might verify link first. 
+                    // Or precise redirect.
+                    window.location.href = '/auth/strava/login?next=' + encodeURIComponent(window.location.pathname + '#community');
+                    return;
+                }
+                if (!res.ok) throw new Error('Erreur Strava');
+                return res.json();
+            })
+            .then(data => {
+                if (Array.isArray(data)) {
+                    renderStravaExecList(data);
+                } else {
+                    throw new Error("Format invalide");
+                }
+            })
+            .catch(err => {
+                stravaExecList.innerHTML = `
+                    <div class="text-center py-6 text-red-500">
+                        <p class="text-xs font-bold">Erreur : ${err.message}</p>
+                        <a href="/auth/strava/login?next=${encodeURIComponent(window.location.pathname + '#community')}" class="mt-2 inline-block px-3 py-1 bg-[#FC4C02] text-white rounded text-xs font-bold">Connexion Strava</a>
+                    </div>
+                `;
+            });
+    }
+
+    function renderStravaExecList(activities) {
+        if (!activities || activities.length === 0) {
+            stravaExecList.innerHTML = `<p class="text-center text-slate-400 py-6 text-xs">Aucune activité récente.</p>`;
+            return;
+        }
+
+        stravaExecList.innerHTML = activities.map(activity => {
+            const dateObj = new Date(activity.start_date);
+            const dateStr = dateObj.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+
+            // Format duration HH:MM:SS
+            const s = activity.moving_time % 60;
+            const m = Math.floor((activity.moving_time / 60) % 60);
+            const h = Math.floor(activity.moving_time / 3600);
+            const durationFormatted = (h > 0 ? h + ':' : '') + (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+
+            return `
+            <div onclick='selectStravaActivity(${JSON.stringify(activity).replace(/'/g, "&apos;")})' 
+                 class="cursor-pointer p-3 rounded-xl border border-slate-100 hover:border-[#FC4C02] hover:bg-orange-50 transition-all flex justify-between items-center text-left">
+                <div>
+                    <h4 class="font-bold text-slate-800 text-sm group-hover:text-[#FC4C02] transition-colors">${activity.name}</h4>
+                    <p class="text-[10px] text-slate-500 mt-0.5">
+                        <span class="font-mono font-medium text-slate-600">${dateStr}</span> • 
+                        ${(activity.distance / 1000).toFixed(1)}km • ${Math.round(activity.total_elevation_gain)}m+
+                    </p>
+                </div>
+                <div class="font-mono font-bold text-brand-600 text-xs bg-white border border-slate-200 px-2 py-1 rounded">
+                    ${durationFormatted}
+                </div>
+            </div>
+            `;
+        }).join('');
+    }
+
+    function selectStravaActivity(activity) {
+        // Fill Form
+
+        // 1. Date (YYYY-MM-DD)
+        const dateObj = new Date(activity.start_date);
+        const yyyy = dateObj.getFullYear();
+        const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const dd = String(dateObj.getDate()).padStart(2, '0');
+        dateInput.value = `${yyyy}-${mm}-${dd}`;
+
+        // 2. Duration (HH:mm:ss)
+        const s = activity.moving_time % 60;
+        const m = Math.floor((activity.moving_time / 60) % 60);
+        const h = Math.floor(activity.moving_time / 3600);
+        // Ensure format matches backend parsing
+        durationInput.value = (h > 0 ? h + 'h' : '') + m + 'm'; // Using h/m format which backend supports and is readable
+
+        // 3. Comment
+        if (!commentInput.value) {
+            commentInput.value = `Importé de Strava : ${activity.name}`;
+        }
+
+        closeStravaExecModal();
     }
 </script>
 

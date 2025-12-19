@@ -225,6 +225,17 @@ async def public_profile(
         models.Track.user_id == target_user.id,
         models.Track.visibility == models.Visibility.PUBLIC
     ).order_by(models.Track.created_at.desc()).all()
+
+    # Calculate Totals
+    total_km = sum(t.distance_km for t in public_tracks if t.distance_km)
+    total_elev = sum(t.elevation_gain for t in public_tracks if t.elevation_gain)
+
+    # Fetch recorded executions 
+    # Logic: executions are linked to user_id. We might want only those on public tracks? 
+    # Or all executions? Let's show all executions for now as it's the user's log.
+    executions = db.query(models.TrackExecution).filter(
+        models.TrackExecution.user_id == target_user.id
+    ).order_by(models.TrackExecution.execution_date.desc()).all()
     
     from ..dependencies import get_current_user_optional
     viewer = await get_current_user_optional(request, db)
@@ -233,5 +244,9 @@ async def public_profile(
         "request": request,
         "user": target_user, # The profile owner
         "viewer": viewer, # The person watching (can be None)
-        "tracks": public_tracks
+        "tracks": public_tracks,
+        "total_km": total_km,
+        "total_elev": total_elev,
+        "executions": executions,
+        "execution_count": len(executions)
     })
