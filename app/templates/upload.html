@@ -821,7 +821,7 @@
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'imported' || data.status === 'duplicate') {
-                    window.location.href = `/tracks/${data.id}/edit`;
+                    window.location.href = `/track/${data.id}/edit`;
                 } else {
                     throw new Error(data.detail || 'Erreur inconnue');
                 }
