@@ -594,9 +594,6 @@ async def import_strava_activity(
         location_city = city,
         location_region = region,
         location_country = country, 
-    )
-    
-        location_country = country,
         
         # Detailed Metrics from Analytics
         distance_km = metrics["distance_km"],
