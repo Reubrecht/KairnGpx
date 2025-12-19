@@ -617,15 +617,14 @@ async def import_strava_activity(
         tags = all_tags,
         
         # Environments & Extras from Form
-        environment_tags = environment,
+        environment = environment,
         scenery_rating = scenery_rating,
         water_points_count = water_points_count,
         
         # Race Info
-        is_official_race = is_official_bot,
-        race_name = race_name,
-        race_year = race_year,
-        race_route_name = race_route_name
+        is_official_route = is_official_bot,
+        # race_name, race_year, race_route_name need separate handling (RaceRoute creation)
+        # For now, excluding them to prevent TypeError as Track model doesn't have these fields.
     )
 
     
