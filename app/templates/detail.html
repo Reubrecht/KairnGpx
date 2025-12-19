@@ -1,12 +1,11 @@
 ﻿{% extends "base.html" %}
 
 {% block content %}
-<div class="relative w-full h-[calc(100vh-64px)] flex flex-col md:block">
+<div class="relative w-full h-[calc(100vh-64px)] block">
 
     <!-- Map Container -->
     <!-- Mobile: Top 40-50% height. Desktop: Fixed full background -->
-    <div id="map-container"
-        class="relative w-full h-[50vh] md:fixed md:inset-x-0 md:bottom-0 md:top-[64px] md:h-auto md:z-0 bg-slate-50">
+    <div id="map-container" class="fixed inset-x-0 bottom-0 top-[64px] z-0 bg-slate-50">
         <div id="map" class="h-full w-full"></div>
 
         <!-- MAP CONTROLS (Top Right) -->
@@ -66,15 +65,14 @@
 
     <!-- Scrollable Content Container -->
     <!-- Mobile: Remaining height, scrollable. Desktop: Overlay card -->
-    <div
-        class="flex-1 bg-white relative z-10 md:bg-transparent md:pointer-events-none overflow-y-auto md:overflow-visible">
+    <div class="relative z-10 bg-transparent pointer-events-none h-full overflow-y-auto">
 
         <!-- Desktop Spacer -->
-        <div class="hidden md:block h-[50vh] w-full"></div>
+        <div class="h-[45vh] md:h-[50vh] w-full transition-all"></div>
 
         <!-- Main Card -->
         <div
-            class="bg-white md:rounded-t-3xl md:shadow-[0_-8px_30px_rgba(0,0,0,0.12)] md:border-t md:border-gray-100 md:min-h-[60vh] md:pointer-events-auto p-4 md:p-8">
+            class="bg-white rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.12)] border-t border-gray-100 min-h-[60vh] pointer-events-auto p-4 md:p-8">
 
             <!-- Mobile Drag Handle -->
             <div class="w-full flex justify-center py-2 md:py-4 mb-2">
@@ -1133,16 +1131,6 @@
             });
 
             // --- 0.5 Add Satellite Layer (Hidden by default) ---
-            // Find the first symbol layer to place satellite below labels
-            let firstSymbolId = null;
-            const layers = map.getStyle().layers;
-            for (let i = 0; i < layers.length; i++) {
-                if (layers[i].type === 'symbol') {
-                    firstSymbolId = layers[i].id;
-                    break;
-                }
-            }
-
             map.addLayer({
                 'id': 'satellite-layer',
                 'type': 'raster',
@@ -1151,7 +1139,7 @@
                     'raster-opacity': 0,
                     'raster-fade-duration': 300
                 }
-            }, firstSymbolId); // Insert BEFORE labels
+            });
 
 
 
@@ -1190,7 +1178,7 @@
             coords.forEach(coord => bounds.extend(coord));
 
             // Calculate dynamic bottom padding (approx 50% of screen height for card overlay)
-            const bottomPadding = window.innerHeight < 768 ? window.innerHeight * 0.45 : window.innerHeight * 0.55;
+            const bottomPadding = window.innerHeight * 0.55;
 
             map.fitBounds(bounds, {
                 padding: { top: 80, bottom: bottomPadding, left: 50, right: 50 },
