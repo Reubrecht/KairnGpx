@@ -456,6 +456,25 @@ async def import_strava_activity(activity_id: str, db: Session = Depends(get_db)
          
     streams = streams_resp.json()
     
+    # Extract Coordinates for Map & Location
+    start_lat, start_lon = None, None
+    end_lat, end_lon = None, None
+    
+    # Strava returns streams as a list of dicts if key_by_type=false, BUT key_by_type=true gives a dict.
+    # We used key_by_type=true.
+    # streams structure: { "latlng": {"data": [[lat, lon], ...]}, ... }
+    
+    if "latlng" in streams and "data" in streams["latlng"] and len(streams["latlng"]["data"]) > 0:
+        coords_data = streams["latlng"]["data"]
+        start_lat, start_lon = coords_data[0]
+        end_lat, end_lon = coords_data[-1]
+        
+    # Geocode Location
+    city, region, country = None, None, None
+    if start_lat and start_lon:
+        city, region, country = utils.get_location_info(start_lat, start_lon)
+
+    
     # 3. Convert to GPX
     gpx_content = convert_streams_to_gpx(activity_details, streams)
     
@@ -488,7 +507,16 @@ async def import_strava_activity(activity_id: str, db: Session = Depends(get_db)
         source_type=models.SourceType.STRAVA_IMPORT,
         file_path=f"app/uploads/{filename}",
         file_hash=file_hash,
-        visibility=models.Visibility.PRIVATE 
+        visibility=models.Visibility.PRIVATE,
+        
+        # Location & Coords
+        start_lat = start_lat,
+        start_lon = start_lon,
+        end_lat = end_lat,
+        end_lon = end_lon,
+        location_city = city,
+        location_region = region,
+        location_country = country, 
     )
     
     # Metrics
