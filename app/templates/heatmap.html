@@ -165,12 +165,36 @@
         const map = new maplibregl.Map({
             container: 'map',
             style: '/static/style.json', // Local style
-            center: [2.2137, 46.2276], // France center
+            center: [2.2137, 46.2276], // Default France center (fallback)
             zoom: 5.5,
             pitch: 0,
             bearing: 0,
             antialias: true
         });
+
+        // Determine bounds of all tracks to auto-focus
+        if (tracksRaw && tracksRaw.length > 0) {
+            const bounds = new maplibregl.LngLatBounds();
+            let hasValidCoords = false;
+
+            tracksRaw.forEach(t => {
+                if (t.start_lat != null && t.start_lon != null) {
+                    bounds.extend([t.start_lon, t.start_lat]);
+                    hasValidCoords = true;
+                }
+            });
+
+            if (hasValidCoords) {
+                // Use fitBounds to focus on the data
+                // We do this immediately or on load? Usually safer on load or immediately if container ready.
+                // Doing it nicely:
+                map.fitBounds(bounds, {
+                    padding: 80,
+                    maxZoom: 12, // Don't zoom in too close if only 1 point
+                    animate: false // Instant fit on init
+                });
+            }
+        }
 
         // Global State
         let hoveredTrackId = null;
@@ -360,7 +384,11 @@
                         const popup = new maplibregl.Popup({ offset: 25 })
                             .setHTML(`
                                 <div class="p-3 text-center min-w-[120px]">
-                                    <h3 class="font-bold text-slate-800 text-sm">${u.username}</h3>
+                                    <h3 class="font-bold text-slate-800 text-sm">
+                                        <a href="/user/${encodeURIComponent(u.username)}" class="hover:text-brand-600 hover:underline">
+                                            ${u.username}
+                                        </a>
+                                    </h3>
                                     <p class="text-xs text-slate-500">${u.location_city || 'Localisation inconnue'}</p>
                                 </div>
                             `);

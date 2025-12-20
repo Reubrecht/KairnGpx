@@ -899,6 +899,11 @@ async def edit_track_action(
     activity_type: str = Form(...),
     environment: List[str] = Form([]),
     tags: str = Form(None),
+    # Admin Fields
+    action: Optional[str] = Form(None),
+    owner_name: Optional[str] = Form(None),
+    verification_status: Optional[str] = Form(None),
+    is_official: bool = Form(False),
     db: Session = Depends(get_db)
 ):
     user = await get_current_user(request, db)
@@ -910,6 +915,24 @@ async def edit_track_action(
     if track.user_id != user.id and not user.is_admin:
         raise HTTPException(status_code=403, detail="Not authorized")
 
+    # --- 1. HANDLE ACTIONS (Delete, etc) ---
+    if action == "delete_force":
+        if not user.is_admin:
+            raise HTTPException(status_code=403, detail="Admin only")
+            
+        try:
+            # Delete file
+            if track.file_path and os.path.exists(track.file_path):
+                os.remove(track.file_path)
+        except Exception as e:
+            print(f"Error removing file during force delete: {e}")
+            
+        db.delete(track)
+        db.commit()
+        
+        return RedirectResponse(url="/profile", status_code=303)
+
+    # --- 2. STANDARD UPDATES ---
     track.title = title
     track.description = description
     track.visibility = models.Visibility(visibility)
@@ -933,7 +956,24 @@ async def edit_track_action(
     
     track.environment = environment
     track.tags = [t.strip() for t in tags.split(',')] if tags else []
-    
+
+    # --- 3. ADMIN UPDATES ---
+    if user.is_admin:
+        if owner_name:
+             new_owner = db.query(models.User).filter(models.User.username == owner_name).first()
+             if new_owner:
+                 track.user_id = new_owner.id
+                 track.uploader_name = new_owner.username
+        
+        if verification_status:
+             try:
+                 track.verification_status = models.VerificationStatus(verification_status)
+             except:
+                 pass
+        
+        # Checkbox for official route (admin overwrite)
+        track.is_official_route = is_official
+
     db.commit()
     
     return RedirectResponse(url=f"/track/{track_id}", status_code=303)
