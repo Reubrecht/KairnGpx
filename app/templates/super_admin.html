@@ -220,51 +220,52 @@
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- ALERTS -->
-        <div x-show="window.location.href.includes('success=true')"
-            class="bg-green-100 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-6 flex items-center gap-3"
-            role="alert">
-            <i class="ph-fill ph-check-circle text-xl"></i>
-            <span class="font-bold">Email envoyé avec succès !</span>
-        </div>
-        <div x-show="window.location.href.includes('error=true')"
-            class="bg-red-100 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 flex items-center gap-3"
-            role="alert">
-            <i class="ph-fill ph-warning-circle text-xl"></i>
-            <span class="font-bold">Erreur lors de l'envoi de l'email. Vérifiez les logs.</span>
-        </div>
-</div>
 
-<!-- EVENTS MANAGER (TREE VIEW) -->
-<div x-show="currentTab === 'events'" class="animate-fade-in-up" x-data="{ eventQuery: '' }">
-    <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-        <h2 class="text-3xl font-black text-slate-900 shrink-0">Catalogue des Courses</h2>
-
-        <div class="flex-1 w-full max-w-md mx-4">
-            <div class="relative">
-                <i class="ph-bold ph-magnifying-glass absolute left-3 top-2.5 text-slate-400"></i>
-                <input type="text" x-model="eventQuery" placeholder="Rechercher (Nom, Slug, Année)..."
-                    class="w-full pl-10 pr-4 py-2 rounded-xl border-slate-200 bg-white focus:ring-2 focus:ring-brand-500 transition-shadow shadow-sm">
+            <!-- ALERTS -->
+            <div x-show="window.location.href.includes('success=true')"
+                class="bg-green-100 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-6 flex items-center gap-3"
+                role="alert">
+                <i class="ph-fill ph-check-circle text-xl"></i>
+                <span class="font-bold">Email envoyé avec succès !</span>
             </div>
-        </div>
+            <div x-show="window.location.href.includes('error=true')"
+                class="bg-red-100 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 flex items-center gap-3"
+                role="alert">
+                <i class="ph-fill ph-warning-circle text-xl"></i>
+                <span class="font-bold">Erreur lors de l'envoi de l'email. Vérifiez les logs.</span>
+            </div>
 
-        <div class="flex gap-2 shrink-0">
-            <button onclick="document.getElementById('modal-import-races').showModal()"
-                class="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-4 py-2 rounded-xl font-bold text-sm flex items-center transition-all">
-                <i class="ph-bold ph-upload-simple mr-2"></i> Import JSON
-            </button>
-            <a href="/superadmin/event/new"
-                class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-brand-500/30 transition-all">
-                <i class="ph-bold ph-plus mr-2"></i> Nouvel Événement
-            </a>
-        </div>
-    </div>
 
-    <div class="space-y-4">
-        {% for event in events %}
-        <div x-show="!eventQuery || $el.textContent.toLowerCase().includes(eventQuery.toLowerCase())" x-data="{ 
+            <!-- EVENTS MANAGER (TREE VIEW) -->
+            <div x-show="currentTab === 'events'" class="animate-fade-in-up" x-data="{ eventQuery: '' }">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                    <h2 class="text-3xl font-black text-slate-900 shrink-0">Catalogue des Courses</h2>
+
+                    <div class="flex-1 w-full max-w-md mx-4">
+                        <div class="relative">
+                            <i class="ph-bold ph-magnifying-glass absolute left-3 top-2.5 text-slate-400"></i>
+                            <input type="text" x-model="eventQuery" placeholder="Rechercher (Nom, Slug, Année)..."
+                                class="w-full pl-10 pr-4 py-2 rounded-xl border-slate-200 bg-white focus:ring-2 focus:ring-brand-500 transition-shadow shadow-sm">
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2 shrink-0">
+                        <button onclick="document.getElementById('modal-import-races').showModal()"
+                            class="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-4 py-2 rounded-xl font-bold text-sm flex items-center transition-all">
+                            <i class="ph-bold ph-upload-simple mr-2"></i> Import JSON
+                        </button>
+                        <a href="/superadmin/event/new"
+                            class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-brand-500/30 transition-all">
+                            <i class="ph-bold ph-plus mr-2"></i> Nouvel Événement
+                        </a>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    {% for event in events %}
+                    <div x-show="!eventQuery || $el.textContent.toLowerCase().includes(eventQuery.toLowerCase())"
+                        x-data="{ 
                         open: (window.location.hash === '#event-{{ event.id }}'),
                         init() {
                             if (this.open) {
@@ -272,301 +273,318 @@
                             }
                         }
                     }" id="event-{{ event.id }}"
-            class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <!-- Event Header -->
-            <div class="p-4 flex items-center justify-between bg-slate-50/50 hover:bg-slate-50 transition-colors cursor-pointer"
-                onclick="window.location.href='/superadmin/event/{{ event.id }}/edit'">
-                <div class="flex items-center gap-4">
-                    <button @click.stop="open = !open"
-                        class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 transition-transform duration-200 hover:text-brand-600 hover:border-brand-300"
-                        :class="{ 'rotate-90': open }">
-                        <i class="ph-bold ph-caret-right"></i>
-                    </button>
-                    <div>
-                        <h3 class="font-bold text-slate-900 text-lg hover:text-brand-600 transition-colors">{{
-                            event.name }}</h3>
-                        <div class="flex items-center gap-2 text-xs text-slate-500">
-                            <span class="bg-slate-200 px-1.5 py-0.5 rounded text-slate-600 font-mono">{{
-                                event.slug }}</span>
-                            <span>•</span>
-                            <span>{{ event.editions|length }} éditions</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <a href="/superadmin/event/{{ event.id }}/edit"
-                        class="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
-                        title="Éditer">
-                        <i class="ph-bold ph-pencil-simple"></i>
-                    </a>
-                    <form action="/superadmin/events/{{ event.id }}/delete" method="POST"
-                        onsubmit="return confirm('Supprimer cet événement et TOUTES ses éditions/parcours ?');">
-                        <button type="submit" @click.stop
-                            class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Supprimer">
-                            <i class="ph-bold ph-trash"></i>
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Nested Editions -->
-            <div x-show="open" x-collapse class="border-t border-slate-100">
-                <div class="p-4 pl-16 space-y-4 bg-slate-50/30">
-                    <!-- Add Edition Button -->
-                    <form action="/superadmin/event/{{ event.id }}/add_edition" method="POST" class="flex gap-2 mb-4">
-                        <input type="number" name="year" placeholder="Année (ex: 2026)"
-                            class="w-24 px-3 py-1.5 text-sm rounded-lg border-slate-200" required>
-                        <button type="submit"
-                            class="text-xs font-bold bg-white border border-slate-200 px-3 py-1.5 rounded-lg hover:border-brand-500 hover:text-brand-600 transition-colors">+
-                            Ajouter Édition</button>
-                    </form>
-
-                    {% for edition in event.editions %}
-                    <div x-data="{ edOpen: false }"
-                        class="bg-white rounded-xl border border-slate-200/60 overflow-hidden">
-                        <div class="p-3 flex items-center justify-between cursor-pointer hover:bg-slate-50"
-                            @click="edOpen = !edOpen">
-                            <div class="flex items-center gap-3">
-                                <i class="ph-bold ph-caret-right text-xs text-slate-400 transition-transform"
-                                    :class="{ 'rotate-90': edOpen }"></i>
-                                <span class="font-bold text-slate-800">Édition {{ edition.year }}</span>
-                                <span class="text-xs text-slate-400">({{ edition.routes|length }}
-                                    parcours)</span>
+                        class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <!-- Event Header -->
+                        <div class="p-4 flex items-center justify-between bg-slate-50/50 hover:bg-slate-50 transition-colors cursor-pointer"
+                            onclick="window.location.href='/superadmin/event/{{ event.id }}/edit'">
+                            <div class="flex items-center gap-4">
+                                <button @click.stop="open = !open"
+                                    class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 transition-transform duration-200 hover:text-brand-600 hover:border-brand-300"
+                                    :class="{ 'rotate-90': open }">
+                                    <i class="ph-bold ph-caret-right"></i>
+                                </button>
+                                <div>
+                                    <h3 class="font-bold text-slate-900 text-lg hover:text-brand-600 transition-colors">
+                                        {{
+                                        event.name }}</h3>
+                                    <div class="flex items-center gap-2 text-xs text-slate-500">
+                                        <span class="bg-slate-200 px-1.5 py-0.5 rounded text-slate-600 font-mono">{{
+                                            event.slug }}</span>
+                                        <span>•</span>
+                                        <span>{{ event.editions|length }} éditions</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="flex gap-2">
-                                <!-- Add Route Modal Trigger (We'll use a generic form populated by JS ideally, but let's keep it simple inline for now) -->
+                            <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <a href="/superadmin/event/{{ event.id }}/edit"
+                                    class="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
+                                    title="Éditer">
+                                    <i class="ph-bold ph-pencil-simple"></i>
+                                </a>
+                                <form action="/superadmin/events/{{ event.id }}/delete" method="POST"
+                                    onsubmit="return confirm('Supprimer cet événement et TOUTES ses éditions/parcours ?');">
+                                    <button type="submit" @click.stop
+                                        class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        title="Supprimer">
+                                        <i class="ph-bold ph-trash"></i>
+                                    </button>
+                                </form>
                             </div>
                         </div>
 
-                        <!-- Routes List -->
-                        <div x-show="edOpen" class="border-t border-slate-100 p-3 pl-8 bg-slate-50/50 overflow-x-auto">
-                            <table class="w-full text-sm text-left">
-                                <thead class="text-xs text-slate-400 uppercase font-bold">
-                                    <tr>
-                                        <th class="py-2">Nom</th>
-                                        <th class="py-2">Distance</th>
-                                        <th class="py-2">D+</th>
-                                        <th class="py-2">Trace Officielle</th>
-                                        <th class="py-2 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100">
-                                    {% for route in edition.routes %}
-                                    <tr class="group hover:bg-slate-100/50 transition-colors">
-                                        <td class="py-2 font-medium text-slate-700">{{ route.name }}</td>
-                                        <td class="py-2 text-slate-500">{{ route.distance_km }} km</td>
-                                        <td class="py-2 text-slate-500">{{ route.elevation_gain }} m</td>
-                                        <td class="py-2">
-                                            {% if route.official_track %}
-                                            <a href="/track/{{ route.official_track.id }}" target="_blank"
-                                                class="flex items-center gap-1 text-green-600 text-xs font-bold hover:underline">
-                                                <i class="ph-fill ph-check-circle"></i> Liée
-                                            </a>
-                                            {% else %}
-                                            <span class="text-slate-400 text-xs italic">Aucune</span>
-                                            {% endif %}
-                                        </td>
-                                        <td class="py-2 text-right relative" x-data="{ showLinkMenu: false }">
-                                            <button @click="showLinkMenu = !showLinkMenu"
-                                                class="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-600">
-                                                <i class="ph-bold ph-dots-three-vertical"></i>
-                                            </button>
+                        <!-- Nested Editions -->
+                        <div x-show="open" x-collapse class="border-t border-slate-100">
+                            <div class="p-4 pl-16 space-y-4 bg-slate-50/30">
+                                <!-- Add Edition Button -->
+                                <form action="/superadmin/event/{{ event.id }}/add_edition" method="POST"
+                                    class="flex gap-2 mb-4">
+                                    <input type="number" name="year" placeholder="Année (ex: 2026)"
+                                        class="w-24 px-3 py-1.5 text-sm rounded-lg border-slate-200" required>
+                                    <button type="submit"
+                                        class="text-xs font-bold bg-white border border-slate-200 px-3 py-1.5 rounded-lg hover:border-brand-500 hover:text-brand-600 transition-colors">+
+                                        Ajouter Édition</button>
+                                </form>
 
-                                            <!-- Dropdown to Upload/Link -->
-                                            <div x-show="showLinkMenu" @click.away="showLinkMenu = false"
-                                                class="absolute right-0 top-8 w-48 bg-white shadow-xl rounded-lg border border-slate-100 z-10 p-1 flex flex-col gap-1">
-                                                <div
-                                                    class="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase bg-slate-50">
-                                                    Gestion Trace</div>
-                                                <form action="/superadmin/routes/{{ route.id }}/link_existing_track"
-                                                    method="POST" class="p-2 border-b border-slate-100">
-                                                    <div class="flex items-center gap-1">
-                                                        <input type="text" name="track_input" placeholder="ID ou URL..."
-                                                            class="w-full text-[10px] px-2 py-1 rounded border-slate-200 focus:border-brand-500"
-                                                            required>
-                                                        <button type="submit"
-                                                            class="p-1 text-brand-600 hover:bg-brand-50 rounded">
-                                                            <i class="ph-bold ph-check"></i>
+                                {% for edition in event.editions %}
+                                <div x-data="{ edOpen: false }"
+                                    class="bg-white rounded-xl border border-slate-200/60 overflow-hidden">
+                                    <div class="p-3 flex items-center justify-between cursor-pointer hover:bg-slate-50"
+                                        @click="edOpen = !edOpen">
+                                        <div class="flex items-center gap-3">
+                                            <i class="ph-bold ph-caret-right text-xs text-slate-400 transition-transform"
+                                                :class="{ 'rotate-90': edOpen }"></i>
+                                            <span class="font-bold text-slate-800">Édition {{ edition.year }}</span>
+                                            <span class="text-xs text-slate-400">({{ edition.routes|length }}
+                                                parcours)</span>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <!-- Add Route Modal Trigger (We'll use a generic form populated by JS ideally, but let's keep it simple inline for now) -->
+                                        </div>
+                                    </div>
+
+                                    <!-- Routes List -->
+                                    <div x-show="edOpen"
+                                        class="border-t border-slate-100 p-3 pl-8 bg-slate-50/50 overflow-x-auto">
+                                        <table class="w-full text-sm text-left">
+                                            <thead class="text-xs text-slate-400 uppercase font-bold">
+                                                <tr>
+                                                    <th class="py-2">Nom</th>
+                                                    <th class="py-2">Distance</th>
+                                                    <th class="py-2">D+</th>
+                                                    <th class="py-2">Trace Officielle</th>
+                                                    <th class="py-2 text-right">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-slate-100">
+                                                {% for route in edition.routes %}
+                                                <tr class="group hover:bg-slate-100/50 transition-colors">
+                                                    <td class="py-2 font-medium text-slate-700">{{ route.name }}</td>
+                                                    <td class="py-2 text-slate-500">{{ route.distance_km }} km</td>
+                                                    <td class="py-2 text-slate-500">{{ route.elevation_gain }} m</td>
+                                                    <td class="py-2">
+                                                        {% if route.official_track %}
+                                                        <a href="/track/{{ route.official_track.id }}" target="_blank"
+                                                            class="flex items-center gap-1 text-green-600 text-xs font-bold hover:underline">
+                                                            <i class="ph-fill ph-check-circle"></i> Liée
+                                                        </a>
+                                                        {% else %}
+                                                        <span class="text-slate-400 text-xs italic">Aucune</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td class="py-2 text-right relative"
+                                                        x-data="{ showLinkMenu: false }">
+                                                        <button @click="showLinkMenu = !showLinkMenu"
+                                                            class="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-600">
+                                                            <i class="ph-bold ph-dots-three-vertical"></i>
                                                         </button>
-                                                    </div>
-                                                </form>
-                                                <form action="/superadmin/routes/{{ route.id }}/link_track"
-                                                    method="POST" enctype="multipart/form-data">
-                                                    <label
-                                                        class="block px-3 py-2 text-xs text-slate-600 hover:bg-slate-50 hover:text-brand-600 cursor-pointer rounded flex items-center gap-2 transition-colors">
-                                                        <i class="ph-bold ph-upload-simple text-sm"></i>
-                                                        Importer GPX
-                                                        <input type="file" name="file" class="hidden" accept=".gpx"
-                                                            onchange="if(confirm('Importer cette trace pour {{ route.name }} ?')) this.form.submit()">
-                                                    </label>
-                                                </form>
-                                                {% if route.official_track %}
-                                                <a href="/track/{{ route.official_track.id }}/edit"
-                                                    class="block px-3 py-2 text-xs text-slate-600 hover:bg-slate-50 hover:text-brand-600 rounded flex items-center gap-2 transition-colors">
-                                                    <i class="ph-bold ph-pencil-simple text-sm"></i> Éditer
-                                                    Trace
-                                                </a>
-                                                {% endif %}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
 
-                                    <!-- New Route Row -->
-                                    <tr>
-                                        <form action="/superadmin/edition/{{ edition.id }}/add_route" method="POST">
-                                            <td class="py-2"><input type="text" name="name"
-                                                    placeholder="Nom du parcours"
-                                                    class="w-full px-2 py-1 text-xs rounded border-slate-200" required>
-                                            </td>
-                                            <td class="py-2"><input type="number" step="0.1" name="distance_km"
-                                                    placeholder="km"
-                                                    class="w-16 px-2 py-1 text-xs rounded border-slate-200">
-                                            </td>
-                                            <td class="py-2"><input type="number" name="elevation_gain" placeholder="d+"
-                                                    class="w-16 px-2 py-1 text-xs rounded border-slate-200">
-                                            </td>
-                                            <td colspan="2" class="py-2 text-right">
-                                                <button type="submit"
-                                                    class="text-xs bg-slate-800 text-white px-2 py-1 rounded hover:bg-slate-700">Ajouter</button>
-                                            </td>
-                                        </form>
-                                    </tr>
-                                </tbody>
-                            </table>
+                                                        <!-- Dropdown to Upload/Link -->
+                                                        <div x-show="showLinkMenu" @click.away="showLinkMenu = false"
+                                                            class="absolute right-0 top-8 w-48 bg-white shadow-xl rounded-lg border border-slate-100 z-10 p-1 flex flex-col gap-1">
+                                                            <div
+                                                                class="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase bg-slate-50">
+                                                                Gestion Trace</div>
+                                                            <form
+                                                                action="/superadmin/routes/{{ route.id }}/link_existing_track"
+                                                                method="POST" class="p-2 border-b border-slate-100">
+                                                                <div class="flex items-center gap-1">
+                                                                    <input type="text" name="track_input"
+                                                                        placeholder="ID ou URL..."
+                                                                        class="w-full text-[10px] px-2 py-1 rounded border-slate-200 focus:border-brand-500"
+                                                                        required>
+                                                                    <button type="submit"
+                                                                        class="p-1 text-brand-600 hover:bg-brand-50 rounded">
+                                                                        <i class="ph-bold ph-check"></i>
+                                                                    </button>
+                                                                </div>
+                                                            </form>
+                                                            <form action="/superadmin/routes/{{ route.id }}/link_track"
+                                                                method="POST" enctype="multipart/form-data">
+                                                                <label
+                                                                    class="block px-3 py-2 text-xs text-slate-600 hover:bg-slate-50 hover:text-brand-600 cursor-pointer rounded flex items-center gap-2 transition-colors">
+                                                                    <i class="ph-bold ph-upload-simple text-sm"></i>
+                                                                    Importer GPX
+                                                                    <input type="file" name="file" class="hidden"
+                                                                        accept=".gpx"
+                                                                        onchange="if(confirm('Importer cette trace pour {{ route.name }} ?')) this.form.submit()">
+                                                                </label>
+                                                            </form>
+                                                            {% if route.official_track %}
+                                                            <a href="/track/{{ route.official_track.id }}/edit"
+                                                                class="block px-3 py-2 text-xs text-slate-600 hover:bg-slate-50 hover:text-brand-600 rounded flex items-center gap-2 transition-colors">
+                                                                <i class="ph-bold ph-pencil-simple text-sm"></i> Éditer
+                                                                Trace
+                                                            </a>
+                                                            {% endif %}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+
+                                                <!-- New Route Row -->
+                                                <tr>
+                                                    <form action="/superadmin/edition/{{ edition.id }}/add_route"
+                                                        method="POST">
+                                                        <td class="py-2"><input type="text" name="name"
+                                                                placeholder="Nom du parcours"
+                                                                class="w-full px-2 py-1 text-xs rounded border-slate-200"
+                                                                required>
+                                                        </td>
+                                                        <td class="py-2"><input type="number" step="0.1"
+                                                                name="distance_km" placeholder="km"
+                                                                class="w-16 px-2 py-1 text-xs rounded border-slate-200">
+                                                        </td>
+                                                        <td class="py-2"><input type="number" name="elevation_gain"
+                                                                placeholder="d+"
+                                                                class="w-16 px-2 py-1 text-xs rounded border-slate-200">
+                                                        </td>
+                                                        <td colspan="2" class="py-2 text-right">
+                                                            <button type="submit"
+                                                                class="text-xs bg-slate-800 text-white px-2 py-1 rounded hover:bg-slate-700">Ajouter</button>
+                                                        </td>
+                                                    </form>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
                         </div>
                     </div>
                     {% endfor %}
                 </div>
             </div>
-        </div>
-        {% endfor %}
-    </div>
-</div>
 
-<!-- USERS COCKPIT -->
-<div x-show="currentTab === 'users'" class="animate-fade-in-up">
-    <h2 class="text-3xl font-black text-slate-900 mb-8">Utilisateurs</h2>
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <!-- Search/Filter Bar -->
-        <div class="p-4 border-b border-slate-100 flex gap-4">
-            <div class="relative flex-1">
-                <i class="ph-bold ph-magnifying-glass absolute left-3 top-2.5 text-slate-400"></i>
-                <input type="text" placeholder="Rechercher un utilisateur (email, nom)..."
-                    class="w-full pl-10 pr-4 py-2 rounded-xl border-slate-200 bg-slate-50 focus:bg-white transition-colors"
-                    @input="val = $el.value.toLowerCase(); $el.parentElement.parentElement.nextElementSibling.querySelectorAll('tbody tr').forEach(row => {
+            <!-- USERS COCKPIT -->
+            <div x-show="currentTab === 'users'" class="animate-fade-in-up">
+                <h2 class="text-3xl font-black text-slate-900 mb-8">Utilisateurs</h2>
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <!-- Search/Filter Bar -->
+                    <div class="p-4 border-b border-slate-100 flex gap-4">
+                        <div class="relative flex-1">
+                            <i class="ph-bold ph-magnifying-glass absolute left-3 top-2.5 text-slate-400"></i>
+                            <input type="text" placeholder="Rechercher un utilisateur (email, nom)..."
+                                class="w-full pl-10 pr-4 py-2 rounded-xl border-slate-200 bg-slate-50 focus:bg-white transition-colors"
+                                @input="val = $el.value.toLowerCase(); $el.parentElement.parentElement.nextElementSibling.querySelectorAll('tbody tr').forEach(row => {
                             row.style.display = row.innerText.toLowerCase().includes(val) ? 'table-row' : 'none';
                         })">
-            </div>
-        </div>
-
-        <!-- Desktop Table -->
-        <div class="overflow-x-auto desktop-table w-full">
-            <table class="w-full text-left font-mono text-sm whitespace-nowrap table-dense">
-                <thead class="bg-slate-50 text-slate-500 font-bold uppercase">
-                    <tr>
-                        <th>User</th>
-                        <th>Stats</th>
-                        <th>Role</th>
-                        <th class="text-right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    {% for u in users %}
-                    <tr class="hover:bg-slate-50 transition-colors group">
-                        <td>
-                            <div class="flex items-center gap-2">
-                                <div
-                                    class="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-600">
-                                    {{ u.username[:2].upper() }}
-                                </div>
-                                <span class="font-bold text-slate-900">{{ u.username }}</span>
-                                <span class="text-xs text-slate-400">&lt;{{ u.email }}&gt;</span>
-                                {% if u.is_premium %}<i class="ph-fill ph-crown text-amber-500 text-xs"></i>{% endif %}
-                            </div>
-                        </td>
-                        <td>
-                            {% if u.utmb_index %}<span class="bg-slate-100 px-1 rounded text-xs">UTMB:{{ u.utmb_index
-                                }}</span>{% endif %}
-                        </td>
-                        <td>
-                            <span
-                                class="text-[10px] font-bold uppercase px-1 rounded border 
-                                {% if u.role.value == 'super_admin' %}bg-purple-50 text-purple-600 border-purple-100{% elif u.role.value == 'admin' %}bg-blue-50 text-blue-600 border-blue-100{% else %}bg-slate-50 text-slate-500 border-slate-100{% endif %}">
-                                {{ u.role.value }}
-                            </span>
-                        </td>
-                        <td
-                            class="text-right flex justify-end gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
-                            <button data-id="{{ u.id }}" data-username="{{ u.username }}" data-email="{{ u.email }}"
-                                data-utmb="{{ u.utmb_index or '' }}" data-role="{{ u.role.value }}"
-                                data-premium="{{ u.is_premium|string|lower }}" data-fullname="{{ u.full_name or '' }}"
-                                data-profile-picture="{{ u.profile_picture or '' }}"
-                                onclick="openUserEditModal(this.dataset.id, this.dataset.username, this.dataset.email, this.dataset.utmb, this.dataset.role, this.dataset.premium, this.dataset.fullname, this.dataset.profilePicture)"
-                                class="text-blue-500 hover:bg-blue-50 p-1 rounded"><i
-                                    class="ph-bold ph-pencil-simple"></i></button>
-
-                            <form action="/superadmin/user/{{ u.id }}/toggle_premium" method="POST" class="inline">
-                                <button class="text-amber-500 hover:bg-amber-50 p-1 rounded"><i
-                                        class="ph-bold ph-crown"></i></button>
-                            </form>
-
-                            <form action="/superadmin/user/{{ u.id }}/delete" method="POST"
-                                onsubmit="return confirm('Supprimer ?')" class="inline">
-                                <button class="text-red-500 hover:bg-red-50 p-1 rounded"><i
-                                        class="ph-bold ph-trash"></i></button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Mobile Card Grid -->
-        <div class="mobile-card-grid p-4">
-            {% for u in users %}
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3">
-                <div class="flex justify-between items-start">
-                    <div class="flex items-center gap-3">
-                        <div
-                            class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600">
-                            {{ u.username[:2].upper() }}
-                        </div>
-                        <div>
-                            <div class="font-bold text-slate-900 flex items-center gap-1">
-                                {{ u.username }}
-                                {% if u.is_premium %}<i class="ph-fill ph-crown text-amber-500 text-xs"></i>{% endif %}
-                            </div>
-                            <div class="text-xs text-slate-500 break-all">{{ u.email }}</div>
                         </div>
                     </div>
-                    <span
-                        class="text-[10px] font-bold uppercase px-2 py-1 rounded bg-slate-50 text-slate-500 border border-slate-100">{{
-                        u.role.value }}</span>
-                </div>
 
-                <div class="flex gap-2 border-t border-slate-50 pt-3">
-                    <button data-id="{{ u.id }}" data-username="{{ u.username }}" data-email="{{ u.email }}"
-                        data-utmb="{{ u.utmb_index or '' }}" data-role="{{ u.role.value }}"
-                        data-premium="{{ u.is_premium|string|lower }}" data-fullname="{{ u.full_name or '' }}"
-                        data-profile-picture="{{ u.profile_picture or '' }}"
-                        onclick="openUserEditModal(this.dataset.id, this.dataset.username, this.dataset.email, this.dataset.utmb, this.dataset.role, this.dataset.premium, this.dataset.fullname, this.dataset.profilePicture)"
-                        class="flex-1 py-2 rounded-lg bg-slate-50 text-slate-600 font-bold text-xs hover:bg-slate-100">Éditer</button>
-                    <form action="/superadmin/user/{{ u.id }}/toggle_premium" method="POST" class="flex-1">
-                        <button
-                            class="w-full py-2 rounded-lg bg-amber-50 text-amber-600 font-bold text-xs hover:bg-amber-100">Premium</button>
-                    </form>
+                    <!-- Desktop Table -->
+                    <div class="overflow-x-auto desktop-table w-full">
+                        <table class="w-full text-left font-mono text-sm whitespace-nowrap table-dense">
+                            <thead class="bg-slate-50 text-slate-500 font-bold uppercase">
+                                <tr>
+                                    <th>User</th>
+                                    <th>Stats</th>
+                                    <th>Role</th>
+                                    <th class="text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                {% for u in users %}
+                                <tr class="hover:bg-slate-50 transition-colors group">
+                                    <td>
+                                        <div class="flex items-center gap-2">
+                                            <div
+                                                class="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-600">
+                                                {{ u.username[:2].upper() }}
+                                            </div>
+                                            <span class="font-bold text-slate-900">{{ u.username }}</span>
+                                            <span class="text-xs text-slate-400">&lt;{{ u.email }}&gt;</span>
+                                            {% if u.is_premium %}<i
+                                                class="ph-fill ph-crown text-amber-500 text-xs"></i>{% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if u.utmb_index %}<span class="bg-slate-100 px-1 rounded text-xs">UTMB:{{
+                                            u.utmb_index
+                                            }}</span>{% endif %}
+                                    </td>
+                                    <td>
+                                        <span
+                                            class="text-[10px] font-bold uppercase px-1 rounded border 
+                                {% if u.role.value == 'super_admin' %}bg-purple-50 text-purple-600 border-purple-100{% elif u.role.value == 'admin' %}bg-blue-50 text-blue-600 border-blue-100{% else %}bg-slate-50 text-slate-500 border-slate-100{% endif %}">
+                                            {{ u.role.value }}
+                                        </span>
+                                    </td>
+                                    <td
+                                        class="text-right flex justify-end gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
+                                        <button data-id="{{ u.id }}" data-username="{{ u.username }}"
+                                            data-email="{{ u.email }}" data-utmb="{{ u.utmb_index or '' }}"
+                                            data-role="{{ u.role.value }}"
+                                            data-premium="{{ u.is_premium|string|lower }}"
+                                            data-fullname="{{ u.full_name or '' }}"
+                                            data-profile-picture="{{ u.profile_picture or '' }}"
+                                            onclick="openUserEditModal(this.dataset.id, this.dataset.username, this.dataset.email, this.dataset.utmb, this.dataset.role, this.dataset.premium, this.dataset.fullname, this.dataset.profilePicture)"
+                                            class="text-blue-500 hover:bg-blue-50 p-1 rounded"><i
+                                                class="ph-bold ph-pencil-simple"></i></button>
+
+                                        <form action="/superadmin/user/{{ u.id }}/toggle_premium" method="POST"
+                                            class="inline">
+                                            <button class="text-amber-500 hover:bg-amber-50 p-1 rounded"><i
+                                                    class="ph-bold ph-crown"></i></button>
+                                        </form>
+
+                                        <form action="/superadmin/user/{{ u.id }}/delete" method="POST"
+                                            onsubmit="return confirm('Supprimer ?')" class="inline">
+                                            <button class="text-red-500 hover:bg-red-50 p-1 rounded"><i
+                                                    class="ph-bold ph-trash"></i></button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Mobile Card Grid -->
+                    <div class="mobile-card-grid p-4">
+                        {% for u in users %}
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3">
+                            <div class="flex justify-between items-start">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600">
+                                        {{ u.username[:2].upper() }}
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-slate-900 flex items-center gap-1">
+                                            {{ u.username }}
+                                            {% if u.is_premium %}<i
+                                                class="ph-fill ph-crown text-amber-500 text-xs"></i>{% endif %}
+                                        </div>
+                                        <div class="text-xs text-slate-500 break-all">{{ u.email }}</div>
+                                    </div>
+                                </div>
+                                <span
+                                    class="text-[10px] font-bold uppercase px-2 py-1 rounded bg-slate-50 text-slate-500 border border-slate-100">{{
+                                    u.role.value }}</span>
+                            </div>
+
+                            <div class="flex gap-2 border-t border-slate-50 pt-3">
+                                <button data-id="{{ u.id }}" data-username="{{ u.username }}" data-email="{{ u.email }}"
+                                    data-utmb="{{ u.utmb_index or '' }}" data-role="{{ u.role.value }}"
+                                    data-premium="{{ u.is_premium|string|lower }}"
+                                    data-fullname="{{ u.full_name or '' }}"
+                                    data-profile-picture="{{ u.profile_picture or '' }}"
+                                    onclick="openUserEditModal(this.dataset.id, this.dataset.username, this.dataset.email, this.dataset.utmb, this.dataset.role, this.dataset.premium, this.dataset.fullname, this.dataset.profilePicture)"
+                                    class="flex-1 py-2 rounded-lg bg-slate-50 text-slate-600 font-bold text-xs hover:bg-slate-100">Éditer</button>
+                                <form action="/superadmin/user/{{ u.id }}/toggle_premium" method="POST" class="flex-1">
+                                    <button
+                                        class="w-full py-2 rounded-lg bg-amber-50 text-amber-600 font-bold text-xs hover:bg-amber-100">Premium</button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
-            {% endfor %}
-        </div>
-    </div>
-</div>
 
-<!-- ALL TRACKS MANAGER -->
-<div x-show="currentTab === 'tracks'" class="animate-fade-in-up" x-data="{
+            <!-- ALL TRACKS MANAGER -->
+            <div x-show="currentTab === 'tracks'" class="animate-fade-in-up" x-data="{
         tracks: [],
         query: '',
         loading: false,
@@ -596,345 +614,357 @@
         }
     }" x-init="searchTracks()">
 
-    <h2 class="text-3xl font-black text-slate-900 mb-8">Gestion des Traces</h2>
+                <h2 class="text-3xl font-black text-slate-900 mb-8">Gestion des Traces</h2>
 
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[500px]">
-        <!-- Search Bar -->
-        <div class="p-4 border-b border-slate-100 flex gap-4">
-            <div class="relative flex-1">
-                <i class="ph-bold ph-magnifying-glass absolute left-3 top-2.5 text-slate-400"></i>
-                <input type="text" x-model="query" @keydown.enter="searchTracks()"
-                    placeholder="Rechercher (Titre, Ville, User, Hash, Email)..."
-                    class="w-full pl-10 pr-4 py-2 rounded-xl border-slate-200 bg-slate-50 focus:bg-white transition-colors">
-            </div>
-            <button @click="searchTracks()"
-                class="bg-slate-900 text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-slate-800 transition-colors">
-                <span x-show="!loading">Rechercher</span>
-                <span x-show="loading"><i class="ph-bold ph-spinner animate-spin"></i></span>
-            </button>
-        </div>
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[500px]">
+                    <!-- Search Bar -->
+                    <div class="p-4 border-b border-slate-100 flex gap-4">
+                        <div class="relative flex-1">
+                            <i class="ph-bold ph-magnifying-glass absolute left-3 top-2.5 text-slate-400"></i>
+                            <input type="text" x-model="query" @keydown.enter="searchTracks()"
+                                placeholder="Rechercher (Titre, Ville, User, Hash, Email)..."
+                                class="w-full pl-10 pr-4 py-2 rounded-xl border-slate-200 bg-slate-50 focus:bg-white transition-colors">
+                        </div>
+                        <button @click="searchTracks()"
+                            class="bg-slate-900 text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-slate-800 transition-colors">
+                            <span x-show="!loading">Rechercher</span>
+                            <span x-show="loading"><i class="ph-bold ph-spinner animate-spin"></i></span>
+                        </button>
+                    </div>
 
-        <!-- Desktop Table -->
-        <div class="overflow-x-auto desktop-table w-full">
-            <table class="w-full text-left font-mono text-sm whitespace-nowrap table-dense">
-                <thead class="bg-slate-50 text-slate-500 font-bold uppercase">
-                    <tr>
-                        <th>Titre / Lieu</th>
-                        <th>Stats</th>
-                        <th>Uploader</th>
-                        <th>Status</th>
-                        <th class="text-right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    <template x-for="t in tracks" :key="t.id">
-                        <tr class="hover:bg-slate-50 transition-colors group">
-                            <td>
-                                <div class="font-bold text-slate-900 truncate max-w-[250px]" x-text="t.title"></div>
-                                <div class="text-[10px] text-slate-500 flex items-center gap-1">
-                                    <i class="ph-bold ph-map-pin"></i> <span x-text="t.location || 'N/A'"></span>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="flex gap-1">
-                                    <span
-                                        class="bg-slate-100 text-slate-600 px-1 py-0.5 rounded textxs font-bold font-mono border border-slate-200"
-                                        x-text="t.distance_km + 'km'"></span>
-                                    <span
-                                        class="bg-slate-100 text-slate-600 px-1 py-0.5 rounded textxs font-bold font-mono border border-slate-200"
-                                        x-text="t.elevation_gain + 'd+'"></span>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="text-xs font-bold text-slate-700" x-text="t.uploader"></div>
-                                <div class="text-[10px] text-slate-400" x-text="t.created_at"></div>
-                            </td>
-                            <td>
-                                <span class="px-1 py-0.5 rounded text-[10px] font-bold uppercase border" :class="{
+                    <!-- Desktop Table -->
+                    <div class="overflow-x-auto desktop-table w-full">
+                        <table class="w-full text-left font-mono text-sm whitespace-nowrap table-dense">
+                            <thead class="bg-slate-50 text-slate-500 font-bold uppercase">
+                                <tr>
+                                    <th>Titre / Lieu</th>
+                                    <th>Stats</th>
+                                    <th>Uploader</th>
+                                    <th>Status</th>
+                                    <th class="text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <template x-for="t in tracks" :key="t.id">
+                                    <tr class="hover:bg-slate-50 transition-colors group">
+                                        <td>
+                                            <div class="font-bold text-slate-900 truncate max-w-[250px]"
+                                                x-text="t.title"></div>
+                                            <div class="text-[10px] text-slate-500 flex items-center gap-1">
+                                                <i class="ph-bold ph-map-pin"></i> <span
+                                                    x-text="t.location || 'N/A'"></span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="flex gap-1">
+                                                <span
+                                                    class="bg-slate-100 text-slate-600 px-1 py-0.5 rounded textxs font-bold font-mono border border-slate-200"
+                                                    x-text="t.distance_km + 'km'"></span>
+                                                <span
+                                                    class="bg-slate-100 text-slate-600 px-1 py-0.5 rounded textxs font-bold font-mono border border-slate-200"
+                                                    x-text="t.elevation_gain + 'd+'"></span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="text-xs font-bold text-slate-700" x-text="t.uploader"></div>
+                                            <div class="text-[10px] text-slate-400" x-text="t.created_at"></div>
+                                        </td>
+                                        <td>
+                                            <span class="px-1 py-0.5 rounded text-[10px] font-bold uppercase border"
+                                                :class="{
                                         'bg-green-50 text-green-600 border-green-100': t.status.includes('verified'),
                                         'bg-amber-50 text-amber-600 border-amber-100': t.status === 'pending',
                                         'bg-red-50 text-red-600 border-red-100': t.status === 'rejected'
                                     }" x-text="t.status.replace('verified_', 'OK ').replace('_', ' ')"></span>
-                                <template x-if="t.is_official">
-                                    <span
-                                        class="ml-1 text-[10px] bg-brand-100 text-brand-700 px-1 rounded border border-brand-200 font-bold"
-                                        title="Officiel">OFF</span>
+                                            <template x-if="t.is_official">
+                                                <span
+                                                    class="ml-1 text-[10px] bg-brand-100 text-brand-700 px-1 rounded border border-brand-200 font-bold"
+                                                    title="Officiel">OFF</span>
+                                            </template>
+                                        </td>
+                                        <td
+                                            class="text-right flex justify-end gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
+                                            <a :href="`/track/${t.id}`" target="_blank"
+                                                class="p-1 text-slate-400 hover:text-brand-600 hover:bg-slate-100 rounded"><i
+                                                    class="ph-bold ph-arrow-square-out"></i></a>
+                                            <a :href="`/track/${t.id}/edit`" target="_blank"
+                                                class="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded"><i
+                                                    class="ph-bold ph-pencil-simple"></i></a>
+                                            <button @click="deleteTrack(t.id)"
+                                                class="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded"><i
+                                                    class="ph-bold ph-trash"></i></button>
+                                        </td>
+                                    </tr>
                                 </template>
-                            </td>
-                            <td
-                                class="text-right flex justify-end gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
-                                <a :href="`/track/${t.id}`" target="_blank"
-                                    class="p-1 text-slate-400 hover:text-brand-600 hover:bg-slate-100 rounded"><i
-                                        class="ph-bold ph-arrow-square-out"></i></a>
-                                <a :href="`/track/${t.id}/edit`" target="_blank"
-                                    class="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded"><i
-                                        class="ph-bold ph-pencil-simple"></i></a>
-                                <button @click="deleteTrack(t.id)"
-                                    class="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded"><i
-                                        class="ph-bold ph-trash"></i></button>
-                            </td>
-                        </tr>
-                    </template>
-                    <tr x-show="tracks.length === 0 && !loading">
-                        <td colspan="5" class="p-8 text-center text-slate-400 italic">Aucune trace trouvée.</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+                                <tr x-show="tracks.length === 0 && !loading">
+                                    <td colspan="5" class="p-8 text-center text-slate-400 italic">Aucune trace trouvée.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
 
-        <!-- Mobile Layout -->
-        <div class="mobile-card-grid p-4">
-            <template x-for="t in tracks" :key="t.id">
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <div class="font-bold text-slate-900 text-sm mb-1" x-text="t.title"></div>
-                            <div class="flex gap-2 text-xs text-slate-500 font-mono">
-                                <span x-text="t.distance_km + 'km'"></span> • <span
-                                    x-text="t.elevation_gain + 'd+'"></span>
-                            </div>
-                        </div>
-                        <span class="px-2 py-1 rounded text-[10px] font-bold uppercase border" :class="{
+                    <!-- Mobile Layout -->
+                    <div class="mobile-card-grid p-4">
+                        <template x-for="t in tracks" :key="t.id">
+                            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <div class="font-bold text-slate-900 text-sm mb-1" x-text="t.title"></div>
+                                        <div class="flex gap-2 text-xs text-slate-500 font-mono">
+                                            <span x-text="t.distance_km + 'km'"></span> • <span
+                                                x-text="t.elevation_gain + 'd+'"></span>
+                                        </div>
+                                    </div>
+                                    <span class="px-2 py-1 rounded text-[10px] font-bold uppercase border" :class="{
                             'bg-green-50 text-green-600 border-green-100': t.status.includes('verified'),
                             'bg-amber-50 text-amber-600 border-amber-100': t.status === 'pending',
                             'bg-red-50 text-red-600 border-red-100': t.status === 'rejected'
                         }" x-text="t.status.split('_')[0]"></span>
-                    </div>
+                                </div>
 
+                                <div
+                                    class="flex items-center justify-between text-[10px] text-slate-400 border-t border-slate-50 pt-2">
+                                    <span x-text="t.uploader"></span>
+                                    <span x-text="t.location"></span>
+                                </div>
+
+                                <div class="grid grid-cols-3 gap-2 mt-1">
+                                    <a :href="`/track/${t.id}`" target="_blank"
+                                        class="text-center py-2 bg-slate-50 rounded text-slate-600 hover:bg-slate-100 flex items-center justify-center"><i
+                                            class="ph-bold ph-eye"></i></a>
+                                    <a :href="`/track/${t.id}/edit`" target="_blank"
+                                        class="text-center py-2 bg-blue-50 rounded text-blue-600 hover:bg-blue-100 flex items-center justify-center"><i
+                                            class="ph-bold ph-pencil-simple"></i></a>
+                                    <button @click="deleteTrack(t.id)"
+                                        class="text-center py-2 bg-red-50 rounded text-red-600 hover:bg-red-100 flex items-center justify-center"><i
+                                            class="ph-bold ph-trash"></i></button>
+                                </div>
+                            </div>
+                        </template>
+                        <div x-show="tracks.length === 0 && !loading"
+                            class="text-center p-8 text-slate-400 italic text-sm">
+                            Aucun résultat.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- MODERATION -->
+            <div x-show="currentTab === 'moderation'" class="animate-fade-in-up">
+                <!-- EVENT REQUESTS SECTION -->
+                <div class="mb-12">
+                    <h3 class="text-xl font-bold text-slate-700 mb-4 flex items-center gap-2">
+                        <span
+                            class="bg-indigo-100 text-indigo-700 w-8 h-8 rounded-full flex items-center justify-center text-sm">📍</span>
+                        Demandes d'Événements
+                        {% if event_requests %}
+                        <span class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full ml-2">{{
+                            event_requests|length }}</span>
+                        {% endif %}
+                    </h3>
+
+                    {% if event_requests %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% for req in event_requests %}
+                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                            <div class="flex justify-between items-start mb-3">
+                                <h4 class="font-bold text-slate-900">{{ req.event_name }} {% if req.year %}<span
+                                        class="text-slate-500 text-sm">({{ req.year }})</span>{% endif %}</h4>
+                                <span
+                                    class="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-1 rounded border border-blue-100 uppercase">Demande</span>
+                            </div>
+                            <p class="text-sm text-slate-500 mb-2 italic">"{{ req.comment }}"</p>
+                            {% if req.website %}
+                            <a href="{{ req.website }}" target="_blank"
+                                class="text-xs text-brand-600 hover:underline mb-3 block flex items-center gap-1"><i
+                                    class="ph-bold ph-link"></i> {{ req.website }}</a>
+                            {% endif %}
+                            <div class="text-xs text-slate-400 mb-4">Demandé par <strong>{{ req.user.username
+                                    }}</strong>
+                            </div>
+
+                            <div class="flex gap-2">
+                                <a href="/superadmin/event/new?request_id={{ req.id }}"
+                                    class="flex-1 bg-slate-900 text-white py-2 rounded-lg text-xs font-bold hover:bg-slate-800 transition-colors text-center">
+                                    <i class="ph-bold ph-plus"></i> Créer
+                                </a>
+                                <!-- Add Approve/Reject endpoints? For now manual creation is fine -->
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
                     <div
-                        class="flex items-center justify-between text-[10px] text-slate-400 border-t border-slate-50 pt-2">
-                        <span x-text="t.uploader"></span>
-                        <span x-text="t.location"></span>
+                        class="p-6 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center text-slate-400 text-sm">
+                        Aucune demande d'événement en attente.
                     </div>
-
-                    <div class="grid grid-cols-3 gap-2 mt-1">
-                        <a :href="`/track/${t.id}`" target="_blank"
-                            class="text-center py-2 bg-slate-50 rounded text-slate-600 hover:bg-slate-100 flex items-center justify-center"><i
-                                class="ph-bold ph-eye"></i></a>
-                        <a :href="`/track/${t.id}/edit`" target="_blank"
-                            class="text-center py-2 bg-blue-50 rounded text-blue-600 hover:bg-blue-100 flex items-center justify-center"><i
-                                class="ph-bold ph-pencil-simple"></i></a>
-                        <button @click="deleteTrack(t.id)"
-                            class="text-center py-2 bg-red-50 rounded text-red-600 hover:bg-red-100 flex items-center justify-center"><i
-                                class="ph-bold ph-trash"></i></button>
-                    </div>
+                    {% endif %}
                 </div>
-            </template>
-            <div x-show="tracks.length === 0 && !loading" class="text-center p-8 text-slate-400 italic text-sm">
-                Aucun résultat.
-            </div>
-        </div>
-    </div>
-</div>
-<!-- MODERATION -->
-<div x-show="currentTab === 'moderation'" class="animate-fade-in-up">
-    <!-- EVENT REQUESTS SECTION -->
-    <div class="mb-12">
-        <h3 class="text-xl font-bold text-slate-700 mb-4 flex items-center gap-2">
-            <span
-                class="bg-indigo-100 text-indigo-700 w-8 h-8 rounded-full flex items-center justify-center text-sm">📍</span>
-            Demandes d'Événements
-            {% if event_requests %}
-            <span class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full ml-2">{{
-                event_requests|length }}</span>
-            {% endif %}
-        </h3>
 
-        {% if event_requests %}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {% for req in event_requests %}
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                <div class="flex justify-between items-start mb-3">
-                    <h4 class="font-bold text-slate-900">{{ req.event_name }} {% if req.year %}<span
-                            class="text-slate-500 text-sm">({{ req.year }})</span>{% endif %}</h4>
+                <h3 class="text-xl font-bold text-slate-700 mb-4 flex items-center gap-2">
                     <span
-                        class="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-1 rounded border border-blue-100 uppercase">Demande</span>
-                </div>
-                <p class="text-sm text-slate-500 mb-2 italic">"{{ req.comment }}"</p>
-                {% if req.website %}
-                <a href="{{ req.website }}" target="_blank"
-                    class="text-xs text-brand-600 hover:underline mb-3 block flex items-center gap-1"><i
-                        class="ph-bold ph-link"></i> {{ req.website }}</a>
-                {% endif %}
-                <div class="text-xs text-slate-400 mb-4">Demandé par <strong>{{ req.user.username
-                        }}</strong>
-                </div>
+                        class="bg-amber-100 text-amber-700 w-8 h-8 rounded-full flex items-center justify-center text-sm">⛰️</span>
+                    Traces en Attente
+                    {% if pending_tracks %}
+                    <span class="bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded-full ml-2">{{
+                        pending_tracks|length }}</span>
+                    {% endif %}
+                </h3>
 
-                <div class="flex gap-2">
-                    <a href="/superadmin/event/new?request_id={{ req.id }}"
-                        class="flex-1 bg-slate-900 text-white py-2 rounded-lg text-xs font-bold hover:bg-slate-800 transition-colors text-center">
-                        <i class="ph-bold ph-plus"></i> Créer
-                    </a>
-                    <!-- Add Approve/Reject endpoints? For now manual creation is fine -->
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% else %}
-        <div
-            class="p-6 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center text-slate-400 text-sm">
-            Aucune demande d'événement en attente.
-        </div>
-        {% endif %}
-    </div>
+                {% if pending_tracks %}
+                <div class="grid grid-cols-1 gap-6">
+                    {% for t in pending_tracks %}
+                    <!-- ... Track Cards ... -->
+                    <div
+                        class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col md:flex-row">
+                        <!-- Map Preview (Left) -->
+                        <div
+                            class="w-full md:w-1/3 bg-slate-100 h-64 md:h-auto border-b md:border-b-0 md:border-r border-slate-200 relative isolate">
+                            <div id="map-{{ t.id }}" class="absolute inset-0 z-0"></div>
+                            <!-- Overlays -->
+                            <div
+                                class="absolute inset-0 pointer-events-none bg-gradient-to-t from-gray-900/10 to-transparent z-10">
+                            </div>
+                            <div
+                                class="absolute bottom-2 left-2 z-20 bg-white/90 backdrop-blur px-2 py-1 rounded text-[10px] font-mono font-bold text-slate-600 shadow-sm border border-slate-200">
+                                {{ t.distance_km }}km • {{ t.elevation_gain }}d+
+                            </div>
+                        </div>
 
-    <h3 class="text-xl font-bold text-slate-700 mb-4 flex items-center gap-2">
-        <span
-            class="bg-amber-100 text-amber-700 w-8 h-8 rounded-full flex items-center justify-center text-sm">⛰️</span>
-        Traces en Attente
-        {% if pending_tracks %}
-        <span class="bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded-full ml-2">{{
-            pending_tracks|length }}</span>
-        {% endif %}
-    </h3>
+                        <!-- Action Panel (Right) -->
+                        <div class="flex-1 p-6">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 class="text-xl font-bold text-slate-900 mb-1">
+                                        <a href="/track/{{ t.id }}" target="_blank"
+                                            class="hover:underline hover:text-brand-600">{{
+                                            t.title }} <i class="ph-bold ph-arrow-square-out text-sm"></i></a>
+                                    </h3>
+                                    <p class="text-sm text-slate-500">Uploadé par <span
+                                            class="font-bold text-slate-700">{{
+                                            t.user_obj.username if t.user_obj else t.uploader_name }}</span> le {{
+                                        t.created_at.strftime('%d/%m/%Y') }}</p>
+                                </div>
+                                <span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded">Nouvelle
+                                    Trace</span>
+                            </div>
 
-    {% if pending_tracks %}
-    <div class="grid grid-cols-1 gap-6">
-        {% for t in pending_tracks %}
-        <!-- ... Track Cards ... -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col md:flex-row">
-            <!-- Map Preview (Left) -->
-            <div
-                class="w-full md:w-1/3 bg-slate-100 h-64 md:h-auto border-b md:border-b-0 md:border-r border-slate-200 relative isolate">
-                <div id="map-{{ t.id }}" class="absolute inset-0 z-0"></div>
-                <!-- Overlays -->
-                <div class="absolute inset-0 pointer-events-none bg-gradient-to-t from-gray-900/10 to-transparent z-10">
+                            <div class="bg-slate-50 rounded-xl p-4 mb-6 border border-slate-100">
+                                <div class="text-xs font-bold text-slate-400 uppercase mb-2">Actions Rapides</div>
+                                <div class="flex flex-wrap gap-2">
+                                    <form action="/superadmin/track/{{ t.id }}/verify" method="POST">
+                                        <button
+                                            class="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg font-bold text-sm shadow-sm flex items-center gap-2">
+                                            <i class="ph-bold ph-check"></i> Valider Public
+                                        </button>
+                                    </form>
+                                    <form action="/superadmin/track/{{ t.id }}/reject" method="POST"
+                                        onsubmit="return confirm('Supprimer définitivement cette trace ?')">
+                                        <button
+                                            class="bg-white border border-slate-200 text-red-500 hover:bg-red-50 hover:border-red-200 px-3 py-1.5 rounded-lg font-bold text-sm shadow-sm flex items-center gap-2">
+                                            <i class="ph-bold ph-trash"></i> Refuser / Supprimer
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Link to Official Route -->
+                            <form action="/superadmin/track/{{ t.id }}/link_route" method="POST"
+                                class="border-t border-slate-100 pt-4">
+                                <label class="block text-xs font-bold text-slate-700 mb-2">Relier à une course
+                                    officielle
+                                    (Si applicable)</label>
+                                <div class="flex gap-2">
+                                    <select name="route_id"
+                                        class="flex-1 rounded-lg border-slate-200 text-sm focus:border-brand-500 bg-slate-50">
+                                        <option value="">Sélectionner un parcours...</option>
+                                        {% for evt in events %}
+                                        <optgroup label="{{ evt.name }}">
+                                            {% for ed in evt.editions %}
+                                            {% for r in ed.routes %}
+                                            <option value="{{ r.id }}">{{ ed.year }} - {{ r.name }} ({{ r.distance_km
+                                                }}km)
+                                            </option>
+                                            {% endfor %}
+                                            {% endfor %}
+                                        </optgroup>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit"
+                                        class="bg-brand-600 text-white px-3 py-2 rounded-lg font-bold text-xs hover:bg-brand-700">Lier
+                                        & Valider</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
+                {% else %}
                 <div
-                    class="absolute bottom-2 left-2 z-20 bg-white/90 backdrop-blur px-2 py-1 rounded text-[10px] font-mono font-bold text-slate-600 shadow-sm border border-slate-200">
-                    {{ t.distance_km }}km • {{ t.elevation_gain }}d+
+                    class="flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-slate-200 border-dashed text-center">
+                    <div
+                        class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-4 text-3xl">
+                        ✓</div>
+                    <h3 class="text-lg font-bold text-slate-900">Tout est calme</h3>
+                    <p class="text-slate-400">Aucune trace en attente de modération pour le moment.</p>
                 </div>
+                {% endif %}
             </div>
 
-            <!-- Action Panel (Right) -->
-            <div class="flex-1 p-6">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h3 class="text-xl font-bold text-slate-900 mb-1">
-                            <a href="/track/{{ t.id }}" target="_blank" class="hover:underline hover:text-brand-600">{{
-                                t.title }} <i class="ph-bold ph-arrow-square-out text-sm"></i></a>
-                        </h3>
-                        <p class="text-sm text-slate-500">Uploadé par <span class="font-bold text-slate-700">{{
-                                t.user_obj.username if t.user_obj else t.uploader_name }}</span> le {{
-                            t.created_at.strftime('%d/%m/%Y') }}</p>
-                    </div>
-                    <span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded">Nouvelle
-                        Trace</span>
-                </div>
+            <!-- EMAIL SENDER -->
+            <div x-show="currentTab === 'email'" class="animate-fade-in-up">
+                <h2 class="text-3xl font-black text-slate-900 mb-8 flex items-center gap-3">
+                    <i class="ph-duotone ph-envelope-open text-brand-600"></i> Messagerie
+                </h2>
 
-                <div class="bg-slate-50 rounded-xl p-4 mb-6 border border-slate-100">
-                    <div class="text-xs font-bold text-slate-400 uppercase mb-2">Actions Rapides</div>
-                    <div class="flex flex-wrap gap-2">
-                        <form action="/superadmin/track/{{ t.id }}/verify" method="POST">
-                            <button
-                                class="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg font-bold text-sm shadow-sm flex items-center gap-2">
-                                <i class="ph-bold ph-check"></i> Valider Public
+                <div class="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm max-w-2xl">
+                    <form action="/superadmin/email/send" method="POST" class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Destinataire</label>
+                            <div class="relative">
+                                <i class="ph-bold ph-at absolute left-3 top-3 text-slate-400"></i>
+                                <input type="email" name="recipient" placeholder="client@exemple.com" required
+                                    class="w-full pl-10 pr-4 py-2.5 rounded-xl border-slate-200 focus:border-brand-500 focus:ring-brand-500 transition-shadow">
+                            </div>
+                            <p class="text-xs text-slate-400 mt-1">Entrez l'adresse email complète du destinataire.</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Sujet</label>
+                            <input type="text" name="subject"
+                                placeholder="Ex: Informations importantes concernant votre compte" required
+                                class="w-full px-4 py-2.5 rounded-xl border-slate-200 focus:border-brand-500 focus:ring-brand-500 transition-shadow">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Message</label>
+                            <div class="relative">
+                                <textarea name="content" rows="8" placeholder="Bonjour, ..." required
+                                    class="w-full px-4 py-3 rounded-xl border-slate-200 focus:border-brand-500 focus:ring-brand-500 transition-shadow font-mono text-sm"></textarea>
+                                <div class="absolute bottom-3 right-3 text-xs text-slate-400 pointer-events-none">HTML
+                                    supporté
+                                    (brut)</div>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                <i class="ph-bold ph-info mr-1"></i> Ce message sera automatiquement mis en forme avec
+                                le modèle
+                                <strong>MyKairn</strong> (logo, pied de page, etc.).
+                            </p>
+                        </div>
+
+                        <div class="pt-4 flex justify-end">
+                            <button type="submit"
+                                class="bg-brand-600 hover:bg-brand-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-brand-500/30 flex items-center gap-2 transition-all hover:scale-105 active:scale-95">
+                                <i class="ph-bold ph-paper-plane-right"></i>
+                                Envoyer le message
                             </button>
-                        </form>
-                        <form action="/superadmin/track/{{ t.id }}/reject" method="POST"
-                            onsubmit="return confirm('Supprimer définitivement cette trace ?')">
-                            <button
-                                class="bg-white border border-slate-200 text-red-500 hover:bg-red-50 hover:border-red-200 px-3 py-1.5 rounded-lg font-bold text-sm shadow-sm flex items-center gap-2">
-                                <i class="ph-bold ph-trash"></i> Refuser / Supprimer
-                            </button>
-                        </form>
-                    </div>
+                        </div>
+                    </form>
                 </div>
-
-                <!-- Link to Official Route -->
-                <form action="/superadmin/track/{{ t.id }}/link_route" method="POST"
-                    class="border-t border-slate-100 pt-4">
-                    <label class="block text-xs font-bold text-slate-700 mb-2">Relier à une course
-                        officielle
-                        (Si applicable)</label>
-                    <div class="flex gap-2">
-                        <select name="route_id"
-                            class="flex-1 rounded-lg border-slate-200 text-sm focus:border-brand-500 bg-slate-50">
-                            <option value="">Sélectionner un parcours...</option>
-                            {% for evt in events %}
-                            <optgroup label="{{ evt.name }}">
-                                {% for ed in evt.editions %}
-                                {% for r in ed.routes %}
-                                <option value="{{ r.id }}">{{ ed.year }} - {{ r.name }} ({{ r.distance_km
-                                    }}km)
-                                </option>
-                                {% endfor %}
-                                {% endfor %}
-                            </optgroup>
-                            {% endfor %}
-                        </select>
-                        <button type="submit"
-                            class="bg-brand-600 text-white px-3 py-2 rounded-lg font-bold text-xs hover:bg-brand-700">Lier
-                            & Valider</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    {% else %}
-    <div
-        class="flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-slate-200 border-dashed text-center">
-        <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-4 text-3xl">
-            ✓</div>
-        <h3 class="text-lg font-bold text-slate-900">Tout est calme</h3>
-        <p class="text-slate-400">Aucune trace en attente de modération pour le moment.</p>
-    </div>
-    {% endif %}
-</div>
-
-<!-- EMAIL SENDER -->
-<div x-show="currentTab === 'email'" class="animate-fade-in-up">
-    <h2 class="text-3xl font-black text-slate-900 mb-8 flex items-center gap-3">
-        <i class="ph-duotone ph-envelope-open text-brand-600"></i> Messagerie
-    </h2>
-
-    <div class="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm max-w-2xl">
-        <form action="/superadmin/email/send" method="POST" class="space-y-6">
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-2">Destinataire</label>
-                <div class="relative">
-                    <i class="ph-bold ph-at absolute left-3 top-3 text-slate-400"></i>
-                    <input type="email" name="recipient" placeholder="client@exemple.com" required
-                        class="w-full pl-10 pr-4 py-2.5 rounded-xl border-slate-200 focus:border-brand-500 focus:ring-brand-500 transition-shadow">
-                </div>
-                <p class="text-xs text-slate-400 mt-1">Entrez l'adresse email complète du destinataire.</p>
             </div>
 
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-2">Sujet</label>
-                <input type="text" name="subject" placeholder="Ex: Informations importantes concernant votre compte"
-                    required
-                    class="w-full px-4 py-2.5 rounded-xl border-slate-200 focus:border-brand-500 focus:ring-brand-500 transition-shadow">
-            </div>
-
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-2">Message</label>
-                <div class="relative">
-                    <textarea name="content" rows="8" placeholder="Bonjour, ..." required
-                        class="w-full px-4 py-3 rounded-xl border-slate-200 focus:border-brand-500 focus:ring-brand-500 transition-shadow font-mono text-sm"></textarea>
-                    <div class="absolute bottom-3 right-3 text-xs text-slate-400 pointer-events-none">HTML supporté
-                        (brut)</div>
-                </div>
-                <p class="text-xs text-slate-500 mt-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
-                    <i class="ph-bold ph-info mr-1"></i> Ce message sera automatiquement mis en forme avec le modèle
-                    <strong>MyKairn</strong> (logo, pied de page, etc.).
-                </p>
-            </div>
-
-            <div class="pt-4 flex justify-end">
-                <button type="submit"
-                    class="bg-brand-600 hover:bg-brand-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-brand-500/30 flex items-center gap-2 transition-all hover:scale-105 active:scale-95">
-                    <i class="ph-bold ph-paper-plane-right"></i>
-                    Envoyer le message
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- DATABASE INSPECTOR -->
-<div x-show="currentTab === 'database'" class="animate-fade-in-up" x-data="{
+            <!-- DATABASE INSPECTOR -->
+            <div x-show="currentTab === 'database'" class="animate-fade-in-up" x-data="{
             tables: [],
             currentTable: '',
             tableData: [],
@@ -965,292 +995,307 @@
                 }
             }
         }" x-init="loadTables()">
-    <h2 class="text-3xl font-black text-slate-900 mb-8 flex items-center gap-3">
-        <i class="ph-duotone ph-database text-brand-600"></i> Explorateur BDD
-    </h2>
+                <h2 class="text-3xl font-black text-slate-900 mb-8 flex items-center gap-3">
+                    <i class="ph-duotone ph-database text-brand-600"></i> Explorateur BDD
+                </h2>
 
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 min-h-[500px]">
-        <!-- Toolbar -->
-        <div class="flex gap-4 mb-6 items-center">
-            <select x-model="currentTable" @change="loadData($event.target.value)"
-                class="rounded-xl border-slate-200 bg-slate-50 font-bold text-slate-700 focus:border-brand-500 focus:ring-brand-500">
-                <option value="">-- Choisir une table --</option>
-                <template x-for="t in tables">
-                    <option :value="t" x-text="t"></option>
-                </template>
-            </select>
-
-            <button @click="loadData(currentTable)" x-show="currentTable"
-                class="p-2 text-slate-500 hover:text-brand-600 hover:bg-slate-100 rounded-lg transition-colors">
-                <i class="ph-bold ph-arrows-clockwise" :class="{'animate-spin': loading}"></i>
-            </button>
-
-            <span x-show="tableData.length > 0" class="text-xs font-mono text-slate-400">
-                <span x-text="tableData.length"></span> enregistrements (max 100)
-            </span>
-        </div>
-
-        <!-- Table -->
-        <div class="overflow-x-auto border border-slate-100 rounded-xl">
-            <table class="w-full text-left text-xs whitespace-nowrap" x-show="currentTable && !loading">
-                <thead class="bg-slate-50 text-slate-500 font-bold uppercase">
-                    <tr>
-                        <th class="px-4 py-3 sticky left-0 bg-slate-50 z-10 w-10">#</th>
-                        <template x-for="col in tableColumns">
-                            <th class="px-4 py-3 border-b border-slate-200" x-text="col"></th>
-                        </template>
-                        <th class="px-4 py-3 text-right sticky right-0 bg-slate-50 z-10">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 font-mono text-slate-600">
-                    <template x-for="row in tableData">
-                        <tr class="hover:bg-slate-50/80 transition-colors">
-                            <td class="px-4 py-2 font-bold sticky left-0 bg-white group-hover:bg-slate-50 z-10"
-                                x-text="row.id"></td>
-                            <template x-for="col in tableColumns">
-                                <td class="px-4 py-2 border-r border-slate-50"
-                                    x-text="(row[col] !== null && typeof row[col] === 'object') ? JSON.stringify(row[col]).substring(0,30)+'...' : row[col]">
-                                </td>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 min-h-[500px]">
+                    <!-- Toolbar -->
+                    <div class="flex gap-4 mb-6 items-center">
+                        <select x-model="currentTable" @change="loadData($event.target.value)"
+                            class="rounded-xl border-slate-200 bg-slate-50 font-bold text-slate-700 focus:border-brand-500 focus:ring-brand-500">
+                            <option value="">-- Choisir une table --</option>
+                            <template x-for="t in tables">
+                                <option :value="t" x-text="t"></option>
                             </template>
-                            <td class="px-4 py-2 text-right sticky right-0 bg-white group-hover:bg-slate-50 z-10">
-                                <button @click="deleteRow(row.id)" class="text-red-400 hover:text-red-600 p-1">
-                                    <i class="ph-bold ph-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    </template>
-                    <tr x-show="tableData.length === 0">
-                        <td :colspan="tableColumns.length + 2" class="p-8 text-center text-slate-400 italic">
-                            Aucune donnée trouvée ou table vide.
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+                        </select>
 
-            <!-- Loading State -->
-            <div x-show="loading" class="p-12 flex justify-center text-brand-500">
-                <i class="ph-duotone ph-spinner animate-spin text-3xl"></i>
-            </div>
-        </div>
-    </div>
-</div>
+                        <button @click="loadData(currentTable)" x-show="currentTable"
+                            class="p-2 text-slate-500 hover:text-brand-600 hover:bg-slate-100 rounded-lg transition-colors">
+                            <i class="ph-bold ph-arrows-clockwise" :class="{'animate-spin': loading}"></i>
+                        </button>
 
+                        <span x-show="tableData.length > 0" class="text-xs font-mono text-slate-400">
+                            <span x-text="tableData.length"></span> enregistrements (max 100)
+                        </span>
+                    </div>
 
+                    <!-- Table -->
+                    <div class="overflow-x-auto border border-slate-100 rounded-xl">
+                        <table class="w-full text-left text-xs whitespace-nowrap" x-show="currentTable && !loading">
+                            <thead class="bg-slate-50 text-slate-500 font-bold uppercase">
+                                <tr>
+                                    <th class="px-4 py-3 sticky left-0 bg-slate-50 z-10 w-10">#</th>
+                                    <template x-for="col in tableColumns">
+                                        <th class="px-4 py-3 border-b border-slate-200" x-text="col"></th>
+                                    </template>
+                                    <th class="px-4 py-3 text-right sticky right-0 bg-slate-50 z-10">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 font-mono text-slate-600">
+                                <template x-for="row in tableData">
+                                    <tr class="hover:bg-slate-50/80 transition-colors">
+                                        <td class="px-4 py-2 font-bold sticky left-0 bg-white group-hover:bg-slate-50 z-10"
+                                            x-text="row.id"></td>
+                                        <template x-for="col in tableColumns">
+                                            <td class="px-4 py-2 border-r border-slate-50"
+                                                x-text="(row[col] !== null && typeof row[col] === 'object') ? JSON.stringify(row[col]).substring(0,30)+'...' : row[col]">
+                                            </td>
+                                        </template>
+                                        <td
+                                            class="px-4 py-2 text-right sticky right-0 bg-white group-hover:bg-slate-50 z-10">
+                                            <button @click="deleteRow(row.id)"
+                                                class="text-red-400 hover:text-red-600 p-1">
+                                                <i class="ph-bold ph-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <tr x-show="tableData.length === 0">
+                                    <td :colspan="tableColumns.length + 2"
+                                        class="p-8 text-center text-slate-400 italic">
+                                        Aucune donnée trouvée ou table vide.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
 
-
-<div x-show="currentTab === 'prediction'" class="animate-fade-in-up"
-    x-data='predictionEditor({{ prediction_config_json | safe }})'>
-    <form action="/api/admin/prediction_config" method="POST" class="max-w-4xl mx-auto">
-
-        {% if user_has_custom_config %}
-        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start justify-between">
-            <div class="flex items-start gap-3">
-                <i class="ph-fill ph-warning-circle text-amber-500 text-xl mt-0.5"></i>
-                <div>
-                    <h4 class="font-bold text-amber-900 text-sm">Conflit de Configuration</h4>
-                    <p class="text-xs text-amber-700 mt-1">
-                        Vous avez des paramètres de prédiction personnels définis dans votre profil.
-                        <br>Ces paramètres <strong>écrasent</strong> les valeurs globales ci-dessous lors de
-                        vos
-                        tests (page détail).
-                    </p>
+                        <!-- Loading State -->
+                        <div x-show="loading" class="p-12 flex justify-center text-brand-500">
+                            <i class="ph-duotone ph-spinner animate-spin text-3xl"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <button type="submit" formaction="/api/admin/reset_personal_config"
-                class="bg-white border border-amber-200 text-amber-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-amber-100 transition-colors shadow-sm">
-                Réinitialiser mes paramètres
-            </button>
-        </div>
-        {% endif %}
 
-        <div class="flex justify-between items-center mb-8">
-            <div>
-                <h2 class="text-3xl font-black text-slate-900">Calibration des Prédictions</h2>
-                <p class="text-slate-500 mt-1">Ajustez les facteurs de l'algorithme de prédiction de temps.
-                </p>
-            </div>
-            <button type="submit"
-                class="bg-brand-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-brand-700 transition shadow-lg shadow-brand-500/30">
-                Enregistrer
-            </button>
-        </div>
 
-        <!-- SIMULATOR -->
-        <div class="bg-white rounded-2xl p-6 shadow-sm mb-8 border border-slate-200">
-            <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-                <h3 class="font-bold text-lg flex items-center gap-2 text-slate-900">
+
+
+            <div x-show="currentTab === 'prediction'" class="animate-fade-in-up"
+                x-data='predictionEditor({{ prediction_config_json | safe }})'>
+                <form action="/api/admin/prediction_config" method="POST" class="max-w-4xl mx-auto">
+
+                    {% if user_has_custom_config %}
                     <div
-                        class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
-                        ⚡</div>
-                    Simulateur Live
-                </h3>
-                <div class="flex items-center gap-3 bg-slate-50 p-2 rounded-xl border border-slate-100">
-                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Index
-                        Coureur</span>
-                    <input type="range"
-                        class="w-48 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                        min="300" max="900" step="10" x-model="userIndex">
-                    <span class="font-mono font-bold text-lg min-w-[3ch] text-indigo-600" x-text="userIndex"></span>
-                </div>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <template x-for="ex in examples">
-                    <div
-                        class="bg-slate-50 p-4 rounded-xl border border-slate-100 relative overflow-hidden group hover:border-indigo-100 transition-colors">
-                        <div class="relative z-10">
-                            <div class="text-xs text-slate-500 font-bold uppercase mb-2 tracking-widest"
-                                x-text="ex.name"></div>
-                            <div class="text-3xl font-black font-mono tracking-tight text-slate-800 mb-2"
-                                x-text="predict(ex)"></div>
-                            <div
-                                class="text-[10px] text-slate-400 font-bold flex justify-between border-t border-slate-200 pt-2 mt-2">
-                                <span class="flex items-center gap-1"><i class="ph-bold ph-ruler"></i> <span
-                                        x-text="ex.dist + 'km'"></span></span>
-                                <span class="flex items-center gap-1"><i class="ph-bold ph-mountains"></i> <span
-                                        x-text="ex.elev + 'm'"></span></span>
+                        class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start justify-between">
+                        <div class="flex items-start gap-3">
+                            <i class="ph-fill ph-warning-circle text-amber-500 text-xl mt-0.5"></i>
+                            <div>
+                                <h4 class="font-bold text-amber-900 text-sm">Conflit de Configuration</h4>
+                                <p class="text-xs text-amber-700 mt-1">
+                                    Vous avez des paramètres de prédiction personnels définis dans votre profil.
+                                    <br>Ces paramètres <strong>écrasent</strong> les valeurs globales ci-dessous lors de
+                                    vos
+                                    tests (page détail).
+                                </p>
                             </div>
                         </div>
+                        <button type="submit" formaction="/api/admin/reset_personal_config"
+                            class="bg-white border border-amber-200 text-amber-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-amber-100 transition-colors shadow-sm">
+                            Réinitialiser mes paramètres
+                        </button>
                     </div>
-                </template>
-            </div>
-        </div>
+                    {% endif %}
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
-
-            <!-- Base Speed -->
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                    <i class="ph-fill ph-speedometer text-brand-500"></i> Vitesse de Base
-                </h3>
-                <p class="text-xs text-slate-400 mb-4">Formule : Vitesse (km-effort/h) = (Pente * Index) -
-                    Intercept.
-                    <br>Ex: Pour Index 500 : (0.024 * 500) - 4 = 8 km/h.
-                </p>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-1">Pente (Slope)</label>
-                        <input type="number" step="0.001" name="base_speed_slope" x-model="config.base_speed_slope"
-                            class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-1">Intercept</label>
-                        <input type="number" step="0.1" name="base_speed_intercept"
-                            x-model="config.base_speed_intercept"
-                            class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-1">Vitesse Min
-                            (km/h)</label>
-                        <input type="number" step="0.1" name="min_speed_kmeh" x-model="config.min_speed_kmeh"
-                            class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Technicality -->
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                    <i class="ph-fill ph-mountains text-brand-500"></i> Technicité (Pente Moyenne)
-                </h3>
-                <p class="text-xs text-slate-400 mb-4">Pénalités appliquées si le ratio D+/Distance dépasse
-                    les
-                    seuils.</p>
-                <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                        <span>Seuil (m/km)</span>
-                        <span>Facteur Mult.</span>
-                    </div>
-                    <!-- Level 1 -->
-                    <div class="grid grid-cols-2 gap-2 items-center">
-                        <input type="number" name="tech_factor_1_threshold" x-model="config.tech_factor_1_threshold"
-                            class="rounded-xl border-slate-200 focus:border-brand-500 text-sm font-bold">
-                        <input type="number" step="0.01" name="tech_factor_1_hilly" x-model="config.tech_factor_1_hilly"
-                            class="rounded-xl border-slate-200 focus:border-brand-500 text-sm font-bold">
-                    </div>
-                    <!-- Level 2 -->
-                    <div class="grid grid-cols-2 gap-2 items-center">
-                        <input type="number" name="tech_factor_2_threshold" x-model="config.tech_factor_2_threshold"
-                            class="rounded-xl border-slate-200 focus:border-brand-500 text-sm font-bold">
-                        <input type="number" step="0.01" name="tech_factor_2_mountain"
-                            x-model="config.tech_factor_2_mountain"
-                            class="rounded-xl border-slate-200 focus:border-brand-500 text-sm font-bold">
-                    </div>
-                    <!-- Level 3 -->
-                    <div class="grid grid-cols-2 gap-2 items-center">
-                        <input type="number" name="tech_factor_3_threshold" x-model="config.tech_factor_3_threshold"
-                            class="rounded-xl border-slate-200 focus:border-brand-500 text-sm font-bold">
-                        <input type="number" step="0.01" name="tech_factor_3_alpine"
-                            x-model="config.tech_factor_3_alpine"
-                            class="rounded-xl border-slate-200 focus:border-brand-500 text-sm font-bold">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Distance Decay -->
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                    <i class="ph-fill ph-battery-warning text-brand-500"></i> Fatigue & Distance
-                </h3>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-1">Début Fatigue
-                            (km-effort)</label>
-                        <input type="number" name="decay_start_km" x-model="config.decay_start_km"
-                            class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="flex justify-between items-center mb-8">
                         <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-1">Palier (km)</label>
-                            <input type="number" name="decay_step_km" x-model="config.decay_step_km"
-                                class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
+                            <h2 class="text-3xl font-black text-slate-900">Calibration des Prédictions</h2>
+                            <p class="text-slate-500 mt-1">Ajustez les facteurs de l'algorithme de prédiction de temps.
+                            </p>
                         </div>
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-1">Taux / Palier</label>
-                            <input type="number" step="0.01" name="decay_rate_per_step"
-                                x-model="config.decay_rate_per_step"
-                                class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
+                        <button type="submit"
+                            class="bg-brand-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-brand-700 transition shadow-lg shadow-brand-500/30">
+                            Enregistrer
+                        </button>
+                    </div>
+
+                    <!-- SIMULATOR -->
+                    <div class="bg-white rounded-2xl p-6 shadow-sm mb-8 border border-slate-200">
+                        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                            <h3 class="font-bold text-lg flex items-center gap-2 text-slate-900">
+                                <div
+                                    class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
+                                    ⚡</div>
+                                Simulateur Live
+                            </h3>
+                            <div class="flex items-center gap-3 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                                <span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Index
+                                    Coureur</span>
+                                <input type="range"
+                                    class="w-48 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                    min="300" max="900" step="10" x-model="userIndex">
+                                <span class="font-mono font-bold text-lg min-w-[3ch] text-indigo-600"
+                                    x-text="userIndex"></span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <template x-for="ex in examples">
+                                <div
+                                    class="bg-slate-50 p-4 rounded-xl border border-slate-100 relative overflow-hidden group hover:border-indigo-100 transition-colors">
+                                    <div class="relative z-10">
+                                        <div class="text-xs text-slate-500 font-bold uppercase mb-2 tracking-widest"
+                                            x-text="ex.name"></div>
+                                        <div class="text-3xl font-black font-mono tracking-tight text-slate-800 mb-2"
+                                            x-text="predict(ex)"></div>
+                                        <div
+                                            class="text-[10px] text-slate-400 font-bold flex justify-between border-t border-slate-200 pt-2 mt-2">
+                                            <span class="flex items-center gap-1"><i class="ph-bold ph-ruler"></i> <span
+                                                    x-text="ex.dist + 'km'"></span></span>
+                                            <span class="flex items-center gap-1"><i class="ph-bold ph-mountains"></i>
+                                                <span x-text="ex.elev + 'm'"></span></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-1">Max Déclin Total</label>
-                        <input type="number" step="0.01" name="decay_max_total" x-model="config.decay_max_total"
-                            class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
-                    </div>
-                </div>
-            </div>
 
-            <!-- Intensities -->
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                    <i class="ph-fill ph-gauge text-brand-500"></i> Intensités
-                </h3>
-                <p class="text-xs text-slate-400 mb-4">Multiplicateurs de vitesse pour les allures
-                    alternatives.
-                </p>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-1">Endurance
-                            (Multiplicateur)</label>
-                        <input type="number" step="0.01" name="endurance_multiplier"
-                            x-model="config.endurance_multiplier"
-                            class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
-                        <p class="text-[10px] text-slate-400 mt-1">Ex: 0.85 = 85% de la vitesse course.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
+
+                        <!-- Base Speed -->
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                            <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <i class="ph-fill ph-speedometer text-brand-500"></i> Vitesse de Base
+                            </h3>
+                            <p class="text-xs text-slate-400 mb-4">Formule : Vitesse (km-effort/h) = (Pente * Index) -
+                                Intercept.
+                                <br>Ex: Pour Index 500 : (0.024 * 500) - 4 = 8 km/h.
+                            </p>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-1">Pente (Slope)</label>
+                                    <input type="number" step="0.001" name="base_speed_slope"
+                                        x-model="config.base_speed_slope"
+                                        class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-1">Intercept</label>
+                                    <input type="number" step="0.1" name="base_speed_intercept"
+                                        x-model="config.base_speed_intercept"
+                                        class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-1">Vitesse Min
+                                        (km/h)</label>
+                                    <input type="number" step="0.1" name="min_speed_kmeh"
+                                        x-model="config.min_speed_kmeh"
+                                        class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Technicality -->
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                            <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <i class="ph-fill ph-mountains text-brand-500"></i> Technicité (Pente Moyenne)
+                            </h3>
+                            <p class="text-xs text-slate-400 mb-4">Pénalités appliquées si le ratio D+/Distance dépasse
+                                les
+                                seuils.</p>
+                            <div class="space-y-4">
+                                <div
+                                    class="grid grid-cols-2 gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                    <span>Seuil (m/km)</span>
+                                    <span>Facteur Mult.</span>
+                                </div>
+                                <!-- Level 1 -->
+                                <div class="grid grid-cols-2 gap-2 items-center">
+                                    <input type="number" name="tech_factor_1_threshold"
+                                        x-model="config.tech_factor_1_threshold"
+                                        class="rounded-xl border-slate-200 focus:border-brand-500 text-sm font-bold">
+                                    <input type="number" step="0.01" name="tech_factor_1_hilly"
+                                        x-model="config.tech_factor_1_hilly"
+                                        class="rounded-xl border-slate-200 focus:border-brand-500 text-sm font-bold">
+                                </div>
+                                <!-- Level 2 -->
+                                <div class="grid grid-cols-2 gap-2 items-center">
+                                    <input type="number" name="tech_factor_2_threshold"
+                                        x-model="config.tech_factor_2_threshold"
+                                        class="rounded-xl border-slate-200 focus:border-brand-500 text-sm font-bold">
+                                    <input type="number" step="0.01" name="tech_factor_2_mountain"
+                                        x-model="config.tech_factor_2_mountain"
+                                        class="rounded-xl border-slate-200 focus:border-brand-500 text-sm font-bold">
+                                </div>
+                                <!-- Level 3 -->
+                                <div class="grid grid-cols-2 gap-2 items-center">
+                                    <input type="number" name="tech_factor_3_threshold"
+                                        x-model="config.tech_factor_3_threshold"
+                                        class="rounded-xl border-slate-200 focus:border-brand-500 text-sm font-bold">
+                                    <input type="number" step="0.01" name="tech_factor_3_alpine"
+                                        x-model="config.tech_factor_3_alpine"
+                                        class="rounded-xl border-slate-200 focus:border-brand-500 text-sm font-bold">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Distance Decay -->
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                            <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <i class="ph-fill ph-battery-warning text-brand-500"></i> Fatigue & Distance
+                            </h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-1">Début Fatigue
+                                        (km-effort)</label>
+                                    <input type="number" name="decay_start_km" x-model="config.decay_start_km"
+                                        class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-bold text-slate-700 mb-1">Palier (km)</label>
+                                        <input type="number" name="decay_step_km" x-model="config.decay_step_km"
+                                            class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-bold text-slate-700 mb-1">Taux / Palier</label>
+                                        <input type="number" step="0.01" name="decay_rate_per_step"
+                                            x-model="config.decay_rate_per_step"
+                                            class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-1">Max Déclin Total</label>
+                                    <input type="number" step="0.01" name="decay_max_total"
+                                        x-model="config.decay_max_total"
+                                        class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Intensities -->
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                            <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <i class="ph-fill ph-gauge text-brand-500"></i> Intensités
+                            </h3>
+                            <p class="text-xs text-slate-400 mb-4">Multiplicateurs de vitesse pour les allures
+                                alternatives.
+                            </p>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-1">Endurance
+                                        (Multiplicateur)</label>
+                                    <input type="number" step="0.01" name="endurance_multiplier"
+                                        x-model="config.endurance_multiplier"
+                                        class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
+                                    <p class="text-[10px] text-slate-400 mt-1">Ex: 0.85 = 85% de la vitesse course.</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-1">Intensif / Push
+                                        (Multiplicateur)</label>
+                                    <input type="number" step="0.01" name="push_multiplier"
+                                        x-model="config.push_multiplier"
+                                        class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
+                                    <p class="text-[10px] text-slate-400 mt-1">Ex: 1.15 = 115% de la vitesse course.</p>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
-                    <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-1">Intensif / Push
-                            (Multiplicateur)</label>
-                        <input type="number" step="0.01" name="push_multiplier" x-model="config.push_multiplier"
-                            class="w-full rounded-xl border-slate-200 focus:border-brand-500 text-slate-900 font-bold">
-                        <p class="text-[10px] text-slate-400 mt-1">Ex: 1.15 = 115% de la vitesse course.</p>
-                    </div>
-                </div>
+                </form>
             </div>
 
         </div>
-    </form>
-</div>
-
-</main>
+    </main>
 </div>
 
 <!-- Alpine.js is assumed to be loaded in base.html or added here -->
