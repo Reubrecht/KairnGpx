@@ -164,7 +164,7 @@
                             <button onclick="copyLink()"
                                 class="flex-1 md:flex-none justify-center inline-flex items-center px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
                                 <i class="ph ph-share-network mr-2 text-slate-400 text-lg"></i>
-                                Partager
+                                <span id="shareBtnText">Partager</span>
                             </button>
 
                             <a href="/raw_gpx/{{ track.id }}"
@@ -1715,7 +1715,22 @@
         }, 100);
     }
 
-    function copyLink() {
+    async function copyLink() {
+        // 1. Try Native Share (Mobile)
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: '{{ track.title }}',
+                    text: 'Découvre cette trace sur My Kairn !',
+                    url: window.location.href
+                });
+                return; // Share successful
+            } catch (err) {
+                console.log('Share dismissed or failed, falling back to copy', err);
+            }
+        }
+
+        // 2. Fallback: Copy to Clipboard
         if (navigator.clipboard && window.isSecureContext) {
             navigator.clipboard.writeText(window.location.href).then(function () {
                 showCopyFeedback();
@@ -1724,7 +1739,7 @@
                 fallbackCopyTextToClipboard(window.location.href);
             });
         } else {
-            // Fallback for non-secure contexts (like http localhost sometimes behaves)
+            // Fallback for non-secure contexts
             fallbackCopyTextToClipboard(window.location.href);
         }
     }
