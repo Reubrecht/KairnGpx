@@ -91,20 +91,21 @@
 
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('title', file.name.replace('.gpx', '')); // Default title
-        formData.append('visibility', 'public');
 
-        fetch('/upload', {
+        // Staging upload
+        fetch('/upload/stage', {
             method: 'POST',
             body: formData
         })
             .then(response => {
-                if (response.redirected) {
-                    window.location.href = response.url;
+                if (!response.ok) throw new Error('Upload failed');
+                return response.json();
+            })
+            .then(data => {
+                if (data.temp_id) {
+                    window.location.href = '/upload?temp_id=' + data.temp_id;
                 } else {
-                    return response.text().then(text => {
-                        window.location.href = '/explore'; // Fallback
-                    });
+                    throw new Error('No temp_id returned');
                 }
             })
             .catch(err => {
