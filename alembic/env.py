@@ -5,6 +5,15 @@ from sqlalchemy import pool
 
 from alembic import context
 
+import os
+import sys
+
+# Add the project root to the path so we can import app
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
+from app.models import Base
+from app.database import Base # Verify which one has metadata. usually models.Base or database.Base. app.models imports Base from .database, so it is the same.
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
@@ -16,9 +25,13 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-target_metadata = None
+target_metadata = Base.metadata
+
+# Override sqlalchemy.url with environment variable
+# ensuring valid sqlite url for local dev if not set
+db_url = os.getenv("DATABASE_URL", "sqlite:///app/data/kairn.db")
+config.set_main_option("sqlalchemy.url", db_url)
+
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
