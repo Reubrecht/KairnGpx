@@ -102,6 +102,7 @@ class User(Base):
     # Email Verification
     is_email_verified = Column(Boolean, default=False)
     email_verification_token = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Profile
     full_name = Column(String, nullable=True)
