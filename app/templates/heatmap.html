@@ -1,39 +1,118 @@
 {% extends "base.html" %}
 
 {% block head %}
-<!-- Leaflet & Heatmap -->
-<link rel="stylesheet" href="{{ url_for('static', path='/css/leaflet.css') }}" />
-<script src="{{ url_for('static', path='/js/leaflet.js') }}"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+<!-- MapLibre GL JS -->
+<script src="{{ url_for('static', path='/js/maplibre-gl.js') }}"></script>
+<link href="{{ url_for('static', path='/css/maplibre-gl.css') }}" rel="stylesheet" />
 <style>
     #map {
         height: calc(100vh - 64px);
         width: 100%;
     }
+
+    .maplibregl-popup-content {
+        padding: 0;
+        border-radius: 12px;
+        border: none;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+    }
+
+    /* Custom Scrollbar for side panel if needed */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1;
+        border-radius: 20px;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="relative">
-    <div id="map" class="z-0"></div>
+<div class="relative w-full h-[calc(100vh-64px)]">
 
-    <!-- Floating Info Panel -->
+    <!-- Map Container -->
+    <div id="map" class="absolute inset-0 z-0"></div>
+
+    <!-- Floating Info Panel (Top Left) -->
     <div
-        class="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur-md p-4 rounded-xl shadow-lg border border-slate-200 max-w-xs">
-        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-            🔥 Heatmap Kairn
+        class="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-slate-200 max-w-xs transition-all hover:bg-white">
+        <h2 class="text-lg font-black text-slate-800 flex items-center gap-2 mb-1">
+            <span class="bg-brand-50 text-brand-600 p-1.5 rounded-lg"><i
+                    class="ph-fill ph-globe-hemisphere-west"></i></span>
+            Carte Globale
         </h2>
-        <p class="text-sm text-slate-600 mt-1">
-            Visualisez la densité des activités de la communauté.
-            <br>
-            <span class="font-bold text-brand-600">{{ total_tracks }} traces</span> répertoriées.
+        <p class="text-xs text-slate-500 leading-relaxed">
+            Explorez les <span class="font-bold text-slate-900">{{ total_tracks }} traces</span> de la communauté.
+            Survolez un point pour voir le parcours.
         </p>
+
+        <!-- Legend / Toggles -->
+        <div class="mt-4 space-y-2 border-t border-slate-100 pt-3">
+            <label
+                class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer hover:text-brand-600 transition-colors">
+                <input type="checkbox" id="toggle-heatmap" checked
+                    class="rounded text-brand-600 focus:ring-brand-500 border-gray-300">
+                <span>Heatmap</span>
+            </label>
+            <label
+                class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer hover:text-brand-600 transition-colors">
+                <input type="checkbox" id="toggle-points" checked
+                    class="rounded text-brand-600 focus:ring-brand-500 border-gray-300">
+                <span>Points de départ</span>
+            </label>
+            <label
+                class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer hover:text-brand-600 transition-colors">
+                <input type="checkbox" id="toggle-users" checked
+                    class="rounded text-brand-600 focus:ring-brand-500 border-gray-300">
+                <span>Membres</span>
+            </label>
+        </div>
     </div>
+
+    <!-- Map Controls (Top Right) -->
+    <div class="absolute top-4 right-4 z-10 flex flex-col gap-2">
+        <div
+            class="bg-white/90 backdrop-blur-md border border-slate-200 rounded-lg shadow-sm p-1.5 flex flex-col gap-1.5">
+            <button onclick="zoomIn()"
+                class="w-8 h-8 flex items-center justify-center rounded hover:bg-slate-100 text-slate-600 transition-colors">
+                <i class="ph-bold ph-plus"></i>
+            </button>
+            <button onclick="zoomOut()"
+                class="w-8 h-8 flex items-center justify-center rounded hover:bg-slate-100 text-slate-600 transition-colors">
+                <i class="ph-bold ph-minus"></i>
+            </button>
+            <div class="h-px bg-slate-200 mx-1"></div>
+            <button onclick="toggle3D()" id="btn-3d"
+                class="w-8 h-8 flex items-center justify-center rounded hover:bg-slate-100 text-slate-600 hover:text-brand-600 transition-colors font-black text-[10px]"
+                title="Basculer 3D">
+                3D
+            </button>
+            <button onclick="toggleSat()" id="btn-sat"
+                class="w-8 h-8 flex items-center justify-center rounded hover:bg-slate-100 text-slate-600 hover:text-brand-600 transition-colors"
+                title="Satellite">
+                <i class="ph-bold ph-globe-hemisphere-east"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Loading Indicator (Hidden by default) -->
+    <div id="loading-indicator"
+        class="hidden absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-white/90 backdrop-blur px-4 py-2 rounded-full shadow-xl flex items-center gap-3">
+        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-600"></div>
+        <span class="text-xs font-bold text-slate-700">Chargement de la trace...</span>
+    </div>
+
 </div>
 {% endblock %}
 
 {% block scripts %}
-
 <script id="tracks-json" type="application/json">
     {{ tracks_json | safe }}
 </script>
@@ -42,117 +121,396 @@
 </script>
 
 <script>
-    // 1. Initialize Map
-    const map = L.map('map').setView([46.603354, 1.888334], 6); // Centered on France
+    // --- Data Preparation ---
+    const tracksRaw = JSON.parse(document.getElementById('tracks-json').textContent);
+    const usersRaw = JSON.parse(document.getElementById('users-json').textContent);
 
-    const baseLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
-        maxZoom: 20
-    }).addTo(map);
-
-    // Parse Data from JSON
-    const tracksDataRaw = document.getElementById('tracks-json').textContent;
-    const usersDataRaw = document.getElementById('users-json').textContent;
-    let tracks = [];
-    let users = [];
-
-    try {
-        tracks = JSON.parse(tracksDataRaw);
-        users = JSON.parse(usersDataRaw);
-    } catch (e) {
-        console.error("Failed to parse map data", e);
-    }
-
-    // 2. Heatmap Layer
-    const heatData = tracks.map(t => [t.start_lat, t.start_lon, 0.8]);
-
-    let heatLayer = null;
-    if (heatData.length > 0) {
-        heatLayer = L.heatLayer(heatData, {
-            radius: 25,
-            blur: 15,
-            maxZoom: 10,
-            gradient: { 0.4: 'blue', 0.65: 'lime', 1: 'red' }
-        });
-        // Default: Add Heatmap
-        heatLayer.addTo(map);
-    }
-
-    // 3. User Markers Layer
-    const userLayer = L.featureGroup();
-
-    users.forEach(u => {
-        if (u.location_lat && u.location_lon) {
-            let iconHtml = "";
-            if (u.profile_picture) {
-                iconHtml = `<div class='w-10 h-10 rounded-full border-2 border-white overflow-hidden shadow-lg bg-slate-200'>
-                                <img src='${u.profile_picture}' class='w-full h-full object-cover'>
-                            </div>`;
-            } else {
-                let initials = u.username.substring(0, 2).toUpperCase();
-                iconHtml = `<div class='w-10 h-10 rounded-full border-2 border-white overflow-hidden shadow-lg bg-brand-600 flex items-center justify-center text-white font-bold text-xs'>
-                                ${initials}
-                            </div>`;
+    // Convert to GeoJSON FeatureCollection
+    const tracksGeoJSON = {
+        "type": "FeatureCollection",
+        "features": tracksRaw.map(t => ({
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [t.start_lon, t.start_lat]
+            },
+            "properties": {
+                "id": t.id,
+                "title": t.title,
+                "distance": t.distance_km,
+                "elevation": t.elevation_gain,
+                "mag": 1 // For heatmap weight
             }
-
-            const icon = L.divIcon({
-                className: 'bg-transparent border-none',
-                html: iconHtml,
-                iconSize: [40, 40],
-                iconAnchor: [20, 20]
-            });
-
-            const marker = L.marker([u.location_lat, u.location_lon], { icon: icon })
-                .bindPopup(`
-                    <div class="text-center">
-                        <div class="font-bold text-slate-900">${u.username}</div>
-                        <div class="text-xs text-slate-500">${u.location_city || ''}</div>
-                    </div>
-                `);
-            userLayer.addLayer(marker);
-        }
-    });
-
-    // 4. Activity/Track Markers (Circles)
-    const trackLayer = L.featureGroup();
-    tracks.forEach(t => {
-        L.circleMarker([t.start_lat, t.start_lon], {
-            radius: 6,
-            fillColor: "#10b981",
-            color: "#fff",
-            weight: 2,
-            opacity: 1,
-            fillOpacity: 0.8
-        }).addTo(trackLayer).bindPopup(`
-            <div class="text-center">
-                <h3 class="font-bold text-slate-900">${t.title}</h3>
-                <p class="text-xs text-slate-500 mb-2">${t.distance_km}km • ${t.elevation_gain}m+</p>
-                <a href="/track/${t.id}" class="block w-full bg-brand-600 !text-white text-xs font-bold py-1 px-2 rounded hover:bg-brand-700 transition">Voir la trace</a>
-            </div>
-        `);
-    });
-
-    // Default: Add Track Markers
-    trackLayer.addTo(map);
-
-    // 5. Layer Control
-    const overlays = {
-        "Heatmap": heatLayer,
-        "Traces (Points)": trackLayer,
-        "Membres": userLayer
+        }))
     };
 
-    // Filter out null layers
-    if (!heatLayer) delete overlays["Heatmap"];
+    // --- Map Initialization ---
+    const map = new maplibregl.Map({
+        container: 'map',
+        style: '/static/style.json', // Local style
+        center: [2.2137, 46.2276], // France center
+        zoom: 5.5,
+        pitch: 0,
+        bearing: 0,
+        antialias: true
+    });
 
-    L.control.layers(null, overlays, { position: 'topleft', collapsed: false }).addTo(map);
+    // Add Navigation Control (we use custom buttons, but standard is also fine)
+    // map.addControl(new maplibregl.NavigationControl(), 'top-right');
 
-    // Fit bounds
-    if (heatData.length > 0) {
-        const group = new L.featureGroup(heatData.map(p => L.marker([p[0], p[1]])));
-        map.fitBounds(group.getBounds().pad(0.1));
+    // Global State
+    let hoveredTrackId = null;
+    let is3D = false;
+    let isSat = false;
+
+    map.on('load', () => {
+        // --- Sources ---
+
+        // 1. Tracks Source (Points)
+        map.addSource('tracks', {
+            type: 'geojson',
+            data: tracksGeoJSON,
+            cluster: true,
+            clusterMaxZoom: 12, // Max zoom to cluster points on
+            clusterRadius: 50 // Radius of each cluster when clustering points (defaults to 50)
+        });
+
+        // 2. Heatmap Source (Same data, unclustered for smoothness or clustered?)
+        // Better to use unclustered source for heatmap
+        map.addSource('heatmap-source', {
+            type: 'geojson',
+            data: tracksGeoJSON
+        });
+
+        // 3. Hover Track Source (Empty initially)
+        map.addSource('hover-track', {
+            type: 'geojson',
+            data: {
+                "type": "FeatureCollection",
+                "features": []
+            }
+        });
+
+        // --- Layers ---
+
+        // A. Heatmap Layer
+        map.addLayer({
+            id: 'heatmap-layer',
+            type: 'heatmap',
+            source: 'heatmap-source',
+            maxzoom: 15,
+            paint: {
+                // Increase the heatmap weight based on frequency and property magnitude
+                'heatmap-weight': [
+                    'interpolate',
+                    ['linear'],
+                    ['get', 'mag'],
+                    0, 0,
+                    6, 1
+                ],
+                // Increase the heatmap color weight weight by zoom level
+                // heatmap-intensity is a multiplier on top of heatmap-weight
+                'heatmap-intensity': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    0, 1,
+                    9, 3
+                ],
+                // Color ramp for heatmap.  Domain is 0 (low) to 1 (high).
+                // Begin color ramp at 0-stop with a 0-transparancy color
+                // to create a blur-like effect.
+                'heatmap-color': [
+                    'interpolate',
+                    ['linear'],
+                    ['heatmap-density'],
+                    0, 'rgba(33,102,172,0)',
+                    0.2, 'rgb(103,169,207)',
+                    0.4, 'rgb(209,229,240)',
+                    0.6, 'rgb(253,219,199)',
+                    0.8, 'rgb(239,138,98)',
+                    1, 'rgb(178,24,43)'
+                ],
+                // Adjust the heatmap radius by zoom level
+                'heatmap-radius': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    0, 2,
+                    9, 20
+                ],
+                // Transition from heatmap to circle layer by zoom level
+                'heatmap-opacity': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    7, 1,
+                    12, 0.5
+                ],
+            }
+        });
+
+        // B. Track Line Layer (Hover)
+        map.addLayer({
+            id: 'hover-track-line',
+            type: 'line',
+            source: 'hover-track',
+            layout: {
+                'line-join': 'round',
+                'line-cap': 'round'
+            },
+            paint: {
+                'line-color': '#fc4c02', // Strava/Kairn Orange
+                'line-width': 4,
+                'line-opacity': 0.8
+            }
+        });
+
+        // C. Circle Layer (Individual Points) - Always visible or only at high zoom?
+        // Let's make them visible always but smaller at low zoom
+        map.addLayer({
+            id: 'track-points',
+            type: 'circle',
+            source: 'tracks',
+            filter: ['!', ['has', 'point_count']], // Only unclustered points
+            paint: {
+                'circle-radius': 6,
+                'circle-color': '#10b981',
+                'circle-stroke-width': 2,
+                'circle-stroke-color': '#ffffff',
+                'circle-opacity': 0.9
+            }
+        });
+
+        // D. Clusters
+        map.addLayer({
+            id: 'clusters',
+            type: 'circle',
+            source: 'tracks',
+            filter: ['has', 'point_count'],
+            paint: {
+                'circle-color': [
+                    'step',
+                    ['get', 'point_count'],
+                    '#51bbd6',
+                    100,
+                    '#f1f075',
+                    750,
+                    '#f28cb1'
+                ],
+                'circle-radius': [
+                    'step',
+                    ['get', 'point_count'],
+                    20,
+                    100,
+                    30,
+                    750,
+                    40
+                ]
+            }
+        });
+
+        map.addLayer({
+            id: 'cluster-count',
+            type: 'symbol',
+            source: 'tracks',
+            filter: ['has', 'point_count'],
+            layout: {
+                'text-field': '{point_count_abbreviated}',
+                'text-font': ['Open Sans Semibold'], // Check if fonts exist in style, otherwise might need standard font
+                'text-size': 12
+            }
+        });
+
+        // --- User Markers (Custom DOM Markers) ---
+        usersRaw.forEach(u => {
+            if (!u.location_lat || !u.location_lon) return;
+
+            const el = document.createElement('div');
+            el.className = 'w-10 h-10 rounded-full border-2 border-white shadow-md bg-white overflow-hidden cursor-pointer hover:scale-110 transition-transform';
+
+            if (u.profile_picture) {
+                const img = document.createElement('img');
+                img.src = u.profile_picture;
+                img.className = 'w-full h-full object-cover';
+                el.appendChild(img);
+            } else {
+                el.className += ' flex items-center justify-center bg-indigo-500 text-white font-bold text-xs';
+                el.innerText = u.username.substring(0, 2).toUpperCase();
+            }
+
+            // Popup
+            const popup = new maplibregl.Popup({ offset: 25 })
+                .setHTML(`
+                    <div class="p-3 text-center min-w-[120px]">
+                        <h3 class="font-bold text-slate-800 text-sm">${u.username}</h3>
+                        <p class="text-xs text-slate-500">${u.location_city || 'Localisation inconnue'}</p>
+                    </div>
+                `);
+
+            new maplibregl.Marker({ element: el })
+                .setLngLat([u.location_lon, u.location_lat])
+                .setPopup(popup)
+                .addTo(map);
+        });
+
+        // --- Interactions ---
+
+        // 1. Hover on Track Points
+        map.on('mouseenter', 'track-points', async (e) => {
+            map.getCanvas().style.cursor = 'pointer';
+
+            const feature = e.features[0];
+            const trackId = feature.properties.id;
+
+            // Show popup immediately
+            const coordinates = feature.geometry.coordinates.slice();
+            const description = `
+                <div class="px-4 py-3 min-w-[150px]">
+                    <h3 class="font-bold text-slate-900 text-sm mb-1 line-clamp-1">${feature.properties.title}</h3>
+                    <div class="flex items-center gap-3 text-xs text-slate-500">
+                        <span class="font-mono font-bold text-brand-600">${feature.properties.distance.toFixed(1)}km</span>
+                        <span>${Math.round(feature.properties.elevation)}m+</span>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-2 italic">Cliquez pour voir les détails</p>
+                </div>
+            `;
+
+            // Ensure we don't have multiple popups
+            // (Optional: store popup instance)
+            new maplibregl.Popup()
+                .setLngLat(coordinates)
+                .setHTML(description)
+                .addTo(map);
+
+            // Fetch Trace
+            if (hoveredTrackId !== trackId) {
+                hoveredTrackId = trackId;
+                document.getElementById('loading-indicator').classList.remove('hidden');
+
+                try {
+                    const res = await fetch(`/api/track/${trackId}/geojson`);
+                    if (res.ok) {
+                        const geojson = await res.json();
+                        if (geojson) {
+                            map.getSource('hover-track').setData(geojson);
+                        }
+                    }
+                } catch (err) {
+                    console.error("Failed to load trace", err);
+                } finally {
+                    document.getElementById('loading-indicator').classList.add('hidden');
+                }
+            }
+        });
+
+        map.on('mouseleave', 'track-points', () => {
+            map.getCanvas().style.cursor = '';
+            // We keep the trace visible for a bit or until next hover?
+            // Usually nice to keep it until mouse moves away significantly or new hover.
+            // For now, let's clear it? No, user might want to see it while moving mouse to other controls.
+            // But if we have a popup, it stays. 
+            // Let's NOT clear immediately to allow viewing.
+        });
+
+        // Click to go to detail
+        map.on('click', 'track-points', (e) => {
+            const trackId = e.features[0].properties.id;
+            window.location.href = `/track/${trackId}`;
+        });
+
+        // Cluster Click -> Zoom
+        map.on('click', 'clusters', (e) => {
+            const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
+            const clusterId = features[0].properties.cluster_id;
+            map.getSource('tracks').getClusterExpansionZoom(clusterId, (err, zoom) => {
+                if (err) return;
+                map.easeTo({
+                    center: features[0].geometry.coordinates,
+                    zoom: zoom
+                });
+            });
+        });
+
+        map.on('mouseenter', 'clusters', () => {
+            map.getCanvas().style.cursor = 'pointer';
+        });
+        map.on('mouseleave', 'clusters', () => {
+            map.getCanvas().style.cursor = '';
+        });
+
+    }); // End map Load
+
+    // --- Controls Logic ---
+    function zoomIn() { map.zoomIn(); }
+    function zoomOut() { map.zoomOut(); }
+
+    function toggle3D() {
+        is3D = !is3D;
+        const btn = document.getElementById('btn-3d');
+        if (is3D) {
+            map.easeTo({ pitch: 60, bearing: -17.6, duration: 1000 });
+            // Add Terrain if not already
+            if (!map.getSource('terrain')) {
+                map.addSource('terrain', {
+                    "type": "raster-dem",
+                    "tiles": [
+                        "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"
+                    ],
+                    "encoding": "terrarium",
+                    "tileSize": 256,
+                    "maxzoom": 15
+                });
+                map.setTerrain({ 'source': 'terrain', 'exaggeration': 1.2 });
+            }
+            btn.classList.add('text-brand-600', 'bg-slate-50');
+        } else {
+            map.easeTo({ pitch: 0, bearing: 0, duration: 1000 });
+            btn.classList.remove('text-brand-600', 'bg-slate-50');
+        }
     }
+
+    function toggleSat() {
+        isSat = !isSat;
+        const btn = document.getElementById('btn-sat');
+        if (isSat) {
+            if (!map.getLayer('satellite-layer')) {
+                map.addLayer({
+                    'id': 'satellite-layer',
+                    'type': 'raster',
+                    'source': {
+                        'type': 'raster',
+                        'tiles': [
+                            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+                        ],
+                        'tileSize': 256
+                    },
+                    'paint': {}
+                }, 'heatmap-layer'); // Place below heatmap
+            } else {
+                map.setLayoutProperty('satellite-layer', 'visibility', 'visible');
+            }
+            btn.classList.add('text-brand-600', 'bg-slate-50');
+        } else {
+            if (map.getLayer('satellite-layer')) {
+                map.setLayoutProperty('satellite-layer', 'visibility', 'none');
+            }
+            btn.classList.remove('text-brand-600', 'bg-slate-50');
+        }
+    }
+
+    // Toggles
+    document.getElementById('toggle-heatmap').addEventListener('change', (e) => {
+        if (e.target.checked) map.setLayoutProperty('heatmap-layer', 'visibility', 'visible');
+        else map.setLayoutProperty('heatmap-layer', 'visibility', 'none');
+    });
+
+    document.getElementById('toggle-points').addEventListener('change', (e) => {
+        const val = e.target.checked ? 'visible' : 'none';
+        map.setLayoutProperty('track-points', 'visibility', val);
+        map.setLayoutProperty('clusters', 'visibility', val);
+        map.setLayoutProperty('cluster-count', 'visibility', val);
+    });
 
 </script>
 {% endblock %}

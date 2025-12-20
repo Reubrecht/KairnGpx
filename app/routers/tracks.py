@@ -1080,3 +1080,19 @@ async def global_map_page(request: Request, db: Session = Depends(get_db)):
         "total_tracks": len(tracks),
         "user": user
     })
+
+@router.get("/api/track/{track_id}/geojson")
+async def get_track_geojson(track_id: int, db: Session = Depends(get_db)):
+    track = db.query(models.Track).filter(models.Track.id == track_id).first()
+    if not track or not track.file_path or not os.path.exists(track.file_path):
+        raise HTTPException(status_code=404, detail="Track geometry not found")
+        
+    try:
+        with open(track.file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+            analytics = GpxAnalytics(content)
+            geojson = analytics.get_geojson()
+            return geojson
+    except Exception as e:
+        print(f"Error generating GeoJSON for track {track_id}: {e}")
+        raise HTTPException(status_code=500, detail="Error generating geometry")
