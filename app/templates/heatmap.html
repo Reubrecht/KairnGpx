@@ -120,397 +120,420 @@
     {{ users_json | safe }}
 </script>
 
+
 <script>
-    // --- Data Preparation ---
-    const tracksRaw = JSON.parse(document.getElementById('tracks-json').textContent);
-    const usersRaw = JSON.parse(document.getElementById('users-json').textContent);
+    // Robust Data Parsing
+    let tracksRaw = [];
+    let usersRaw = [];
+    try {
+        const tracksEl = document.getElementById('tracks-json');
+        const usersEl = document.getElementById('users-json');
+        if (tracksEl && tracksEl.textContent) tracksRaw = JSON.parse(tracksEl.textContent);
+        if (usersEl && usersEl.textContent) usersRaw = JSON.parse(usersEl.textContent);
+    } catch (e) {
+        console.error("Data parsing error:", e);
+    }
 
-    // Convert to GeoJSON FeatureCollection
-    const tracksGeoJSON = {
-        "type": "FeatureCollection",
-        "features": tracksRaw.map(t => ({
-            "type": "Feature",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [t.start_lon, t.start_lat]
-            },
-            "properties": {
-                "id": t.id,
-                "title": t.title,
-                "distance": t.distance_km,
-                "elevation": t.elevation_gain,
-                "mag": 1 // For heatmap weight
-            }
-        }))
-    };
+    // Check MapLibre Availability
+    if (typeof maplibregl === 'undefined') {
+        console.error("MapLibre GL JS not loaded.");
+        document.getElementById('map').innerHTML = '<div class="flex items-center justify-center h-full text-red-500 font-bold">Erreur de chargement de la carte (librairie manquante).</div>';
+    } else {
 
-    // --- Map Initialization ---
-    const map = new maplibregl.Map({
-        container: 'map',
-        style: '/static/style.json', // Local style
-        center: [2.2137, 46.2276], // France center
-        zoom: 5.5,
-        pitch: 0,
-        bearing: 0,
-        antialias: true
-    });
-
-    // Add Navigation Control (we use custom buttons, but standard is also fine)
-    // map.addControl(new maplibregl.NavigationControl(), 'top-right');
-
-    // Global State
-    let hoveredTrackId = null;
-    let is3D = false;
-    let isSat = false;
-
-    map.on('load', () => {
-        // --- Sources ---
-
-        // 1. Tracks Source (Points)
-        map.addSource('tracks', {
-            type: 'geojson',
-            data: tracksGeoJSON,
-            cluster: true,
-            clusterMaxZoom: 12, // Max zoom to cluster points on
-            clusterRadius: 50 // Radius of each cluster when clustering points (defaults to 50)
-        });
-
-        // 2. Heatmap Source (Same data, unclustered for smoothness or clustered?)
-        // Better to use unclustered source for heatmap
-        map.addSource('heatmap-source', {
-            type: 'geojson',
-            data: tracksGeoJSON
-        });
-
-        // 3. Hover Track Source (Empty initially)
-        map.addSource('hover-track', {
-            type: 'geojson',
-            data: {
-                "type": "FeatureCollection",
-                "features": []
-            }
-        });
-
-        // --- Layers ---
-
-        // A. Heatmap Layer
-        map.addLayer({
-            id: 'heatmap-layer',
-            type: 'heatmap',
-            source: 'heatmap-source',
-            maxzoom: 15,
-            paint: {
-                // Increase the heatmap weight based on frequency and property magnitude
-                'heatmap-weight': [
-                    'interpolate',
-                    ['linear'],
-                    ['get', 'mag'],
-                    0, 0,
-                    6, 1
-                ],
-                // Increase the heatmap color weight weight by zoom level
-                // heatmap-intensity is a multiplier on top of heatmap-weight
-                'heatmap-intensity': [
-                    'interpolate',
-                    ['linear'],
-                    ['zoom'],
-                    0, 1,
-                    9, 3
-                ],
-                // Color ramp for heatmap.  Domain is 0 (low) to 1 (high).
-                // Begin color ramp at 0-stop with a 0-transparancy color
-                // to create a blur-like effect.
-                'heatmap-color': [
-                    'interpolate',
-                    ['linear'],
-                    ['heatmap-density'],
-                    0, 'rgba(33,102,172,0)',
-                    0.2, 'rgb(103,169,207)',
-                    0.4, 'rgb(209,229,240)',
-                    0.6, 'rgb(253,219,199)',
-                    0.8, 'rgb(239,138,98)',
-                    1, 'rgb(178,24,43)'
-                ],
-                // Adjust the heatmap radius by zoom level
-                'heatmap-radius': [
-                    'interpolate',
-                    ['linear'],
-                    ['zoom'],
-                    0, 2,
-                    9, 20
-                ],
-                // Transition from heatmap to circle layer by zoom level
-                'heatmap-opacity': [
-                    'interpolate',
-                    ['linear'],
-                    ['zoom'],
-                    7, 1,
-                    12, 0.5
-                ],
-            }
-        });
-
-        // B. Track Line Layer (Hover)
-        map.addLayer({
-            id: 'hover-track-line',
-            type: 'line',
-            source: 'hover-track',
-            layout: {
-                'line-join': 'round',
-                'line-cap': 'round'
-            },
-            paint: {
-                'line-color': '#fc4c02', // Strava/Kairn Orange
-                'line-width': 4,
-                'line-opacity': 0.8
-            }
-        });
-
-        // C. Circle Layer (Individual Points) - Always visible or only at high zoom?
-        // Let's make them visible always but smaller at low zoom
-        map.addLayer({
-            id: 'track-points',
-            type: 'circle',
-            source: 'tracks',
-            filter: ['!', ['has', 'point_count']], // Only unclustered points
-            paint: {
-                'circle-radius': 6,
-                'circle-color': '#10b981',
-                'circle-stroke-width': 2,
-                'circle-stroke-color': '#ffffff',
-                'circle-opacity': 0.9
-            }
-        });
-
-        // D. Clusters
-        map.addLayer({
-            id: 'clusters',
-            type: 'circle',
-            source: 'tracks',
-            filter: ['has', 'point_count'],
-            paint: {
-                'circle-color': [
-                    'step',
-                    ['get', 'point_count'],
-                    '#51bbd6',
-                    100,
-                    '#f1f075',
-                    750,
-                    '#f28cb1'
-                ],
-                'circle-radius': [
-                    'step',
-                    ['get', 'point_count'],
-                    20,
-                    100,
-                    30,
-                    750,
-                    40
-                ]
-            }
-        });
-
-        map.addLayer({
-            id: 'cluster-count',
-            type: 'symbol',
-            source: 'tracks',
-            filter: ['has', 'point_count'],
-            layout: {
-                'text-field': '{point_count_abbreviated}',
-                'text-font': ['Open Sans Semibold'], // Check if fonts exist in style, otherwise might need standard font
-                'text-size': 12
-            }
-        });
-
-        // --- User Markers (Custom DOM Markers) ---
-        usersRaw.forEach(u => {
-            if (!u.location_lat || !u.location_lon) return;
-
-            const el = document.createElement('div');
-            el.className = 'w-10 h-10 rounded-full border-2 border-white shadow-md bg-white overflow-hidden cursor-pointer hover:scale-110 transition-transform';
-
-            if (u.profile_picture) {
-                const img = document.createElement('img');
-                img.src = u.profile_picture;
-                img.className = 'w-full h-full object-cover';
-                el.appendChild(img);
-            } else {
-                el.className += ' flex items-center justify-center bg-indigo-500 text-white font-bold text-xs';
-                el.innerText = u.username.substring(0, 2).toUpperCase();
-            }
-
-            // Popup
-            const popup = new maplibregl.Popup({ offset: 25 })
-                .setHTML(`
-                    <div class="p-3 text-center min-w-[120px]">
-                        <h3 class="font-bold text-slate-800 text-sm">${u.username}</h3>
-                        <p class="text-xs text-slate-500">${u.location_city || 'Localisation inconnue'}</p>
-                    </div>
-                `);
-
-            new maplibregl.Marker({ element: el })
-                .setLngLat([u.location_lon, u.location_lat])
-                .setPopup(popup)
-                .addTo(map);
-        });
-
-        // --- Interactions ---
-
-        // 1. Hover on Track Points
-        map.on('mouseenter', 'track-points', async (e) => {
-            map.getCanvas().style.cursor = 'pointer';
-
-            const feature = e.features[0];
-            const trackId = feature.properties.id;
-
-            // Show popup immediately
-            const coordinates = feature.geometry.coordinates.slice();
-            const description = `
-                <div class="px-4 py-3 min-w-[150px]">
-                    <h3 class="font-bold text-slate-900 text-sm mb-1 line-clamp-1">${feature.properties.title}</h3>
-                    <div class="flex items-center gap-3 text-xs text-slate-500">
-                        <span class="font-mono font-bold text-brand-600">${feature.properties.distance.toFixed(1)}km</span>
-                        <span>${Math.round(feature.properties.elevation)}m+</span>
-                    </div>
-                    <p class="text-[10px] text-slate-400 mt-2 italic">Cliquez pour voir les détails</p>
-                </div>
-            `;
-
-            // Ensure we don't have multiple popups
-            // (Optional: store popup instance)
-            new maplibregl.Popup()
-                .setLngLat(coordinates)
-                .setHTML(description)
-                .addTo(map);
-
-            // Fetch Trace
-            if (hoveredTrackId !== trackId) {
-                hoveredTrackId = trackId;
-                document.getElementById('loading-indicator').classList.remove('hidden');
-
-                try {
-                    const res = await fetch(`/api/track/${trackId}/geojson`);
-                    if (res.ok) {
-                        const geojson = await res.json();
-                        if (geojson) {
-                            map.getSource('hover-track').setData(geojson);
-                        }
+        // Convert to GeoJSON FeatureCollection
+        const tracksGeoJSON = {
+            "type": "FeatureCollection",
+            "features": tracksRaw
+                .filter(t => t.start_lat != null && t.start_lon != null)
+                .map(t => ({
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [t.start_lon, t.start_lat]
+                    },
+                    "properties": {
+                        "id": t.id,
+                        "title": t.title,
+                        "distance": t.distance_km,
+                        "elevation": t.elevation_gain,
+                        "mag": 1 // For heatmap weight
                     }
-                } catch (err) {
-                    console.error("Failed to load trace", err);
-                } finally {
-                    document.getElementById('loading-indicator').classList.add('hidden');
+                }))
+        };
+
+        // --- Map Initialization ---
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: '/static/style.json', // Local style
+            center: [2.2137, 46.2276], // France center
+            zoom: 5.5,
+            pitch: 0,
+            bearing: 0,
+            antialias: true
+        });
+
+        // Global State
+        let hoveredTrackId = null;
+        let is3D = false;
+        let isSat = false;
+
+        map.on('load', () => {
+            console.log("Map Loaded.");
+            try {
+                // --- Sources ---
+
+                // 1. Tracks Source (Points)
+                map.addSource('tracks', {
+                    type: 'geojson',
+                    data: tracksGeoJSON,
+                    cluster: true,
+                    clusterMaxZoom: 12, // Max zoom to cluster points on
+                    clusterRadius: 50 // Radius of each cluster when clustering points (defaults to 50)
+                });
+
+                // 2. Heatmap Source (Same data, unclustered for smoothness or clustered?)
+                // Better to use unclustered source for heatmap
+                map.addSource('heatmap-source', {
+                    type: 'geojson',
+                    data: tracksGeoJSON
+                });
+
+                // 3. Hover Track Source (Empty initially)
+                map.addSource('hover-track', {
+                    type: 'geojson',
+                    data: {
+                        "type": "FeatureCollection",
+                        "features": []
+                    }
+                });
+
+                // --- Layers ---
+
+                // A. Heatmap Layer
+                map.addLayer({
+                    id: 'heatmap-layer',
+                    type: 'heatmap',
+                    source: 'heatmap-source',
+                    maxzoom: 15,
+                    paint: {
+                        // Increase the heatmap weight based on frequency and property magnitude
+                        'heatmap-weight': [
+                            'interpolate',
+                            ['linear'],
+                            ['get', 'mag'],
+                            0, 0,
+                            6, 1
+                        ],
+                        // Increase the heatmap color weight weight by zoom level
+                        // heatmap-intensity is a multiplier on top of heatmap-weight
+                        'heatmap-intensity': [
+                            'interpolate',
+                            ['linear'],
+                            ['zoom'],
+                            0, 1,
+                            9, 3
+                        ],
+                        // Color ramp for heatmap.  Domain is 0 (low) to 1 (high).
+                        // Begin color ramp at 0-stop with a 0-transparancy color
+                        // to create a blur-like effect.
+                        'heatmap-color': [
+                            'interpolate',
+                            ['linear'],
+                            ['heatmap-density'],
+                            0, 'rgba(33,102,172,0)',
+                            0.2, 'rgb(103,169,207)',
+                            0.4, 'rgb(209,229,240)',
+                            0.6, 'rgb(253,219,199)',
+                            0.8, 'rgb(239,138,98)',
+                            1, 'rgb(178,24,43)'
+                        ],
+                        // Adjust the heatmap radius by zoom level
+                        'heatmap-radius': [
+                            'interpolate',
+                            ['linear'],
+                            ['zoom'],
+                            0, 2,
+                            9, 20
+                        ],
+                        // Transition from heatmap to circle layer by zoom level
+                        'heatmap-opacity': [
+                            'interpolate',
+                            ['linear'],
+                            ['zoom'],
+                            7, 1,
+                            12, 0.5
+                        ],
+                    }
+                });
+
+                // B. Track Line Layer (Hover)
+                map.addLayer({
+                    id: 'hover-track-line',
+                    type: 'line',
+                    source: 'hover-track',
+                    layout: {
+                        'line-join': 'round',
+                        'line-cap': 'round'
+                    },
+                    paint: {
+                        'line-color': '#fc4c02', // Strava/Kairn Orange
+                        'line-width': 4,
+                        'line-opacity': 0.8
+                    }
+                });
+
+                // C. Circle Layer (Individual Points) - Always visible or only at high zoom?
+                // Let's make them visible always but smaller at low zoom
+                map.addLayer({
+                    id: 'track-points',
+                    type: 'circle',
+                    source: 'tracks',
+                    filter: ['!', ['has', 'point_count']], // Only unclustered points
+                    paint: {
+                        'circle-radius': 6,
+                        'circle-color': '#10b981',
+                        'circle-stroke-width': 2,
+                        'circle-stroke-color': '#ffffff',
+                        'circle-opacity': 0.9
+                    }
+                });
+
+                // D. Clusters
+                map.addLayer({
+                    id: 'clusters',
+                    type: 'circle',
+                    source: 'tracks',
+                    filter: ['has', 'point_count'],
+                    paint: {
+                        'circle-color': [
+                            'step',
+                            ['get', 'point_count'],
+                            '#51bbd6',
+                            100,
+                            '#f1f075',
+                            750,
+                            '#f28cb1'
+                        ],
+                        'circle-radius': [
+                            'step',
+                            ['get', 'point_count'],
+                            20,
+                            100,
+                            30,
+                            750,
+                            40
+                        ]
+                    }
+                });
+
+                map.addLayer({
+                    id: 'cluster-count',
+                    type: 'symbol',
+                    source: 'tracks',
+                    filter: ['has', 'point_count'],
+                    layout: {
+                        'text-field': '{point_count_abbreviated}',
+                        'text-font': ['Open Sans Semibold'], // Check if fonts exist in style, otherwise might need standard font
+                        'text-size': 12
+                    }
+                });
+
+                // --- User Markers (Custom DOM Markers) ---
+                if (usersRaw) {
+                    usersRaw.forEach(u => {
+                        if (!u.location_lat || !u.location_lon) return;
+
+                        const el = document.createElement('div');
+                        el.className = 'w-10 h-10 rounded-full border-2 border-white shadow-md bg-white overflow-hidden cursor-pointer hover:scale-110 transition-transform';
+
+                        if (u.profile_picture) {
+                            const img = document.createElement('img');
+                            img.src = u.profile_picture;
+                            img.className = 'w-full h-full object-cover';
+                            el.appendChild(img);
+                        } else {
+                            el.className += ' flex items-center justify-center bg-indigo-500 text-white font-bold text-xs';
+                            el.innerText = u.username.substring(0, 2).toUpperCase();
+                        }
+
+                        // Popup
+                        const popup = new maplibregl.Popup({ offset: 25 })
+                            .setHTML(`
+                                <div class="p-3 text-center min-w-[120px]">
+                                    <h3 class="font-bold text-slate-800 text-sm">${u.username}</h3>
+                                    <p class="text-xs text-slate-500">${u.location_city || 'Localisation inconnue'}</p>
+                                </div>
+                            `);
+
+                        new maplibregl.Marker({ element: el })
+                            .setLngLat([u.location_lon, u.location_lat])
+                            .setPopup(popup)
+                            .addTo(map);
+                    });
                 }
+            } catch (e) {
+                console.error("Map Load Error:", e);
             }
-        });
 
-        map.on('mouseleave', 'track-points', () => {
-            map.getCanvas().style.cursor = '';
-            // We keep the trace visible for a bit or until next hover?
-            // Usually nice to keep it until mouse moves away significantly or new hover.
-            // For now, let's clear it? No, user might want to see it while moving mouse to other controls.
-            // But if we have a popup, it stays. 
-            // Let's NOT clear immediately to allow viewing.
-        });
+            // --- Interactions ---
 
-        // Click to go to detail
-        map.on('click', 'track-points', (e) => {
-            const trackId = e.features[0].properties.id;
-            window.location.href = `/track/${trackId}`;
-        });
+            // 1. Hover on Track Points
+            map.on('mouseenter', 'track-points', async (e) => {
+                map.getCanvas().style.cursor = 'pointer';
 
-        // Cluster Click -> Zoom
-        map.on('click', 'clusters', (e) => {
-            const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
-            const clusterId = features[0].properties.cluster_id;
-            map.getSource('tracks').getClusterExpansionZoom(clusterId, (err, zoom) => {
-                if (err) return;
-                map.easeTo({
-                    center: features[0].geometry.coordinates,
-                    zoom: zoom
+                const feature = e.features[0];
+                const trackId = feature.properties.id;
+
+                // Show popup immediately
+                const coordinates = feature.geometry.coordinates.slice();
+                const description = `
+                    <div class="px-4 py-3 min-w-[150px]">
+                        <h3 class="font-bold text-slate-900 text-sm mb-1 line-clamp-1">${feature.properties.title}</h3>
+                        <div class="flex items-center gap-3 text-xs text-slate-500">
+                            <span class="font-mono font-bold text-brand-600">${feature.properties.distance.toFixed(1)}km</span>
+                            <span>${Math.round(feature.properties.elevation)}m+</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-2 italic">Cliquez pour voir les détails</p>
+                    </div>
+                `;
+
+                // Ensure we don't have multiple popups
+                // (Optional: store popup instance)
+                new maplibregl.Popup()
+                    .setLngLat(coordinates)
+                    .setHTML(description)
+                    .addTo(map);
+
+                // Fetch Trace
+                if (hoveredTrackId !== trackId) {
+                    hoveredTrackId = trackId;
+                    document.getElementById('loading-indicator').classList.remove('hidden');
+
+                    try {
+                        const res = await fetch(`/api/track/${trackId}/geojson`);
+                        if (res.ok) {
+                            const geojson = await res.json();
+                            if (geojson) {
+                                map.getSource('hover-track').setData(geojson);
+                            }
+                        }
+                    } catch (err) {
+                        console.error("Failed to load trace", err);
+                    } finally {
+                        document.getElementById('loading-indicator').classList.add('hidden');
+                    }
+                }
+            });
+
+            map.on('mouseleave', 'track-points', () => {
+                map.getCanvas().style.cursor = '';
+            });
+
+            // Cluster Click -> Zoom
+            map.on('click', 'clusters', (e) => {
+                const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
+                const clusterId = features[0].properties.cluster_id;
+                map.getSource('tracks').getClusterExpansionZoom(clusterId, (err, zoom) => {
+                    if (err) return;
+                    map.easeTo({
+                        center: features[0].geometry.coordinates,
+                        zoom: zoom
+                    });
                 });
             });
-        });
 
-        map.on('mouseenter', 'clusters', () => {
-            map.getCanvas().style.cursor = 'pointer';
-        });
-        map.on('mouseleave', 'clusters', () => {
-            map.getCanvas().style.cursor = '';
-        });
+            map.on('mouseenter', 'clusters', () => {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+            map.on('mouseleave', 'clusters', () => {
+                map.getCanvas().style.cursor = '';
+            });
 
-    }); // End map Load
+            // Click to go to detail
+            map.on('click', 'track-points', (e) => {
+                const trackId = e.features[0].properties.id;
+                window.location.href = `/track/${trackId}`;
+            });
 
-    // --- Controls Logic ---
-    function zoomIn() { map.zoomIn(); }
-    function zoomOut() { map.zoomOut(); }
+        }); // End map Load
 
-    function toggle3D() {
-        is3D = !is3D;
-        const btn = document.getElementById('btn-3d');
-        if (is3D) {
-            map.easeTo({ pitch: 60, bearing: -17.6, duration: 1000 });
-            // Add Terrain if not already
-            if (!map.getSource('terrain')) {
-                map.addSource('terrain', {
-                    "type": "raster-dem",
-                    "tiles": [
-                        "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"
-                    ],
-                    "encoding": "terrarium",
-                    "tileSize": 256,
-                    "maxzoom": 15
-                });
-                map.setTerrain({ 'source': 'terrain', 'exaggeration': 1.2 });
-            }
-            btn.classList.add('text-brand-600', 'bg-slate-50');
-        } else {
-            map.easeTo({ pitch: 0, bearing: 0, duration: 1000 });
-            btn.classList.remove('text-brand-600', 'bg-slate-50');
-        }
-    }
+        // --- Controls Logic (Safe Global Functions) ---
+        // Bind to window to ensure global access for onclick
+        window.zoomIn = function () { map.zoomIn(); };
+        window.zoomOut = function () { map.zoomOut(); };
 
-    function toggleSat() {
-        isSat = !isSat;
-        const btn = document.getElementById('btn-sat');
-        if (isSat) {
-            if (!map.getLayer('satellite-layer')) {
-                map.addLayer({
-                    'id': 'satellite-layer',
-                    'type': 'raster',
-                    'source': {
-                        'type': 'raster',
-                        'tiles': [
-                            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+        window.toggle3D = function () {
+            is3D = !is3D;
+            const btn = document.getElementById('btn-3d');
+            if (is3D) {
+                map.easeTo({ pitch: 60, bearing: -17.6, duration: 1000 });
+                // Add Terrain if not already
+                if (!map.getSource('terrain')) {
+                    map.addSource('terrain', {
+                        "type": "raster-dem",
+                        "tiles": [
+                            "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"
                         ],
-                        'tileSize': 256
-                    },
-                    'paint': {}
-                }, 'heatmap-layer'); // Place below heatmap
+                        "encoding": "terrarium",
+                        "tileSize": 256,
+                        "maxzoom": 15
+                    });
+                    map.setTerrain({ 'source': 'terrain', 'exaggeration': 1.2 });
+                }
+                btn && btn.classList.add('text-brand-600', 'bg-slate-50');
             } else {
-                map.setLayoutProperty('satellite-layer', 'visibility', 'visible');
+                map.easeTo({ pitch: 0, bearing: 0, duration: 1000 });
+                btn && btn.classList.remove('text-brand-600', 'bg-slate-50');
             }
-            btn.classList.add('text-brand-600', 'bg-slate-50');
-        } else {
-            if (map.getLayer('satellite-layer')) {
-                map.setLayoutProperty('satellite-layer', 'visibility', 'none');
+        };
+
+        window.toggleSat = function () {
+            isSat = !isSat;
+            const btn = document.getElementById('btn-sat');
+            if (isSat) {
+                if (!map.getLayer('satellite-layer')) {
+                    map.addLayer({
+                        'id': 'satellite-layer',
+                        'type': 'raster',
+                        'source': {
+                            'type': 'raster',
+                            'tiles': [
+                                'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+                            ],
+                            'tileSize': 256
+                        },
+                        'paint': {}
+                    }, 'heatmap-layer'); // Place below heatmap
+                } else {
+                    map.setLayoutProperty('satellite-layer', 'visibility', 'visible');
+                }
+                btn && btn.classList.add('text-brand-600', 'bg-slate-50');
+            } else {
+                if (map.getLayer('satellite-layer')) {
+                    map.setLayoutProperty('satellite-layer', 'visibility', 'none');
+                }
+                btn && btn.classList.remove('text-brand-600', 'bg-slate-50');
             }
-            btn.classList.remove('text-brand-600', 'bg-slate-50');
+        };
+
+        // Toggles
+        const toggleHeat = document.getElementById('toggle-heatmap');
+        if (toggleHeat) {
+            toggleHeat.addEventListener('change', (e) => {
+                if (e.target.checked) map.setLayoutProperty('heatmap-layer', 'visibility', 'visible');
+                else map.setLayoutProperty('heatmap-layer', 'visibility', 'none');
+            });
+        }
+
+        const togglePoints = document.getElementById('toggle-points');
+        if (togglePoints) {
+            togglePoints.addEventListener('change', (e) => {
+                const val = e.target.checked ? 'visible' : 'none';
+                map.setLayoutProperty('track-points', 'visibility', val);
+                map.setLayoutProperty('clusters', 'visibility', val);
+                map.setLayoutProperty('cluster-count', 'visibility', val);
+            });
         }
     }
-
-    // Toggles
-    document.getElementById('toggle-heatmap').addEventListener('change', (e) => {
-        if (e.target.checked) map.setLayoutProperty('heatmap-layer', 'visibility', 'visible');
-        else map.setLayoutProperty('heatmap-layer', 'visibility', 'none');
-    });
-
-    document.getElementById('toggle-points').addEventListener('change', (e) => {
-        const val = e.target.checked ? 'visible' : 'none';
-        map.setLayoutProperty('track-points', 'visibility', val);
-        map.setLayoutProperty('clusters', 'visibility', val);
-        map.setLayoutProperty('cluster-count', 'visibility', val);
-    });
-
 </script>
 {% endblock %}

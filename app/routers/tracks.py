@@ -1052,14 +1052,15 @@ async def global_map_page(request: Request, db: Session = Depends(get_db)):
     # Prepare JSON data for the map to avoid Jinja in JS errors
     tracks_data = []
     for t in tracks:
-        tracks_data.append({
-            "id": t.id,
-            "title": t.title,
-            "start_lat": t.start_lat,
-            "start_lon": t.start_lon,
-            "distance_km": t.distance_km,
-            "elevation_gain": t.elevation_gain
-        })
+        if t.start_lat is not None and t.start_lon is not None:
+            tracks_data.append({
+                "id": t.id,
+                "title": t.title,
+                "start_lat": t.start_lat,
+                "start_lon": t.start_lon,
+                "distance_km": t.distance_km,
+                "elevation_gain": t.elevation_gain
+            })
     
     users_data = []
     for u in users_with_location:

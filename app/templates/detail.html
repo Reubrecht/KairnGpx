@@ -917,7 +917,7 @@
                             <div class="mt-6">
                                 <h5 class="text-xs font-bold text-slate-400 uppercase mb-2">Environnement</h5>
                                 <div class="flex flex-wrap gap-2">
-                                    {% for env in track.environment %}
+                                    {% for env in track.environment or [] %}
                                     <span
                                         class="inline-flex items-center px-2 py-1 rounded bg-slate-100 text-xs font-medium text-slate-600">
                                         {{ env }}
