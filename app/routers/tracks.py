@@ -458,6 +458,78 @@ async def upload_form(request: Request, db: Session = Depends(get_db), race_rout
         "race_events": race_events
     })
 
+@router.post("/upload/stage")
+async def stage_track_upload(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    user = await get_current_user(request, db)
+    
+    content = await file.read()
+    file_hash = calculate_file_hash(content)
+    
+    # Save to temp location (or just standard uploads but not referenced in DB yet)
+    # Actually, using the standard uploads dir is fine as long as we don't create a Track record yet
+    # But we might want to cleanup unused files later. For now, let's just save it.
+    upload_dir = "app/uploads"
+    os.makedirs(upload_dir, exist_ok=True)
+    file_path = os.path.join(upload_dir, f"temp_{file_hash}.gpx")
+    
+    with open(file_path, "w", encoding="utf-8") as f:
+        # We might need to handle bytes vs string here depending on calculate_file_hash input
+        # Standardize content to bytes for hash, write typically needs str for simplified or bytes for raw
+        # Let's save as is for now
+        f.write(content.decode('utf-8'))
+        
+    return {"temp_id": file_hash, "original_name": file.filename}
+
+@router.get("/upload", response_class=HTMLResponse)
+async def upload_form(
+    request: Request, 
+    db: Session = Depends(get_db), 
+    race_route_id: Optional[int] = None,
+    temp_id: Optional[str] = None
+):
+    user = await get_current_user(request, db) # Force login
+    
+    prefill_race = None
+    if race_route_id:
+        route = db.query(models.RaceRoute).filter(models.RaceRoute.id == race_route_id).first()
+        if route:
+            prefill_race = {
+                "id": route.id,
+                "name": route.edition.event.name,
+                "year": route.edition.year,
+                "route_name": route.name,
+                "category": route.distance_category
+            }
+            
+    # Staged File Info
+    staged_file = None
+    if temp_id:
+        file_path = os.path.join("app/uploads", f"temp_{temp_id}.gpx")
+        if os.path.exists(file_path):
+             with open(file_path, 'r', encoding="utf-8") as f:
+                 analytics = GpxAnalytics(f.read())
+                 meta = analytics.get_metadata()
+                 metrics = analytics.calculate_metrics()
+                 staged_file = {
+                     "id": temp_id,
+                     "name": meta.get("name", "Trace Importée"),
+                     "dist": f"{metrics['distance_km']}km",
+                     "elev": f"{int(metrics['elevation_gain'])}m+"
+                 }
+
+    race_events = db.query(models.RaceEvent).order_by(models.RaceEvent.name).all()
+
+    return templates.TemplateResponse("upload.html", {
+        "request": request,
+        "status_options": [],
+        "technicity_options": [],
+        "terrain_options": [],
+        "user": user,
+        "prefill_race": prefill_race,
+        "staged_file": staged_file,
+        "race_events": race_events
+    })
+
 @router.post("/upload")
 async def upload_track(
     request: Request,
@@ -477,11 +549,25 @@ async def upload_track(
     race_year: Optional[int] = Form(None),
     race_route_name: Optional[str] = Form(None),
     
-    file: UploadFile = File(...),
+    # Files: One of these is required
+    file: Optional[UploadFile] = File(None),
+    temp_file_id: Optional[str] = Form(None),
+    
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    content = await file.read()
+    if file:
+        content = await file.read()
+    elif temp_file_id:
+        # Load from temp
+        temp_path = os.path.join("app/uploads", f"temp_{temp_file_id}.gpx")
+        if not os.path.exists(temp_path):
+            raise HTTPException(status_code=400, detail="Fichier temporaire expiré ou introuvable.")
+        with open(temp_path, "r", encoding="utf-8") as f:
+            content = f.read().encode('utf-8')
+    else:
+        raise HTTPException(status_code=400, detail="Veuillez fournir un fichier GPX.")
+
     file_hash = calculate_file_hash(content)
 
     existing_track = db.query(models.Track).filter(models.Track.file_hash == file_hash).first()

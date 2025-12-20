@@ -40,6 +40,8 @@
                             id="drop-zone">
                             <input type="file" name="file" id="file" class="hidden" accept=".gpx">
                             <input type="hidden" name="strava_activity_id" id="strava-activity-id">
+                            <input type="hidden" name="temp_file_id" id="temp-file-id"
+                                value="{{ staged_file.id if staged_file else '' }}">
 
                             <div class="space-y-4">
                                 <div
@@ -70,9 +72,26 @@
                             <img src="/static/img/strava_logo.svg" alt="Strava" class="h-8 mx-auto mb-3">
                             <p class="text-lg font-bold text-slate-900" id="strava-selected-name">Activité Strava</p>
                             <p class="text-sm text-slate-600 mt-1" id="strava-selected-details">12.5km • 450m+</p>
-                            <p class="text-xs text-[#FC4C02] font-bold mt-4">Prêt à importer ! Complétez les infos
+                            ci-dessous.</p>
+                        </div>
+
+                        <!-- Staged File Display -->
+                        {% if staged_file %}
+                        <div id="staged-file-display"
+                            class="border-2 border-brand-500 bg-brand-50 rounded-xl p-6 text-center relative animate-fade-in-up">
+                            <i class="ph-bold ph-file-gpx text-4xl text-brand-600 mb-3 block"></i>
+                            <p class="text-lg font-bold text-slate-900">{{ staged_file.name }}</p>
+                            <p class="text-sm text-slate-600 mt-1">{{ staged_file.dist }} • {{ staged_file.elev }}</p>
+                            <p class="text-xs text-brand-700 font-bold mt-4">Fichier prêt ! Vérifiez les infos
                                 ci-dessous.</p>
                         </div>
+                        <script>
+                            document.addEventListener('DOMContentLoaded', () => {
+                                document.getElementById('drop-zone').classList.add('hidden');
+                                document.getElementById('title-input').value = "{{ staged_file.name }}";
+                            });
+                        </script>
+                        {% endif %}
                         <div id="file-feedback"
                             class="hidden mt-4 p-4 bg-green-50 rounded-lg border border-green-100 flex items-center gap-3">
                             <svg class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
