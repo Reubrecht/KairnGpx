@@ -58,6 +58,32 @@ class GpxAnalytics:
         if not self.gpx or not self.points:
             return {}
 
+        # 0. Smooth Elevation Data (Moving Average)
+        # Apply smoothing to self.points directly to influence all downstream calculations
+        if len(self.points) > 5:
+            # Create a list of elevations
+            elevs = [p.elevation for p in self.points]
+            # Verify we have elevations
+            if all(e is not None for e in elevs):
+                window_size = 5
+                smoothed_elevs = []
+                # Simple Moving Average
+                for i in range(len(elevs)):
+                    start = max(0, i - window_size // 2)
+                    end = min(len(elevs), i + window_size // 2 + 1)
+                    window = elevs[start:end]
+                    smoothed_elevs.append(sum(window) / len(window))
+                
+                # Apply back to points
+                for i, p in enumerate(self.points):
+                    p.elevation = smoothed_elevs[i]
+                    
+                # Also must update the internal gpx object caches if possible, 
+                # but gpxpy methods calculate on the fly from points usually.
+                # However, gpx.get_uphill_downhill() iterates tracks/segments.
+                # We need to make sure we updated the objects that gpxpy iterates.
+                # self.points contains references to the points in the segments, so modifying them is correct.
+        
         # 1. Basic Stats
         # gpxpy methods often only work on TRACKS, not ROUTES.
         # If we parsed a Route, we must calculate manually from self.points.
