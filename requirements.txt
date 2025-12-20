@@ -16,3 +16,4 @@ python-slugify
 psycopg2-binary
 GeoAlchemy2
 httpx
+Pillow
