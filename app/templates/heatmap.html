@@ -41,31 +41,42 @@
     <div id="map" class="absolute inset-0 z-0"></div>
 
     <!-- Floating Title (Top Left) -->
-    <div class="absolute top-6 left-6 z-10 pointer-events-none">
+    <div class="absolute top-4 left-4 md:top-6 md:left-6 z-10 pointer-events-none">
 
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 md:gap-3">
             <div
-                class="bg-white/90 backdrop-blur shadow-lg shadow-black/5 rounded-xl p-2.5 flex items-center justify-center pointer-events-auto transition-transform hover:scale-105">
+                class="bg-white/90 backdrop-blur shadow-lg shadow-black/5 rounded-xl p-1.5 md:p-2.5 flex items-center justify-center pointer-events-auto transition-transform hover:scale-105">
                 <div
-                    class="bg-gradient-to-br from-brand-500 to-brand-600 text-white w-8 h-8 rounded-lg flex items-center justify-center shadow-inner">
-                    <i class="ph-bold ph-globe-hemisphere-west text-lg"></i>
+                    class="bg-gradient-to-br from-brand-500 to-brand-600 text-white w-6 h-6 md:w-8 md:h-8 rounded-lg flex items-center justify-center shadow-inner">
+                    <i class="ph-bold ph-globe-hemisphere-west text-sm md:text-lg"></i>
                 </div>
             </div>
             <div>
-                <h1 class="font-black text-2xl text-slate-800 drop-shadow-md tracking-tight flex items-baseline gap-2">
+                <h1
+                    class="font-black text-lg md:text-2xl text-slate-800 drop-shadow-md tracking-tight flex items-baseline gap-2">
                     Kairn Maps
                     <span
-                        class="text-[10px] bg-white/90 backdrop-blur font-bold text-brand-600 px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm border border-white/50">Beta</span>
+                        class="text-[9px] md:text-[10px] bg-white/90 backdrop-blur font-bold text-brand-600 px-1.5 md:px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm border border-white/50">Beta</span>
                 </h1>
-                <p class="text-sm font-medium text-slate-600 drop-shadow-sm flex items-center gap-2">
-                    <span class="bg-slate-800 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">{{ total_tracks
-                        }}</span> traces
+                <p class="text-xs md:text-sm font-medium text-slate-600 drop-shadow-sm flex items-center gap-2">
+                    <span class="bg-slate-800 text-white px-1.5 py-0.5 rounded text-[9px] md:text-[10px] font-bold">{{
+                        total_tracks
+                        }}</span> <span class="hidden md:inline">traces</span>
                     <span class="w-1 h-1 rounded-full bg-slate-400"></span>
-                    <span class="bg-orange-500 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">{{ total_events
-                        }}</span> événements
+                    <span class="bg-orange-500 text-white px-1.5 py-0.5 rounded text-[9px] md:text-[10px] font-bold">{{
+                        total_events
+                        }}</span> <span class="hidden md:inline">événements</span>
                 </p>
             </div>
         </div>
+    </div>
+
+    <!-- Mobile Create Button (Bottom Right) -->
+    <div class="absolute bottom-6 right-6 z-20 md:hidden">
+        <a href="/upload"
+            class="flex items-center justify-center w-14 h-14 bg-brand-600 text-white rounded-full shadow-xl hover:bg-brand-700 transition-transform active:scale-95 shadow-brand-500/40">
+            <i class="ph-bold ph-plus text-2xl"></i>
+        </a>
     </div>
 
 
