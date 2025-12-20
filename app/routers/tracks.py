@@ -340,6 +340,7 @@ async def advanced_search(
     ratio_category: Optional[str] = None,
     is_official: Optional[bool] = None,
     author: Optional[str] = None,
+    ajax: Optional[bool] = None
 ):
     user = await get_current_user_optional(request, db)
     has_beta = request.cookies.get("beta_access_v2") == "granted"
@@ -407,6 +408,13 @@ async def advanced_search(
                 filtered_tracks.append(t)
         
         tracks = filtered_tracks
+
+    if ajax:
+        return templates.TemplateResponse("search_results_list.html", {
+            "request": request,
+            "tracks": tracks,
+            "user": user,
+        })
 
     return templates.TemplateResponse("search.html", {
         "request": request,

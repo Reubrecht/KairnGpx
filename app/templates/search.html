@@ -123,44 +123,60 @@
         </div>
 
         <!-- Results -->
-        <div>
-            <h2 class="text-xl font-bold text-slate-900 mb-4">{{ tracks|length }} Résultats</h2>
-
-            {% if tracks %}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {% for track in tracks %}
-                <a href="/track/{{ track.id }}"
-                    class="group block bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 hover:border-brand-200">
-                    <div class="p-4">
-                        <div class="flex justify-between items-start mb-2">
-                            <h3 class="font-bold text-slate-900 group-hover:text-brand-600 truncate">{{ track.title }}
-                            </h3>
-                        </div>
-                        <div class="flex items-center text-xs text-slate-500 mb-3">
-                            <span class="font-bold text-slate-700 mr-1">{{ track.uploader_name }}</span>
-                            <span>•</span>
-                            <span class="ml-1">{{ track.created_at.strftime('%d/%m/%Y') }}</span>
-                        </div>
-                        <div class="flex gap-4 text-sm">
-                            <div><span class="font-bold text-slate-800">{{ track.distance_km }}</span> <span
-                                    class="text-slate-500">km</span></div>
-                            <div><span class="font-bold text-slate-800">{{ track.elevation_gain }}</span> <span
-                                    class="text-slate-500">m+</span></div>
-                        </div>
-                        <div class="mt-2 text-xs text-slate-400 truncate">
-                            📍 {{ track.location_city or 'Lieu inconnu' }}
-                        </div>
-                    </div>
-                </a>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                <p class="text-slate-500">Aucun résultat ne correspond à votre recherche.</p>
-            </div>
-            {% endif %}
+        <div id="results-container">
+            {% include 'search_results_list.html' %}
         </div>
 
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.querySelector('form');
+        const resultsContainer = document.getElementById('results-container');
+        const inputs = form.querySelectorAll('input, select');
+
+        let debounceTimer;
+
+        function fetchResults() {
+            const formData = new FormData(form);
+            const params = new URLSearchParams(formData);
+            params.append('ajax', '1');
+
+            // Show loading state (opacity)
+            resultsContainer.style.opacity = '0.5';
+
+            fetch(`${form.action}?${params.toString()}`)
+                .then(response => response.text())
+                .then(html => {
+                    resultsContainer.innerHTML = html;
+                    resultsContainer.style.opacity = '1';
+
+                    // Update URL without refreshing
+                    const newUrl = `${window.location.pathname}?${params.toString().replace('&ajax=1', '')}`;
+                    window.history.pushState({}, '', newUrl);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    resultsContainer.style.opacity = '1';
+                });
+        }
+
+        inputs.forEach(input => {
+            if (input.type === 'text' || input.type === 'number') {
+                input.addEventListener('input', () => {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(fetchResults, 500); // 500ms debounce for typing
+                });
+            } else {
+                input.addEventListener('change', fetchResults);
+            }
+        });
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            fetchResults();
+        });
+    });
+</script>
 {% endblock %}
