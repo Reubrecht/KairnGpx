@@ -505,17 +505,26 @@ async def upload_form(
     staged_file = None
     if temp_id:
         file_path = os.path.join("app/uploads", f"temp_{temp_id}.gpx")
+        print(f"Looking for staged file at: {file_path}")
         if os.path.exists(file_path):
-             with open(file_path, 'r', encoding="utf-8") as f:
-                 analytics = GpxAnalytics(f.read())
-                 meta = analytics.get_metadata()
-                 metrics = analytics.calculate_metrics()
-                 staged_file = {
-                     "id": temp_id,
-                     "name": meta.get("name", "Trace Importée"),
-                     "dist": f"{metrics['distance_km']}km",
-                     "elev": f"{int(metrics['elevation_gain'])}m+"
-                 }
+             try:
+                 with open(file_path, 'r', encoding="utf-8") as f:
+                     analytics = GpxAnalytics(f.read())
+                     meta = analytics.get_metadata()
+                     metrics = analytics.calculate_metrics()
+                     if metrics:
+                        staged_file = {
+                            "id": temp_id,
+                            "name": meta.get("name", "Trace Importée"),
+                            "dist": f"{metrics.get('distance_km', 0)}km",
+                            "elev": f"{int(metrics.get('elevation_gain', 0))}m+"
+                        }
+                     else:
+                         print(f"Metrics failed for {temp_id}")
+             except Exception as e:
+                 print(f"Error loading staged file {temp_id}: {e}")
+        else:
+             print(f"Staged file not found: {file_path}")
 
     race_events = db.query(models.RaceEvent).order_by(models.RaceEvent.name).all()
 
