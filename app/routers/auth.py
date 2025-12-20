@@ -19,6 +19,9 @@ from ..dependencies import (
 
 router = APIRouter()
 
+from ..services.email import EmailService
+import uuid
+
 @router.get("/register", response_class=HTMLResponse)
 def register_page(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
@@ -70,7 +73,10 @@ def register(
             location_region=location_region,
             location_country=location_country,
             location_lat=location_lat,
-            location_lon=location_lon
+            location_lon=location_lon,
+            # Email Verification
+            is_email_verified=False,
+            email_verification_token=str(uuid.uuid4())
         )
         
         db.add(user)
@@ -97,6 +103,10 @@ def register(
             except Exception as e:
                 print(f"Profile Pic Error: {e}")
         
+        # Send Verification Email
+        email_service = EmailService()
+        email_service.send_verification_email(user.email, user.email_verification_token)
+
         return RedirectResponse(url="/login?registered=True", status_code=status.HTTP_303_SEE_OTHER)
     except Exception as e:
         print(f"REGISTER ERROR: {e}")
@@ -155,3 +165,22 @@ async def verify_beta(request: Request, code: str = Form(...)):
             "error": "Code incorrect.",
             "has_beta": False
         })
+
+@router.get("/verify-email")
+def verify_email(request: Request, token: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email_verification_token == token).first()
+    if not user:
+        return templates.TemplateResponse("login.html", {
+            "request": request,
+            "error": "Lien de vérification invalide ou expiré."
+        })
+    
+    user.is_email_verified = True
+    user.email_verification_token = None # Optional: Clear token to prevent reuse
+    db.commit()
+    
+    return templates.TemplateResponse("login.html", {
+        "request": request,
+        "success": "Email vérifié avec succès ! Vous pouvez maintenant vous connecter."
+    })
+

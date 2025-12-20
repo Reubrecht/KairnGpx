@@ -99,6 +99,10 @@ class User(Base):
     is_premium = Column(Boolean, default=False)
     prediction_config = Column(JSON, nullable=True) # Custom prediction parameters for premium users
 
+    # Email Verification
+    is_email_verified = Column(Boolean, default=False)
+    email_verification_token = Column(String, nullable=True)
+
     # Profile
     full_name = Column(String, nullable=True)
     bio = Column(Text, nullable=True)

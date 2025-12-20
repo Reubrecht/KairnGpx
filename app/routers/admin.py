@@ -742,8 +742,35 @@ async def import_races_json(file: UploadFile, db: Session = Depends(get_db), cur
     return RedirectResponse(url="/superadmin#events", status_code=303)
 
 
-@router.get("/api/admin/pending_count")
-async def get_pending_count(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_admin)):
     req_count = db.query(models.EventRequest).filter(models.EventRequest.status == "PENDING").count()
     track_count = db.query(models.Track).filter(models.Track.verification_status == models.VerificationStatus.PENDING).count()
     return {"count": req_count + track_count, "requests": req_count, "tracks": track_count}
+
+
+# --- SUPER ADMIN : EMAIL ---
+
+@router.post("/superadmin/email/send")
+async def send_email_admin(
+    recipient: str = Form(...),
+    subject: str = Form(...),
+    content: str = Form(...),
+    current_user: models.User = Depends(get_current_super_admin)
+):
+    from ..services.email import EmailService
+    service = EmailService()
+    
+    # Wrap content in basic paragraphs if it's plain text
+    # (The generic template expects specific HTML or text, let's wrap it in div for safety)
+    formatted_content = content.replace("\n", "<br>")
+    
+    html = service._get_html_template(
+        title=subject,
+        body_content=formatted_content
+    )
+    
+    success = service.send_email(recipient, subject, html)
+    
+    if success:
+        return RedirectResponse(url="/superadmin#email?success=true", status_code=303)
+    else:
+        return RedirectResponse(url="/superadmin#email?error=true", status_code=303)
