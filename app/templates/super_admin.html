@@ -502,7 +502,8 @@
                             <button data-id="{{ u.id }}" data-username="{{ u.username }}" data-email="{{ u.email }}"
                                 data-utmb="{{ u.utmb_index or '' }}" data-role="{{ u.role.value }}"
                                 data-premium="{{ u.is_premium|string|lower }}" data-fullname="{{ u.full_name or '' }}"
-                                onclick="openUserEditModal(this.dataset.id, this.dataset.username, this.dataset.email, this.dataset.utmb, this.dataset.role, this.dataset.premium, this.dataset.fullname)"
+                                data-profile-picture="{{ u.profile_picture or '' }}"
+                                onclick="openUserEditModal(this.dataset.id, this.dataset.username, this.dataset.email, this.dataset.utmb, this.dataset.role, this.dataset.premium, this.dataset.fullname, this.dataset.profilePicture)"
                                 class="text-blue-500 hover:bg-blue-50 p-1 rounded"><i
                                     class="ph-bold ph-pencil-simple"></i></button>
 
@@ -550,7 +551,8 @@
                     <button data-id="{{ u.id }}" data-username="{{ u.username }}" data-email="{{ u.email }}"
                         data-utmb="{{ u.utmb_index or '' }}" data-role="{{ u.role.value }}"
                         data-premium="{{ u.is_premium|string|lower }}" data-fullname="{{ u.full_name or '' }}"
-                        onclick="openUserEditModal(this.dataset.id, this.dataset.username, this.dataset.email, this.dataset.utmb, this.dataset.role, this.dataset.premium, this.dataset.fullname)"
+                        data-profile-picture="{{ u.profile_picture or '' }}"
+                        onclick="openUserEditModal(this.dataset.id, this.dataset.username, this.dataset.email, this.dataset.utmb, this.dataset.role, this.dataset.premium, this.dataset.fullname, this.dataset.profilePicture)"
                         class="flex-1 py-2 rounded-lg bg-slate-50 text-slate-600 font-bold text-xs hover:bg-slate-100">Éditer</button>
                     <form action="/superadmin/user/{{ u.id }}/toggle_premium" method="POST" class="flex-1">
                         <button
@@ -1355,6 +1357,26 @@
         <h3 class="font-bold text-lg mb-4 text-slate-900 flex items-center gap-2">
             <i class="ph-bold ph-pencil-simple text-brand-600"></i> Éditer Utilisateur
         </h3>
+
+        <!-- Image Upload Form (Separate) -->
+        <div class="mb-4 flex items-center gap-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
+            <div class="relative">
+                <img id="edit-user-avatar" src="" alt="Avatar"
+                    class="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm bg-slate-200">
+            </div>
+            <form id="upload-image-form" action="" method="POST" enctype="multipart/form-data" class="flex-1">
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Photo de profil</label>
+                <div class="flex gap-2">
+                    <input type="file" name="file" accept="image/*"
+                        class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100">
+                    <button type="submit"
+                        class="bg-brand-600 text-white px-3 py-1 rounded-lg text-xs font-bold hover:bg-brand-700 shadow-sm">
+                        <i class="ph-bold ph-upload-simple"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+
         <form id="edit-user-form" action="" method="POST" class="space-y-4">
             <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Username</label>
@@ -1420,12 +1442,23 @@
 </dialog>
 
 <script>
-    function openUserEditModal(id, username, email, utmb, role, isPremium, fullName) {
+    function openUserEditModal(id, username, email, utmb, role, isPremium, fullName, profilePic) {
         const modal = document.getElementById('modal-edit-user');
         const form = document.getElementById('edit-user-form');
+        const imgForm = document.getElementById('upload-image-form');
+        const avatar = document.getElementById('edit-user-avatar');
 
         // Dynamic Action URL
         form.action = `/superadmin/user/${id}/edit_full`;
+        imgForm.action = `/superadmin/user/${id}/upload_image`;
+
+        // Update Avatar Preview
+        if (profilePic && profilePic !== 'None') {
+            avatar.src = profilePic;
+        } else {
+            // Placeholder
+            avatar.src = `https://ui-avatars.com/api/?name=${username}&background=random`;
+        }
 
         // Update Profile Link
         document.getElementById('btn-user-profile').href = `/u/${username}`;

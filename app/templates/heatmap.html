@@ -552,10 +552,11 @@
 
         // --- Controls Logic (Safe Global Functions) ---
         // Bind to window to ensure global access for onclick
-        window.zoomIn = function () { map.zoomIn(); };
-        window.zoomOut = function () { map.zoomOut(); };
+        window.zoomIn = function () { if (map) map.zoomIn(); };
+        window.zoomOut = function () { if (map) map.zoomOut(); };
 
         window.toggle3D = function () {
+            if (!map) return;
             is3D = !is3D;
             const btn = document.getElementById('btn-3d');
             if (is3D) {
@@ -571,22 +572,35 @@
                         "tileSize": 256,
                         "maxzoom": 15
                     });
-                    map.setTerrain({ 'source': 'terrain', 'exaggeration': 1.2 });
                 }
-                btn && btn.classList.add('text-brand-600', 'bg-brand-50', 'ring-1', 'ring-brand-500/20');
-                btn && btn.classList.remove('hover:bg-slate-100', 'text-slate-600');
+                map.setTerrain({ 'source': 'terrain', 'exaggeration': 1.2 });
+
+                if (btn) {
+                    btn.classList.add('text-brand-600', 'bg-brand-50', 'ring-1', 'ring-brand-500/20');
+                    btn.classList.remove('hover:bg-slate-100', 'text-slate-600');
+                }
             } else {
                 map.easeTo({ pitch: 0, bearing: 0, duration: 1000 });
-                btn && btn.classList.remove('text-brand-600', 'bg-brand-50', 'ring-1', 'ring-brand-500/20');
-                btn && btn.classList.add('hover:bg-slate-100', 'text-slate-600');
+                // Remove terrain after transition
+                setTimeout(() => {
+                    if (!is3D && map) map.setTerrain(null);
+                }, 1000);
+
+                if (btn) {
+                    btn.classList.remove('text-brand-600', 'bg-brand-50', 'ring-1', 'ring-brand-500/20');
+                    btn.classList.add('hover:bg-slate-100', 'text-slate-600');
+                }
             }
         };
 
         window.toggleSat = function () {
+            if (!map) return;
             isSat = !isSat;
             const btn = document.getElementById('btn-sat');
             if (isSat) {
                 if (!map.getLayer('satellite-layer')) {
+                    // Try to place behind heatmap if it exists, otherwise just add
+                    const beforeId = map.getLayer('heatmap-layer') ? 'heatmap-layer' : null;
                     map.addLayer({
                         'id': 'satellite-layer',
                         'type': 'raster',
@@ -598,63 +612,58 @@
                             'tileSize': 256
                         },
                         'paint': {}
-                    }, 'heatmap-layer'); // Place below heatmap
+                    }, beforeId);
                 } else {
                     map.setLayoutProperty('satellite-layer', 'visibility', 'visible');
                 }
-                btn && btn.classList.add('text-brand-600', 'bg-brand-50', 'ring-1', 'ring-brand-500/20');
-                btn && btn.classList.remove('hover:bg-slate-100', 'text-slate-600');
+                if (btn) {
+                    btn.classList.add('text-brand-600', 'bg-brand-50', 'ring-1', 'ring-brand-500/20');
+                    btn.classList.remove('hover:bg-slate-100', 'text-slate-600');
+                }
             } else {
                 if (map.getLayer('satellite-layer')) {
                     map.setLayoutProperty('satellite-layer', 'visibility', 'none');
                 }
-                btn && btn.classList.remove('text-brand-600', 'bg-brand-50', 'ring-1', 'ring-brand-500/20');
-                btn && btn.classList.add('hover:bg-slate-100', 'text-slate-600');
+                if (btn) {
+                    btn.classList.remove('text-brand-600', 'bg-brand-50', 'ring-1', 'ring-brand-500/20');
+                    btn.classList.add('hover:bg-slate-100', 'text-slate-600');
+                }
             }
         };
 
         // Toggle Layer Logic
         window.toggleLayer = function (layerType) {
+            if (!map) return;
             const btn = document.getElementById(`btn-${layerType}`);
             let isActive = false;
 
             // Define active visual classes per type
             let activeClasses = [];
-            let inactiveClasses = ['hover:bg-slate-100', 'text-slate-600', 'bg-white'];
-            // Although clean bg-white default is set in HTML, let's just toggle the active colors.
-
-            // Helper to check usage:
-            // Heatmap: red
-            // Points: emerald
-            // Events: orange
-            // Users: indigo
 
             switch (layerType) {
                 case 'heatmap':
-                    const isHeatmapVisible = map.getLayoutProperty('heatmap-layer', 'visibility') !== 'none';
-                    isActive = !isHeatmapVisible;
-                    map.setLayoutProperty('heatmap-layer', 'visibility', isActive ? 'visible' : 'none');
+                    if (map.getLayer('heatmap-layer')) {
+                        const isHeatmapVisible = map.getLayoutProperty('heatmap-layer', 'visibility') !== 'none';
+                        isActive = !isHeatmapVisible;
+                        map.setLayoutProperty('heatmap-layer', 'visibility', isActive ? 'visible' : 'none');
+                    }
                     activeClasses = ['text-red-600', 'bg-red-50', 'ring-1', 'ring-red-500/20'];
                     break;
 
                 case 'points':
-                    const isPointsVisible = map.getLayoutProperty('track-points', 'visibility') !== 'none';
-                    isActive = !isPointsVisible;
-                    const val = isActive ? 'visible' : 'none';
-                    if (map.getLayer('track-points')) map.setLayoutProperty('track-points', 'visibility', val);
-                    if (map.getLayer('clusters')) map.setLayoutProperty('clusters', 'visibility', val);
-                    if (map.getLayer('cluster-count')) map.setLayoutProperty('cluster-count', 'visibility', val);
+                    if (map.getLayer('track-points')) {
+                        const isPointsVisible = map.getLayoutProperty('track-points', 'visibility') !== 'none';
+                        isActive = !isPointsVisible;
+                        const val = isActive ? 'visible' : 'none';
+                        map.setLayoutProperty('track-points', 'visibility', val);
+                        if (map.getLayer('clusters')) map.setLayoutProperty('clusters', 'visibility', val);
+                        if (map.getLayer('cluster-count')) map.setLayoutProperty('cluster-count', 'visibility', val);
+                    }
                     activeClasses = ['text-emerald-600', 'bg-emerald-50', 'ring-1', 'ring-emerald-500/20'];
                     break;
 
                 case 'events':
-                    // Check current state via button class or global var?
-                    // Let's rely on button class mostly or a simple tracking var.
-                    // Or checking marker visibility.
-                    // Simplest: Check if button has active class? No, logic first.
-                    // We'll trust the button state logic below.
-                    isActive = !btn.classList.contains('bg-orange-50'); // If currently NOT orange, make it orange (active)
-
+                    isActive = !btn.classList.contains('bg-orange-50');
                     if (window.eventMarkers) {
                         window.eventMarkers.forEach(m => {
                             const el = m.getElement();
