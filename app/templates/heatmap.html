@@ -161,6 +161,12 @@
                 }))
         };
 
+        // Global State
+        let hoveredTrackId = null;
+        let currentPopup = null; // Track current popup to remove it
+        let is3D = false;
+        let isSat = false;
+
         // --- Map Initialization ---
         const map = new maplibregl.Map({
             container: 'map',
@@ -172,34 +178,41 @@
             antialias: true
         });
 
-        // Determine bounds of all tracks to auto-focus
-        if (tracksRaw && tracksRaw.length > 0) {
-            const bounds = new maplibregl.LngLatBounds();
-            let hasValidCoords = false;
-
-            tracksRaw.forEach(t => {
-                if (t.start_lat != null && t.start_lon != null) {
-                    bounds.extend([t.start_lon, t.start_lat]);
-                    hasValidCoords = true;
-                }
-            });
-
-            if (hasValidCoords) {
-                // Use fitBounds to focus on the data
-                // We do this immediately or on load? Usually safer on load or immediately if container ready.
-                // Doing it nicely:
-                map.fitBounds(bounds, {
-                    padding: 80,
-                    maxZoom: 12, // Don't zoom in too close if only 1 point
-                    animate: false // Instant fit on init
+        // Geolocation: Center on user
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(position => {
+                const { latitude, longitude } = position.coords;
+                // Fly to user location
+                map.flyTo({
+                    center: [longitude, latitude],
+                    zoom: 9, // Closer zoom when located
+                    essential: true
                 });
-            }
+            }, error => {
+                console.warn("Geolocation access denied or failed:", error);
+                // Fallback: Fit bounds of all tracks if no geo (or just keep default France)
+                // Existing logic below handles fitBounds if we want:
+                fitBoundsToTracks();
+            });
+        } else {
+            fitBoundsToTracks();
         }
 
-        // Global State
-        let hoveredTrackId = null;
-        let is3D = false;
-        let isSat = false;
+        function fitBoundsToTracks() {
+            if (tracksRaw && tracksRaw.length > 0) {
+                const bounds = new maplibregl.LngLatBounds();
+                let hasValidCoords = false;
+                tracksRaw.forEach(t => {
+                    if (t.start_lat != null && t.start_lon != null) {
+                        bounds.extend([t.start_lon, t.start_lat]);
+                        hasValidCoords = true;
+                    }
+                });
+                if (hasValidCoords) {
+                    map.fitBounds(bounds, { padding: 80, maxZoom: 12, animate: true });
+                }
+            }
+        }
 
         map.on('load', () => {
             console.log("Map Loaded.");
@@ -211,24 +224,20 @@
                     type: 'geojson',
                     data: tracksGeoJSON,
                     cluster: true,
-                    clusterMaxZoom: 12, // Max zoom to cluster points on
-                    clusterRadius: 50 // Radius of each cluster when clustering points (defaults to 50)
+                    clusterMaxZoom: 9, // Changed from 12 to 9 to show points earlier
+                    clusterRadius: 50
                 });
 
-                // 2. Heatmap Source (Same data, unclustered for smoothness or clustered?)
-                // Better to use unclustered source for heatmap
+                // 2. Heatmap Source
                 map.addSource('heatmap-source', {
                     type: 'geojson',
                     data: tracksGeoJSON
                 });
 
-                // 3. Hover Track Source (Empty initially)
+                // 3. Hover Track Source
                 map.addSource('hover-track', {
                     type: 'geojson',
-                    data: {
-                        "type": "FeatureCollection",
-                        "features": []
-                    }
+                    data: { "type": "FeatureCollection", "features": [] }
                 });
 
                 // --- Layers ---
@@ -240,30 +249,10 @@
                     source: 'heatmap-source',
                     maxzoom: 15,
                     paint: {
-                        // Increase the heatmap weight based on frequency and property magnitude
-                        'heatmap-weight': [
-                            'interpolate',
-                            ['linear'],
-                            ['get', 'mag'],
-                            0, 0,
-                            6, 1
-                        ],
-                        // Increase the heatmap color weight weight by zoom level
-                        // heatmap-intensity is a multiplier on top of heatmap-weight
-                        'heatmap-intensity': [
-                            'interpolate',
-                            ['linear'],
-                            ['zoom'],
-                            0, 1,
-                            9, 3
-                        ],
-                        // Color ramp for heatmap.  Domain is 0 (low) to 1 (high).
-                        // Begin color ramp at 0-stop with a 0-transparancy color
-                        // to create a blur-like effect.
+                        'heatmap-weight': ['interpolate', ['linear'], ['get', 'mag'], 0, 0, 6, 1],
+                        'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 0, 1, 9, 3],
                         'heatmap-color': [
-                            'interpolate',
-                            ['linear'],
-                            ['heatmap-density'],
+                            'interpolate', ['linear'], ['heatmap-density'],
                             0, 'rgba(33,102,172,0)',
                             0.2, 'rgb(103,169,207)',
                             0.4, 'rgb(209,229,240)',
@@ -271,22 +260,8 @@
                             0.8, 'rgb(239,138,98)',
                             1, 'rgb(178,24,43)'
                         ],
-                        // Adjust the heatmap radius by zoom level
-                        'heatmap-radius': [
-                            'interpolate',
-                            ['linear'],
-                            ['zoom'],
-                            0, 2,
-                            9, 20
-                        ],
-                        // Transition from heatmap to circle layer by zoom level
-                        'heatmap-opacity': [
-                            'interpolate',
-                            ['linear'],
-                            ['zoom'],
-                            7, 1,
-                            12, 0.5
-                        ],
+                        'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 0, 2, 9, 20],
+                        'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], 7, 1, 12, 0.5],
                     }
                 });
 
@@ -295,24 +270,20 @@
                     id: 'hover-track-line',
                     type: 'line',
                     source: 'hover-track',
-                    layout: {
-                        'line-join': 'round',
-                        'line-cap': 'round'
-                    },
+                    layout: { 'line-join': 'round', 'line-cap': 'round' },
                     paint: {
-                        'line-color': '#fc4c02', // Strava/Kairn Orange
+                        'line-color': '#fc4c02',
                         'line-width': 4,
                         'line-opacity': 0.8
                     }
                 });
 
-                // C. Circle Layer (Individual Points) - Always visible or only at high zoom?
-                // Let's make them visible always but smaller at low zoom
+                // C. Circle Layer (Individual Points)
                 map.addLayer({
                     id: 'track-points',
                     type: 'circle',
                     source: 'tracks',
-                    filter: ['!', ['has', 'point_count']], // Only unclustered points
+                    filter: ['!', ['has', 'point_count']],
                     paint: {
                         'circle-radius': 6,
                         'circle-color': '#10b981',
@@ -329,24 +300,8 @@
                     source: 'tracks',
                     filter: ['has', 'point_count'],
                     paint: {
-                        'circle-color': [
-                            'step',
-                            ['get', 'point_count'],
-                            '#51bbd6',
-                            100,
-                            '#f1f075',
-                            750,
-                            '#f28cb1'
-                        ],
-                        'circle-radius': [
-                            'step',
-                            ['get', 'point_count'],
-                            20,
-                            100,
-                            30,
-                            750,
-                            40
-                        ]
+                        'circle-color': ['step', ['get', 'point_count'], '#51bbd6', 100, '#f1f075', 750, '#f28cb1'],
+                        'circle-radius': ['step', ['get', 'point_count'], 20, 100, 30, 750, 40]
                     }
                 });
 
@@ -357,19 +312,17 @@
                     filter: ['has', 'point_count'],
                     layout: {
                         'text-field': '{point_count_abbreviated}',
-                        'text-font': ['Open Sans Semibold'], // Check if fonts exist in style, otherwise might need standard font
+                        'text-font': ['Open Sans Semibold'],
                         'text-size': 12
                     }
                 });
 
-                // --- User Markers (Custom DOM Markers) ---
+                // --- User Markers ---
                 if (usersRaw) {
                     usersRaw.forEach(u => {
                         if (!u.location_lat || !u.location_lon) return;
-
                         const el = document.createElement('div');
                         el.className = 'w-10 h-10 rounded-full border-2 border-white shadow-md bg-white overflow-hidden cursor-pointer hover:scale-110 transition-transform';
-
                         if (u.profile_picture) {
                             const img = document.createElement('img');
                             img.src = u.profile_picture;
@@ -379,24 +332,13 @@
                             el.className += ' flex items-center justify-center bg-indigo-500 text-white font-bold text-xs';
                             el.innerText = u.username.substring(0, 2).toUpperCase();
                         }
-
-                        // Popup
-                        const popup = new maplibregl.Popup({ offset: 25 })
-                            .setHTML(`
-                                <div class="p-3 text-center min-w-[120px]">
-                                    <h3 class="font-bold text-slate-800 text-sm">
-                                        <a href="/user/${encodeURIComponent(u.username)}" class="hover:text-brand-600 hover:underline">
-                                            ${u.username}
-                                        </a>
-                                    </h3>
-                                    <p class="text-xs text-slate-500">${u.location_city || 'Localisation inconnue'}</p>
-                                </div>
-                            `);
-
-                        new maplibregl.Marker({ element: el })
-                            .setLngLat([u.location_lon, u.location_lat])
-                            .setPopup(popup)
-                            .addTo(map);
+                        const popup = new maplibregl.Popup({ offset: 25 }).setHTML(`
+                             <div class="p-3 text-center min-w-[120px]">
+                                 <h3 class="font-bold text-slate-800 text-sm"><a href="/user/${encodeURIComponent(u.username)}" class="hover:text-brand-600 hover:underline">${u.username}</a></h3>
+                                 <p class="text-xs text-slate-500">${u.location_city || 'Localisation inconnue'}</p>
+                             </div>
+                        `);
+                        new maplibregl.Marker({ element: el }).setLngLat([u.location_lon, u.location_lat]).setPopup(popup).addTo(map);
                     });
                 }
             } catch (e) {
@@ -412,7 +354,17 @@
                 const feature = e.features[0];
                 const trackId = feature.properties.id;
 
-                // Show popup immediately
+                // Remove existing popup if any
+                if (currentPopup) {
+                    currentPopup.remove();
+                    currentPopup = null;
+                }
+
+                // Clear previous trace immediately to avoid confusion
+                if (hoveredTrackId !== trackId) {
+                    map.getSource('hover-track').setData({ "type": "FeatureCollection", "features": [] });
+                }
+
                 const coordinates = feature.geometry.coordinates.slice();
                 const description = `
                     <div class="px-4 py-3 min-w-[150px]">
@@ -425,9 +377,8 @@
                     </div>
                 `;
 
-                // Ensure we don't have multiple popups
-                // (Optional: store popup instance)
-                new maplibregl.Popup()
+                // Create new popup
+                currentPopup = new maplibregl.Popup()
                     .setLngLat(coordinates)
                     .setHTML(description)
                     .addTo(map);
