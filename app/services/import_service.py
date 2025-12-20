@@ -99,23 +99,53 @@ def process_race_import(db: Session, content: bytes) -> int:
             if not slug:
                 slug = slugify(item['name'])
                 
+
             event = db.query(models.RaceEvent).filter_by(slug=slug).first()
             if not event:
                 event = models.RaceEvent(
                     name=item['name'],
                     slug=slug,
                     website=item.get('website'),
-                    description=item.get('description')
+                    description=item.get('description'),
+                    region=item.get('region'),
+                    city=item.get('city'),
+                    country=item.get('country'),
+                    circuit=item.get('circuit'),
+                    profile_picture=item.get('profile_picture_url')
                 )
                 db.add(event)
                 db.commit()
                 db.refresh(event)
+            else:
+                # Update existing event info if missing? 
+                if not event.region and item.get('region'):
+                    event.region = item.get('region')
+                    event.city = item.get('city')
+                    event.country = item.get('country')
+                if not event.circuit and item.get('circuit'):
+                    event.circuit = item.get('circuit')
+                db.commit()
             
             # Editions
             for ed in item.get('editions', []):
                 edition = db.query(models.RaceEdition).filter_by(event_id=event.id, year=ed['year']).first()
                 if not edition:
-                    edition = models.RaceEdition(event_id=event.id, year=ed['year'])
+                    s_date = None
+                    e_date = None
+                    if ed.get('start_date'):
+                         try: s_date = datetime.strptime(ed['start_date'], "%Y-%m-%d").date()
+                         except: pass
+                    if ed.get('end_date'):
+                         try: e_date = datetime.strptime(ed['end_date'], "%Y-%m-%d").date()
+                         except: pass
+
+                    edition = models.RaceEdition(
+                        event_id=event.id, 
+                        year=ed['year'],
+                        start_date=s_date,
+                        end_date=e_date,
+                        status=ed.get('status', 'UPCOMING')
+                    )
                     db.add(edition)
                     db.commit()
                     db.refresh(edition)
@@ -131,7 +161,9 @@ def process_race_import(db: Session, content: bytes) -> int:
                             edition_id=edition.id,
                             name=r['name'],
                             distance_km=r.get('distance_km', 0),
-                            elevation_gain=r.get('elevation_gain', 0)
+                            elevation_gain=r.get('elevation_gain', 0),
+                            distance_category=r.get('distance_category'),
+                            results_url=r.get('results_url')
                         )
                         db.add(route)
                         count += 1

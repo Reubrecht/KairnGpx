@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-black text-slate-900 tracking-tight mb-2">Gestion des événements</h1>
+            <p class="text-slate-600">Recherchez et gérez les événements, éditions et courses.</p>
+        </div>
+        <div class="flex gap-4">
+            <a href="/manage/events/new"
+                class="px-5 py-2.5 bg-brand-600 text-white font-bold rounded-lg shadow-md hover:bg-brand-700 transition-colors flex items-center gap-2">
+                <i class="ph-bold ph-plus"></i>
+                Nouvel Événement
+            </a>
+            <label for="import-json"
+                class="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-lg shadow-sm hover:border-brand-500 hover:text-brand-600 transition-colors flex items-center gap-2 cursor-pointer">
+                <i class="ph-bold ph-upload-simple"></i>
+                Import JSON
+            </label>
+            <form id="import-form" action="/manage/events/import" method="post" enctype="multipart/form-data"
+                class="hidden">
+                <input type="file" name="file" id="import-json" accept=".json"
+                    onchange="document.getElementById('import-form').submit()">
+            </form>
+        </div>
+    </div>
+
+    <!-- Search & Filters -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4 mb-8">
+        <form action="/manage/events" method="get" class="flex gap-4 flex-col md:flex-row">
+            <div class="flex-grow relative">
+                <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl"></i>
+                <input type="text" name="q" value="{{ query or '' }}"
+                    placeholder="Rechercher par nom, région, circuit..."
+                    class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all">
+            </div>
+            <button type="submit"
+                class="px-6 py-3 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 transition-colors">
+                Rechercher
+            </button>
+        </form>
+    </div>
+
+    <!-- Batch Actions Form -->
+    <form action="/manage/events/delete_batch" method="post" id="batch-form">
+        <!-- Events Grid -->
+        {% if events %}
+        <div class="mb-4 flex justify-between items-center bg-brand-50 p-3 rounded-lg border border-brand-100 hidden"
+            id="selection-bar">
+            <span class="font-bold text-brand-800 text-sm"><span id="selected-count">0</span> événement(s)
+                sélectionné(s)</span>
+            <button type="submit"
+                onclick="return confirm('Êtes-vous sûr de vouloir supprimer ces événements ? Cette action est irréversible.')"
+                class="px-4 py-2 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 text-sm shadow-sm transition-colors">
+                <i class="ph-bold ph-trash"></i> Supprimer la sélection
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for event in events %}
+            <div
+                class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-slate-100 overflow-hidden group relative">
+
+                <!-- Checkbox Overlay -->
+                <div class="absolute top-2 left-2 z-10">
+                    <input type="checkbox" name="event_ids" value="{{ event.id }}"
+                        class="event-checkbox w-5 h-5 rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer shadow-sm">
+                </div>
+
+                <div class="relative h-40 bg-slate-100 overflow-hidden">
+                    {% if event.profile_picture %}
+                    <img src="{{ event.profile_picture }}" alt="{{ event.name }}"
+                        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    {% else %}
+                    <div class="w-full h-full flex items-center justify-center text-slate-300">
+                        <i class="ph-duotone ph-image text-4xl"></i>
+                    </div>
+                    {% endif %}
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent"></div>
+                    <div class="absolute bottom-4 left-4 text-white pl-6"> <!-- Added padding processing checkbox -->
+                        <h3 class="text-xl font-bold leading-tight">{{ event.name }}</h3>
+                        <p class="text-xs font-medium text-white/80 flex items-center gap-1 mt-1">
+                            <i class="ph-fill ph-map-pin"></i> {{ event.city or event.region or 'Localisation inconnue'
+                            }}
+                        </p>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div class="flex items-center justify-between text-sm text-slate-500 mb-4">
+                        <span>{{ event.editions|length }} Éditions</span>
+                        {% if event.circuit %}
+                        <span class="bg-brand-50 text-brand-700 px-2 py-0.5 rounded text-xs font-bold">{{ event.circuit
+                            }}</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="flex gap-2">
+                        <a href="/manage/events/{{ event.id }}"
+                            class="flex-1 px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded text-center text-sm hover:bg-slate-200 transition-colors">
+                            Gérer
+                        </a>
+                        <a href="/event/{{ event.id }}" target="_blank"
+                            class="px-3 py-2 text-slate-400 hover:text-brand-600 border border-slate-200 rounded hover:border-brand-500 transition-colors"
+                            title="Voir Public">
+                            <i class="ph-bold ph-arrow-square-out"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-20 bg-white rounded-xl border border-dashed border-slate-200">
+            <i class="ph-duotone ph-calendar-x text-6xl text-slate-300 mb-4 inline-block"></i>
+            <h3 class="text-xl font-bold text-slate-700 mb-2">Aucun événement trouvé</h3>
+            <p class="text-slate-500 mb-6">Essayez une autre recherche ou créez un nouvel événement.</p>
+            <a href="/manage/events/new"
+                class="px-5 py-2.5 bg-brand-600 text-white font-bold rounded-lg hover:bg-brand-700 transition-colors">
+                Créer un événement
+            </a>
+        </div>
+        {% endif %}
+    </form>
+
+    <script>
+        const checkboxes = document.querySelectorAll('.event-checkbox');
+        const selectionBar = document.getElementById('selection-bar');
+        const countSpan = document.getElementById('selected-count');
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', updateSelection);
+        });
+
+        function updateSelection() {
+            const checked = document.querySelectorAll('.event-checkbox:checked');
+            countSpan.textContent = checked.length;
+            if (checked.length > 0) {
+                selectionBar.classList.remove('hidden');
+            } else {
+                selectionBar.classList.add('hidden');
+            }
+        }
+    </script>
+
+</div>
+{% endblock %}

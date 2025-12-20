@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+    <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+            <a href="/manage/events"
+                class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
+                <i class="ph-bold ph-arrow-left text-xl"></i>
+            </a>
+            <div class="flex items-center gap-4">
+                {% if event.profile_picture %}
+                <img src="{{ event.profile_picture }}"
+                    class="w-16 h-16 rounded-xl object-cover border border-slate-200 shadow-sm">
+                {% endif %}
+                <div>
+                    <h1 class="text-3xl font-black text-slate-900 tracking-tight">{{ event.name }}</h1>
+                    <div class="flex items-center gap-2 text-sm text-slate-500">
+                        <i class="ph-fill ph-map-pin text-brand-500"></i>
+                        {{ event.city or '' }} {{ event.country or '' }}
+                        {% if event.website %}
+                        <span class="mx-1">•</span>
+                        <a href="{{ event.website }}" target="_blank" class="hover:underline hover:text-brand-600">Site
+                            Web</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="flex gap-3">
+            <a href="/manage/events/{{ event.id }}/edit"
+                class="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-lg hover:border-brand-500 hover:text-brand-600 transition-colors">
+                Modifier infos
+            </a>
+            <button onclick="document.getElementById('modal-add-edition').classList.remove('hidden')"
+                class="px-5 py-2 bg-brand-600 text-white font-bold rounded-lg shadow-md hover:bg-brand-700 transition-colors">
+                + Ajouter une édition
+            </button>
+        </div>
+    </div>
+
+    <!-- Editions List -->
+    <div class="space-y-8">
+        {% for edition in event.editions|sort(attribute='year', reverse=True) %}
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <span class="text-brand-600">{{ edition.year }}</span>
+                        {% if edition.status == 'UPCOMING' %}
+                        <span
+                            class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full uppercase tracking-wide">À
+                            venir</span>
+                        {% elif edition.status == 'COMPLETED' %}
+                        <span
+                            class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full uppercase tracking-wide">Terminé</span>
+                        {% endif %}
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-1">
+                        {% if edition.start_date %}{{ edition.start_date }}{% endif %}
+                        {% if edition.end_date %} - {{ edition.end_date }}{% endif %}
+                    </p>
+                </div>
+                <button onclick="document.getElementById('modal-add-route-{{ edition.id }}').classList.remove('hidden')"
+                    class="text-sm font-bold text-brand-600 hover:text-brand-700 px-3 py-1.5 bg-brand-50 rounded-lg transition-colors">
+                    + Ajouter Course
+                </button>
+            </div>
+
+            <div class="divide-y divide-slate-50">
+                {% for route in edition.routes %}
+                <div class="px-6 py-4 hover:bg-slate-50 transition-colors flex items-center justify-between">
+                    <div>
+                        <div class="flex items-center gap-3">
+                            <h4 class="font-bold text-slate-900">{{ route.name }}</h4>
+                            <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">{{
+                                route.distance_category or 'N/A' }}</span>
+                        </div>
+                        <div class="text-sm text-slate-500 mt-1 flex gap-4">
+                            <span><i class="ph-bold ph-arrows-left-right"></i> {{ route.distance_km }} km</span>
+                            <span><i class="ph-bold ph-trend-up"></i> {{ route.elevation_gain }} m+</span>
+                            {% if route.official_track_id %}
+                            <span class="text-green-600 flex items-center gap-1"><i class="ph-fill ph-check-circle"></i>
+                                Trace liée</span>
+                            {% else %}
+                            <span class="text-amber-500 flex items-center gap-1"><i
+                                    class="ph-fill ph-warning-circle"></i> Pas de trace</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        {% if not route.official_track_id %}
+                        <!-- Upload GPX for this route -->
+                        <form action="/manage/routes/{{ route.id }}/upload" method="post" enctype="multipart/form-data"
+                            class="inline-block">
+                            <label
+                                class="cursor-pointer px-3 py-1.5 text-xs font-bold text-brand-600 border border-brand-200 rounded hover:bg-brand-50 transition-colors">
+                                Lier GPX
+                                <input type="file" name="file" class="hidden" accept=".gpx"
+                                    onchange="this.form.submit()">
+                            </label>
+                        </form>
+                        {% else %}
+                        <a href="/track/{{ route.official_track_id }}"
+                            class="px-3 py-1.5 text-xs font-bold text-slate-600 border border-slate-200 rounded hover:bg-slate-50 transition-colors">
+                            Voir Trace
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="px-6 py-8 text-center text-slate-400 italic text-sm">
+                    Aucune course pour cette édition.
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Modal Add Route for this edition -->
+            <div id="modal-add-route-{{ edition.id }}"
+                class="hidden fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+                <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+                    <h3 class="text-xl font-bold mb-4">Ajouter une course à l'édition {{ edition.year }}</h3>
+                    <form action="/manage/editions/{{ edition.id }}/routes" method="post" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1">Nom de la course</label>
+                            <input type="text" name="name" required placeholder="Ex: UTMB, CCC..."
+                                class="w-full px-3 py-2 border rounded-lg">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Distance (km)</label>
+                                <input type="number" step="0.1" name="distance_km"
+                                    class="w-full px-3 py-2 border rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">D+ (m)</label>
+                                <input type="number" name="elevation_gain" class="w-full px-3 py-2 border rounded-lg">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1">Catégorie</label>
+                            <select name="distance_category" class="w-full px-3 py-2 border rounded-lg">
+                                <option value="XS">XS (< 25km)</option>
+                                <option value="S">S (25-44km)</option>
+                                <option value="M">M (45-74km)</option>
+                                <option value="L">L (75-114km)</option>
+                                <option value="XL">XL (> 115km)</option>
+                            </select>
+                        </div>
+                        <div class="flex justify-end gap-2 pt-4">
+                            <button type="button"
+                                onclick="document.getElementById('modal-add-route-{{ edition.id }}').classList.add('hidden')"
+                                class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">Annuler</button>
+                            <button type="submit"
+                                class="px-4 py-2 bg-brand-600 text-white font-bold rounded-lg hover:bg-brand-700">Ajouter</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Modal Add Edition -->
+    <div id="modal-add-edition"
+        class="hidden fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+            <h3 class="text-xl font-bold mb-4">Nouvelle Édition</h3>
+            <form action="/manage/events/{{ event.id }}/editions" method="post" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Année</label>
+                    <input type="number" name="year" required value="2025"
+                        class="w-full px-3 py-2 border rounded-lg font-mono">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Date de début</label>
+                    <input type="date" name="start_date" class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div class="flex justify-end gap-2 pt-4">
+                    <button type="button" onclick="document.getElementById('modal-add-edition').classList.add('hidden')"
+                        class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">Annuler</button>
+                    <button type="submit"
+                        class="px-4 py-2 bg-brand-600 text-white font-bold rounded-lg hover:bg-brand-700">Créer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,112 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Kairn Event Import Schema",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "required": [
+            "name"
+        ],
+        "properties": {
+            "name": {
+                "type": "string",
+                "description": "Name of the Event (e.g. UTMB Mont-Blanc)"
+            },
+            "slug": {
+                "type": "string",
+                "description": "Unique slug"
+            },
+            "website": {
+                "type": "string",
+                "format": "uri"
+            },
+            "description": {
+                "type": "string"
+            },
+            "region": {
+                "type": "string"
+            },
+            "city": {
+                "type": "string"
+            },
+            "country": {
+                "type": "string"
+            },
+            "circuit": {
+                "type": "string",
+                "description": "e.g. UTMB World Series"
+            },
+            "profile_picture_url": {
+                "type": "string",
+                "format": "uri"
+            },
+            "editions": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "required": [
+                        "year"
+                    ],
+                    "properties": {
+                        "year": {
+                            "type": "integer"
+                        },
+                        "start_date": {
+                            "type": "string",
+                            "format": "date",
+                            "description": "YYYY-MM-DD"
+                        },
+                        "end_date": {
+                            "type": "string",
+                            "format": "date",
+                            "description": "YYYY-MM-DD"
+                        },
+                        "status": {
+                            "type": "string",
+                            "enum": [
+                                "UPCOMING",
+                                "COMPLETED",
+                                "CANCELLED"
+                            ]
+                        },
+                        "routes": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "required": [
+                                    "name"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "e.g. OCC, CCC"
+                                    },
+                                    "distance_km": {
+                                        "type": "number"
+                                    },
+                                    "elevation_gain": {
+                                        "type": "integer"
+                                    },
+                                    "distance_category": {
+                                        "type": "string",
+                                        "enum": [
+                                            "XS",
+                                            "S",
+                                            "M",
+                                            "L",
+                                            "XL"
+                                        ]
+                                    },
+                                    "results_url": {
+                                        "type": "string",
+                                        "format": "uri"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
