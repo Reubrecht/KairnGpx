@@ -15,6 +15,7 @@ models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(title="Kairn", version=app_version)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/media", StaticFiles(directory="app/media"), name="media")
 
 # Include Routers
 app.include_router(auth.router)

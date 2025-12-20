@@ -8,6 +8,7 @@ services:
     volumes:
       - ./app/data:/app/app/data
       - ./app/uploads:/app/app/uploads
+      - ./app/media:/app/app/media
       - ./scripts:/app/scripts
       - ./migrations:/app/migrations
     environment:

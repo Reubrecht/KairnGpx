@@ -40,120 +40,86 @@
     <!-- Map Container -->
     <div id="map" class="absolute inset-0 z-0"></div>
 
-    <!-- Floating Info Panel (Top Left) -->
-    <div
-        class="absolute top-6 left-6 z-10 bg-white/80 backdrop-blur-xl p-5 rounded-3xl shadow-2xl border border-white/40 ring-1 ring-black/5 max-w-sm transition-all hover:bg-white/95 group">
+    <!-- Floating Title (Top Left) -->
+    <div class="absolute top-6 left-6 z-10 pointer-events-none">
 
-        <div class="flex items-center justify-between mb-2">
-            <h2 class="text-xl font-black text-slate-800 flex items-center gap-2.5">
-                <span
-                    class="bg-gradient-to-br from-brand-500 to-brand-600 text-white p-2 rounded-xl shadow-lg shadow-brand-500/20">
-                    <i class="ph-bold ph-globe-hemisphere-west"></i>
-                </span>
-                Kairn Maps
-            </h2>
+        <div class="flex items-center gap-3">
             <div
-                class="px-2 py-1 bg-slate-100 rounded-lg text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                Beta
+                class="bg-white/90 backdrop-blur shadow-lg shadow-black/5 rounded-xl p-2.5 flex items-center justify-center pointer-events-auto transition-transform hover:scale-105">
+                <div
+                    class="bg-gradient-to-br from-brand-500 to-brand-600 text-white w-8 h-8 rounded-lg flex items-center justify-center shadow-inner">
+                    <i class="ph-bold ph-globe-hemisphere-west text-lg"></i>
+                </div>
+            </div>
+            <div>
+                <h1 class="font-black text-2xl text-slate-800 drop-shadow-md tracking-tight flex items-baseline gap-2">
+                    Kairn Maps
+                    <span
+                        class="text-[10px] bg-white/90 backdrop-blur font-bold text-brand-600 px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm border border-white/50">Beta</span>
+                </h1>
+                <p class="text-sm font-medium text-slate-600 drop-shadow-sm flex items-center gap-2">
+                    <span class="bg-slate-800 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">{{ total_tracks
+                        }}</span> traces
+                    <span class="w-1 h-1 rounded-full bg-slate-400"></span>
+                    <span class="bg-orange-500 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">{{ total_events
+                        }}</span> événements
+                </p>
             </div>
         </div>
+    </div>
 
-        <p class="text-xs text-slate-500 leading-relaxed font-medium pl-1">
-            Explorez <span class="font-bold text-slate-900">{{ total_tracks }} traces</span> et <span
-                class="font-bold text-slate-900">{{ total_events }} événements</span>.
-        </p>
 
-        <!-- Legend / Toggles -->
-        <div class="mt-5 space-y-3 pt-4 border-t border-slate-100/80">
+    <!-- Map Controls (Top Right) -->
+    <div class="absolute top-4 right-4 z-10 flex flex-col gap-2">
+        <div
+            class="bg-white/90 backdrop-blur-md border border-slate-200 rounded-lg shadow-sm p-1.5 flex flex-col gap-1.5">
+            <!-- Layers -->
+            <button onclick="toggleLayer('heatmap')" id="btn-heatmap"
+                class="w-10 h-10 flex items-center justify-center rounded-md transition-colors text-red-600 bg-red-50 ring-1 ring-red-500/20"
+                title="Heatmap">
+                <i class="ph-fill ph-fire text-lg"></i>
+            </button>
+            <button onclick="toggleLayer('points')" id="btn-points"
+                class="w-10 h-10 flex items-center justify-center rounded-md transition-colors text-emerald-600 bg-emerald-50 ring-1 ring-emerald-500/20"
+                title="Traces">
+                <i class="ph-fill ph-map-pin text-lg"></i>
+            </button>
+            <button onclick="toggleLayer('events')" id="btn-events"
+                class="w-10 h-10 flex items-center justify-center rounded-md transition-colors text-orange-600 bg-orange-50 ring-1 ring-orange-500/20"
+                title="Événements">
+                <i class="ph-fill ph-flag-banner text-lg"></i>
+            </button>
+            <button onclick="toggleLayer('users')" id="btn-users"
+                class="w-10 h-10 flex items-center justify-center rounded-md transition-colors text-indigo-600 bg-indigo-50 ring-1 ring-indigo-500/20"
+                title="Membres">
+                <i class="ph-fill ph-users text-lg"></i>
+            </button>
 
-            <!-- Heatmap Toggle -->
-            <label
-                class="flex items-center justify-between group/item cursor-pointer p-2 -mx-2 rounded-xl hover:bg-slate-50 transition-colors">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-red-100 text-red-600 flex items-center justify-center">
-                        <i class="ph-fill ph-fire"></i>
-                    </div>
-                    <div>
-                        <span
-                            class="block text-sm font-bold text-slate-700 group-hover/item:text-brand-600 transition-colors">Heatmap</span>
-                        <span class="block text-[10px] text-slate-400 font-medium">Densité d'activité</span>
-                    </div>
-                </div>
-                <!-- Custom Switch -->
-                <div class="relative inline-block w-10 h-6 align-middle select-none transition duration-200 ease-in">
-                    <input type="checkbox" id="toggle-heatmap" checked
-                        class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer left-1 top-1 transition-transform duration-200 ease-in checked:translate-x-full checked:border-brand-500" />
-                    <div
-                        class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-200 cursor-pointer peer-checked:bg-brand-500 transition-colors">
-                    </div>
-                </div>
-            </label>
+            <div class="h-px bg-slate-200 mx-1 my-0.5"></div>
 
-            <!-- Start Points Toggle -->
-            <label
-                class="flex items-center justify-between group/item cursor-pointer p-2 -mx-2 rounded-xl hover:bg-slate-50 transition-colors">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
-                        <i class="ph-fill ph-map-pin"></i>
-                    </div>
-                    <div>
-                        <span
-                            class="block text-sm font-bold text-slate-700 group-hover/item:text-emerald-600 transition-colors">Traces</span>
-                        <span class="block text-[10px] text-slate-400 font-medium">Points de départ</span>
-                    </div>
-                </div>
-                <div class="relative inline-block w-10 h-6 align-middle select-none">
-                    <input type="checkbox" id="toggle-points" checked
-                        class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer left-1 top-1 transition-transform duration-200 ease-in checked:translate-x-full checked:border-emerald-500" />
-                    <div
-                        class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-200 cursor-pointer peer-checked:bg-emerald-500">
-                    </div>
-                </div>
-            </label>
+            <!-- Zoom -->
+            <button onclick="zoomIn()"
+                class="w-10 h-10 flex items-center justify-center rounded-md hover:bg-slate-100 text-slate-600 transition-colors">
+                <i class="ph-bold ph-plus"></i>
+            </button>
+            <button onclick="zoomOut()"
+                class="w-10 h-10 flex items-center justify-center rounded-md hover:bg-slate-100 text-slate-600 transition-colors">
+                <i class="ph-bold ph-minus"></i>
+            </button>
 
-            <!-- Events Toggle -->
-            <label
-                class="flex items-center justify-between group/item cursor-pointer p-2 -mx-2 rounded-xl hover:bg-slate-50 transition-colors">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center">
-                        <i class="ph-fill ph-flag-banner"></i>
-                    </div>
-                    <div>
-                        <span
-                            class="block text-sm font-bold text-slate-700 group-hover/item:text-orange-600 transition-colors">Événements</span>
-                        <span class="block text-[10px] text-slate-400 font-medium">Compétitions à venir</span>
-                    </div>
-                </div>
-                <div class="relative inline-block w-10 h-6 align-middle select-none">
-                    <input type="checkbox" id="toggle-events" checked
-                        class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer left-1 top-1 transition-transform duration-200 ease-in checked:translate-x-full checked:border-orange-500" />
-                    <div
-                        class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-200 cursor-pointer peer-checked:bg-orange-500">
-                    </div>
-                </div>
-            </label>
+            <div class="h-px bg-slate-200 mx-1 my-0.5"></div>
 
-            <!-- Users Toggle -->
-            <label
-                class="flex items-center justify-between group/item cursor-pointer p-2 -mx-2 rounded-xl hover:bg-slate-50 transition-colors">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center">
-                        <i class="ph-fill ph-users"></i>
-                    </div>
-                    <div>
-                        <span
-                            class="block text-sm font-bold text-slate-700 group-hover/item:text-indigo-600 transition-colors">Membres</span>
-                        <span class="block text-[10px] text-slate-400 font-medium">Communauté</span>
-                    </div>
-                </div>
-                <div class="relative inline-block w-10 h-6 align-middle select-none">
-                    <input type="checkbox" id="toggle-users" checked
-                        class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer left-1 top-1 transition-transform duration-200 ease-in checked:translate-x-full checked:border-indigo-500" />
-                    <div
-                        class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-200 cursor-pointer peer-checked:bg-indigo-500">
-                    </div>
-                </div>
-            </label>
+            <!-- Type -->
+            <button onclick="toggle3D()" id="btn-3d"
+                class="w-10 h-10 flex items-center justify-center rounded-md hover:bg-slate-100 text-slate-600 transition-colors font-black text-[10px]"
+                title="Basculer 3D">
+                3D
+            </button>
+            <button onclick="toggleSat()" id="btn-sat"
+                class="w-10 h-10 flex items-center justify-center rounded-md hover:bg-slate-100 text-slate-600 transition-colors"
+                title="Satellite">
+                <i class="ph-bold ph-globe-hemisphere-east text-lg"></i>
+            </button>
         </div>
     </div>
 
@@ -190,32 +156,6 @@
 
         /* indigo-500 */
     </style>
-
-    <!-- Map Controls (Top Right) -->
-    <div class="absolute top-4 right-4 z-10 flex flex-col gap-2">
-        <div
-            class="bg-white/90 backdrop-blur-md border border-slate-200 rounded-lg shadow-sm p-1.5 flex flex-col gap-1.5">
-            <button onclick="zoomIn()"
-                class="w-8 h-8 flex items-center justify-center rounded hover:bg-slate-100 text-slate-600 transition-colors">
-                <i class="ph-bold ph-plus"></i>
-            </button>
-            <button onclick="zoomOut()"
-                class="w-8 h-8 flex items-center justify-center rounded hover:bg-slate-100 text-slate-600 transition-colors">
-                <i class="ph-bold ph-minus"></i>
-            </button>
-            <div class="h-px bg-slate-200 mx-1"></div>
-            <button onclick="toggle3D()" id="btn-3d"
-                class="w-8 h-8 flex items-center justify-center rounded hover:bg-slate-100 text-slate-600 hover:text-brand-600 transition-colors font-black text-[10px]"
-                title="Basculer 3D">
-                3D
-            </button>
-            <button onclick="toggleSat()" id="btn-sat"
-                class="w-8 h-8 flex items-center justify-center rounded hover:bg-slate-100 text-slate-600 hover:text-brand-600 transition-colors"
-                title="Satellite">
-                <i class="ph-bold ph-globe-hemisphere-east"></i>
-            </button>
-        </div>
-    </div>
 
     <!-- Loading Indicator (Hidden by default) -->
     <div id="loading-indicator"
@@ -622,10 +562,12 @@
                     });
                     map.setTerrain({ 'source': 'terrain', 'exaggeration': 1.2 });
                 }
-                btn && btn.classList.add('text-brand-600', 'bg-slate-50');
+                btn && btn.classList.add('text-brand-600', 'bg-brand-50', 'ring-1', 'ring-brand-500/20');
+                btn && btn.classList.remove('hover:bg-slate-100', 'text-slate-600');
             } else {
                 map.easeTo({ pitch: 0, bearing: 0, duration: 1000 });
-                btn && btn.classList.remove('text-brand-600', 'bg-slate-50');
+                btn && btn.classList.remove('text-brand-600', 'bg-brand-50', 'ring-1', 'ring-brand-500/20');
+                btn && btn.classList.add('hover:bg-slate-100', 'text-slate-600');
             }
         };
 
@@ -649,64 +591,91 @@
                 } else {
                     map.setLayoutProperty('satellite-layer', 'visibility', 'visible');
                 }
-                btn && btn.classList.add('text-brand-600', 'bg-slate-50');
+                btn && btn.classList.add('text-brand-600', 'bg-brand-50', 'ring-1', 'ring-brand-500/20');
+                btn && btn.classList.remove('hover:bg-slate-100', 'text-slate-600');
             } else {
                 if (map.getLayer('satellite-layer')) {
                     map.setLayoutProperty('satellite-layer', 'visibility', 'none');
                 }
-                btn && btn.classList.remove('text-brand-600', 'bg-slate-50');
+                btn && btn.classList.remove('text-brand-600', 'bg-brand-50', 'ring-1', 'ring-brand-500/20');
+                btn && btn.classList.add('hover:bg-slate-100', 'text-slate-600');
             }
         };
 
-        // Toggles
-        const toggleHeat = document.getElementById('toggle-heatmap');
-        if (toggleHeat) {
-            toggleHeat.addEventListener('change', (e) => {
-                if (e.target.checked) map.setLayoutProperty('heatmap-layer', 'visibility', 'visible');
-                else map.setLayoutProperty('heatmap-layer', 'visibility', 'none');
-            });
-        }
+        // Toggle Layer Logic
+        window.toggleLayer = function (layerType) {
+            const btn = document.getElementById(`btn-${layerType}`);
+            let isActive = false;
 
-        const togglePoints = document.getElementById('toggle-points');
-        if (togglePoints) {
-            togglePoints.addEventListener('change', (e) => {
-                const val = e.target.checked ? 'visible' : 'none';
-                if (map.getLayer('track-points')) map.setLayoutProperty('track-points', 'visibility', val);
-                if (map.getLayer('clusters')) map.setLayoutProperty('clusters', 'visibility', val);
-                if (map.getLayer('cluster-count')) map.setLayoutProperty('cluster-count', 'visibility', val);
-            });
-        }
+            // Define active visual classes per type
+            let activeClasses = [];
+            let inactiveClasses = ['hover:bg-slate-100', 'text-slate-600', 'bg-white'];
+            // Although clean bg-white default is set in HTML, let's just toggle the active colors.
 
-        const toggleUsers = document.getElementById('toggle-users');
-        if (toggleUsers) {
-            toggleUsers.addEventListener('change', (e) => {
-                const show = e.target.checked;
-                if (window.userMarkers) {
-                    window.userMarkers.forEach(m => {
-                        const el = m.getElement();
-                        el.style.display = show ? 'flex' : 'none'; // Flex because some are flex containers
-                        // Or strict removal: show ? m.addTo(map) : m.remove();
-                        // Display toggle is cheaper
-                        if (!show) el.classList.add('hidden');
-                        else el.classList.remove('hidden');
-                    });
-                }
-            });
-        }
+            // Helper to check usage:
+            // Heatmap: red
+            // Points: emerald
+            // Events: orange
+            // Users: indigo
 
-        const toggleEvents = document.getElementById('toggle-events');
-        if (toggleEvents) {
-            toggleEvents.addEventListener('change', (e) => {
-                const show = e.target.checked;
-                if (window.eventMarkers) {
-                    window.eventMarkers.forEach(m => {
-                        const el = m.getElement();
-                        if (!show) el.classList.add('hidden');
-                        else el.classList.remove('hidden');
-                    });
-                }
-            });
-        }
+            switch (layerType) {
+                case 'heatmap':
+                    const isHeatmapVisible = map.getLayoutProperty('heatmap-layer', 'visibility') !== 'none';
+                    isActive = !isHeatmapVisible;
+                    map.setLayoutProperty('heatmap-layer', 'visibility', isActive ? 'visible' : 'none');
+                    activeClasses = ['text-red-600', 'bg-red-50', 'ring-1', 'ring-red-500/20'];
+                    break;
+
+                case 'points':
+                    const isPointsVisible = map.getLayoutProperty('track-points', 'visibility') !== 'none';
+                    isActive = !isPointsVisible;
+                    const val = isActive ? 'visible' : 'none';
+                    if (map.getLayer('track-points')) map.setLayoutProperty('track-points', 'visibility', val);
+                    if (map.getLayer('clusters')) map.setLayoutProperty('clusters', 'visibility', val);
+                    if (map.getLayer('cluster-count')) map.setLayoutProperty('cluster-count', 'visibility', val);
+                    activeClasses = ['text-emerald-600', 'bg-emerald-50', 'ring-1', 'ring-emerald-500/20'];
+                    break;
+
+                case 'events':
+                    // Check current state via button class or global var?
+                    // Let's rely on button class mostly or a simple tracking var.
+                    // Or checking marker visibility.
+                    // Simplest: Check if button has active class? No, logic first.
+                    // We'll trust the button state logic below.
+                    isActive = !btn.classList.contains('bg-orange-50'); // If currently NOT orange, make it orange (active)
+
+                    if (window.eventMarkers) {
+                        window.eventMarkers.forEach(m => {
+                            const el = m.getElement();
+                            if (!isActive) el.classList.add('hidden');
+                            else el.classList.remove('hidden');
+                        });
+                    }
+                    activeClasses = ['text-orange-600', 'bg-orange-50', 'ring-1', 'ring-orange-500/20'];
+                    break;
+
+                case 'users':
+                    isActive = !btn.classList.contains('bg-indigo-50');
+                    if (window.userMarkers) {
+                        window.userMarkers.forEach(m => {
+                            const el = m.getElement();
+                            if (!isActive) el.classList.add('hidden');
+                            else el.classList.remove('hidden');
+                        });
+                    }
+                    activeClasses = ['text-indigo-600', 'bg-indigo-50', 'ring-1', 'ring-indigo-500/20'];
+                    break;
+            }
+
+            // Toggle UI
+            if (isActive) {
+                btn.classList.remove('text-slate-600', 'hover:bg-slate-100');
+                btn.classList.add(...activeClasses);
+            } else {
+                btn.classList.remove(...activeClasses);
+                btn.classList.add('text-slate-600', 'hover:bg-slate-100');
+            }
+        };
     }
 </script>
 {% endblock %}
