@@ -88,7 +88,19 @@
                         <script>
                             document.addEventListener('DOMContentLoaded', () => {
                                 document.getElementById('drop-zone').classList.add('hidden');
-                                document.getElementById('title-input').value = "{{ staged_file.name }}";
+                                document.getElementById('title-input').value = {{ staged_file.name | tojson }
+                            };
+
+                            const desc = {{ staged_file.description | default ('') | tojson }};
+                            if (desc) {
+                                document.getElementById('desc-input').value = desc;
+                            }
+
+                            const tags = {{ staged_file.tags | default ('') | tojson }};
+                            if (tags) {
+                                const tagsInput = document.querySelector('input[name="tags"]');
+                                if (tagsInput) tagsInput.value = tags;
+                            }
                             });
                         </script>
                         {% endif %}

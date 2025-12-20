@@ -1,1 +1,1 @@
-__version__ = "0.1.0" # Initial version
+__version__ = "1.1" # Initial version

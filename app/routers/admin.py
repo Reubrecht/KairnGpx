@@ -706,6 +706,36 @@ async def upload_user_image(
     return RedirectResponse(url="/superadmin#users", status_code=303)
 
 
+@router.post("/superadmin/user/{user_id}/edit_full")
+async def edit_user_full(
+    user_id: int,
+    username: str = Form(...),
+    email: str = Form(...),
+    role: str = Form(...),
+    full_name: Optional[str] = Form(None),
+    utmb_index: Optional[int] = Form(None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_super_admin)
+):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    user.username = username
+    user.email = email
+    user.full_name = full_name
+    user.utmb_index = utmb_index
+    
+    # Handle Role Enum
+    try:
+        user.role = models.Role(role)
+    except Exception:
+        pass # Keep old role if invalid
+        
+    db.commit()
+    return RedirectResponse(url="/superadmin#users", status_code=303)
+
+
 # --- SUPER ADMIN : MODERATION ---
 
 @router.post("/superadmin/track/{track_id}/verify")

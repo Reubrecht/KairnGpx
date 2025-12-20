@@ -75,7 +75,7 @@
 
     <!-- Mobile Backdrop -->
     <div x-show="mobileMenuOpen" x-transition.opacity @click="mobileMenuOpen = false"
-        class="fixed inset-0 bg-black/60 z-50 md:hidden backdrop-blur-sm"></div>
+        class="fixed inset-0 bg-black/60 z-[55] md:hidden backdrop-blur-sm"></div>
 
     <!-- Sidebar (Desktop & Mobile Unified Logic) -->
     <aside :class="{
@@ -84,7 +84,7 @@
             'w-64': !desktopSidebarCompact,
             'w-20': desktopSidebarCompact
         }"
-        class="fixed md:static inset-y-0 left-0 z-50 bg-slate-900 text-white flex flex-col transition-all duration-300 ease-in-out h-full shadow-xl md:shadow-none md:translate-x-0">
+        class="fixed md:static inset-y-0 left-0 z-[60] bg-slate-900 text-white flex flex-col transition-all duration-300 ease-in-out h-full shadow-xl md:shadow-none md:translate-x-0">
 
         <!-- Header -->
         <div class="h-16 flex items-center justify-between px-6 border-b border-slate-800"
@@ -238,10 +238,19 @@
 </div>
 
 <!-- EVENTS MANAGER (TREE VIEW) -->
-<div x-show="currentTab === 'events'" class="animate-fade-in-up">
-    <div class="flex justify-between items-center mb-8">
-        <h2 class="text-3xl font-black text-slate-900">Catalogue des Courses</h2>
-        <div class="flex gap-2">
+<div x-show="currentTab === 'events'" class="animate-fade-in-up" x-data="{ eventQuery: '' }">
+    <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <h2 class="text-3xl font-black text-slate-900 shrink-0">Catalogue des Courses</h2>
+
+        <div class="flex-1 w-full max-w-md mx-4">
+            <div class="relative">
+                <i class="ph-bold ph-magnifying-glass absolute left-3 top-2.5 text-slate-400"></i>
+                <input type="text" x-model="eventQuery" placeholder="Rechercher (Nom, Slug, Année)..."
+                    class="w-full pl-10 pr-4 py-2 rounded-xl border-slate-200 bg-white focus:ring-2 focus:ring-brand-500 transition-shadow shadow-sm">
+            </div>
+        </div>
+
+        <div class="flex gap-2 shrink-0">
             <button onclick="document.getElementById('modal-import-races').showModal()"
                 class="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-4 py-2 rounded-xl font-bold text-sm flex items-center transition-all">
                 <i class="ph-bold ph-upload-simple mr-2"></i> Import JSON
@@ -255,7 +264,7 @@
 
     <div class="space-y-4">
         {% for event in events %}
-        <div x-data="{ 
+        <div x-show="!eventQuery || $el.textContent.toLowerCase().includes(eventQuery.toLowerCase())" x-data="{ 
                         open: (window.location.hash === '#event-{{ event.id }}'),
                         init() {
                             if (this.open) {
@@ -490,8 +499,10 @@
                         </td>
                         <td
                             class="text-right flex justify-end gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
-                            <button
-                                onclick="openUserEditModal('{{ u.id }}', '{{ u.username }}', '{{ u.email }}', '{{ u.utmb_index or '' }}', '{{ u.role.value }}', '{{ u.is_premium }}', '{{ u.full_name or '' }}')"
+                            <button data-id="{{ u.id }}" data-username="{{ u.username }}" data-email="{{ u.email }}"
+                                data-utmb="{{ u.utmb_index or '' }}" data-role="{{ u.role.value }}"
+                                data-premium="{{ u.is_premium|string|lower }}" data-fullname="{{ u.full_name or '' }}"
+                                onclick="openUserEditModal(this.dataset.id, this.dataset.username, this.dataset.email, this.dataset.utmb, this.dataset.role, this.dataset.premium, this.dataset.fullname)"
                                 class="text-blue-500 hover:bg-blue-50 p-1 rounded"><i
                                     class="ph-bold ph-pencil-simple"></i></button>
 
@@ -536,8 +547,10 @@
                 </div>
 
                 <div class="flex gap-2 border-t border-slate-50 pt-3">
-                    <button
-                        onclick="openUserEditModal('{{ u.id }}', '{{ u.username }}', '{{ u.email }}', '{{ u.utmb_index or '' }}', '{{ u.role.value }}', '{{ u.is_premium }}', '{{ u.full_name or '' }}')"
+                    <button data-id="{{ u.id }}" data-username="{{ u.username }}" data-email="{{ u.email }}"
+                        data-utmb="{{ u.utmb_index or '' }}" data-role="{{ u.role.value }}"
+                        data-premium="{{ u.is_premium|string|lower }}" data-fullname="{{ u.full_name or '' }}"
+                        onclick="openUserEditModal(this.dataset.id, this.dataset.username, this.dataset.email, this.dataset.utmb, this.dataset.role, this.dataset.premium, this.dataset.fullname)"
                         class="flex-1 py-2 rounded-lg bg-slate-50 text-slate-600 font-bold text-xs hover:bg-slate-100">Éditer</button>
                     <form action="/superadmin/user/{{ u.id }}/toggle_premium" method="POST" class="flex-1">
                         <button
@@ -1020,62 +1033,9 @@
     </div>
 </div>
 
-<!-- ROUTE BUILDER (WIP) -->
-<div x-show="currentTab === 'route_builder'" class="animate-fade-in-up">
-    <h2 class="text-3xl font-black text-slate-900 mb-8 flex items-center gap-3">
-        <i class="ph-duotone ph-path text-brand-600"></i> Création d'Itinéraire
-    </h2>
 
-    <div
-        class="bg-white rounded-3xl border border-slate-200 p-12 flex flex-col items-center justify-center text-center min-h-[400px] shadow-sm relative overflow-hidden">
-        <div class="absolute inset-0 bg-[url('/static/img/pattern_topo.svg')] opacity-5"></div>
 
-        <div class="bg-amber-50 rounded-full p-6 mb-6 animate-bounce shadow-lg shadow-amber-500/20 z-10">
-            <i class="ph-duotone ph-barricade text-4xl text-amber-500"></i>
-        </div>
 
-        <h3 class="text-2xl font-black text-slate-900 mb-2 z-10">Module en Construction</h3>
-        <p class="text-slate-500 max-w-md z-10">
-            Nous développons un outil puissant pour tracer vos itinéraires directement sur la carte.
-            Revenez bientôt !
-        </p>
-
-        <div class="mt-8 flex gap-2 z-10">
-            <span
-                class="px-3 py-1 bg-slate-100 rounded-lg text-xs font-mono text-slate-500 border border-slate-200">v0.1
-                planned</span>
-        </div>
-    </div>
-</div>
-
-<!-- STRAVA UPLOAD (WIP) -->
-<div x-show="currentTab === 'strava_upload'" class="animate-fade-in-up">
-    <h2 class="text-3xl font-black text-slate-900 mb-8 flex items-center gap-3">
-        <i class="ph-bold ph-strava-logo text-[#FC4C02]"></i> Synchronisation Strava
-    </h2>
-
-    <div
-        class="bg-white rounded-3xl border border-slate-200 p-12 flex flex-col items-center justify-center text-center min-h-[400px] shadow-sm relative overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-br from-[#FC4C02]/5 to-transparent"></div>
-
-        <div class="bg-[#FC4C02]/10 rounded-full p-6 mb-6 shadow-lg shadow-[#FC4C02]/20 z-10">
-            <i class="ph-duotone ph-arrows-left-right text-4xl text-[#FC4C02]"></i>
-        </div>
-
-        <h3 class="text-2xl font-black text-slate-900 mb-2 z-10">Connexion API Strava</h3>
-        <p class="text-slate-500 max-w-md z-10">
-            Bientôt, vous pourrez importer vos activités directement depuis votre compte Strava.
-            L'intégration de l'API est en cours de développement.
-        </p>
-
-        <div class="mt-8 z-10">
-            <button disabled
-                class="bg-slate-100 text-slate-400 px-6 py-2 rounded-xl font-bold cursor-not-allowed flex items-center gap-2">
-                <i class="ph-bold ph-plugs"></i> Connecter (Bientôt)
-            </button>
-        </div>
-    </div>
-</div>
 <div x-show="currentTab === 'prediction'" class="animate-fade-in-up"
     x-data='predictionEditor({{ prediction_config_json | safe }})'>
     <form action="/api/admin/prediction_config" method="POST" class="max-w-4xl mx-auto">
@@ -1429,12 +1389,27 @@
                 </div>
             </div>
 
-            <div class="modal-action flex justify-end gap-2 pt-4">
+            <div class="modal-action flex items-center justify-between pt-6 border-t border-slate-100 mt-6">
+                <!-- Danger Zone -->
                 <button type="button"
-                    class="px-4 py-2 font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition-colors"
-                    onclick="document.getElementById('modal-edit-user').close()">Annuler</button>
-                <button type="submit"
-                    class="px-4 py-2 font-bold bg-brand-600 hover:bg-brand-700 text-white rounded-xl shadow-lg shadow-brand-500/30 transition-colors">Enregistrer</button>
+                    onclick="if(confirm('🚨 ATTENTION : Suppression DÉFINITIVE de l\'utilisateur et TOUTES ses traces ?')) { let f=document.createElement('form'); f.method='POST'; f.action='/superadmin/user/'+document.getElementById('edit-user-form').action.split('/')[5]+'/delete'; document.body.appendChild(f); f.submit(); }"
+                    class="px-4 py-2 font-bold text-red-500 hover:bg-red-50 hover:text-red-700 rounded-xl transition-colors border border-transparent hover:border-red-100">
+                    <i class="ph-bold ph-trash mr-2"></i> Supprimer
+                </button>
+
+                <div class="flex gap-2">
+                    <a id="btn-user-profile" href="#" target="_blank"
+                        class="px-4 py-2 font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition-colors flex items-center gap-2">
+                        <i class="ph-bold ph-arrow-square-out"></i> Profil Public
+                    </a>
+                    <button type="button"
+                        class="px-4 py-2 font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition-colors"
+                        onclick="document.getElementById('modal-edit-user').close()">Annuler</button>
+                    <button type="submit"
+                        class="px-4 py-2 font-bold bg-brand-600 hover:bg-brand-700 text-white rounded-xl shadow-lg shadow-brand-500/30 transition-colors">
+                        <i class="ph-bold ph-check mr-2"></i> Enregistrer
+                    </button>
+                </div>
             </div>
         </form>
     </div>
@@ -1445,31 +1420,21 @@
 </dialog>
 
 <script>
-
-
     function openUserEditModal(id, username, email, utmb, role, isPremium, fullName) {
         const modal = document.getElementById('modal-edit-user');
         const form = document.getElementById('edit-user-form');
 
-        // Update Action URL
-        form.action = `/superadmin/user/${id}/update_full`; // New endpoint we need to add or reuse update
-        // Since we modified admin.py update_user_details to take these args, we might need to adjust action path
-        // Wait, looking at admin.py, existing endpoint is /superadmin/user/{user_id}/update but it doesn't take 'role'
-        // We should probably update the endpoint in admin.py to handle role update in same call, or just update details.
-        // Actually for now let's use the existing update endpoint and handle role separately if we want, OR update the endpoint.
-        // Let's stick to update_user_details (username, email, full_name, utmb) 
-        // AND we should probably add role to it or separate calls.
-
-        // Simpler: Just map to existing endpoint for now, role is handled by select in table (which I removed in favor of modal? No I should kept it or add it to modal).
-        // I replaced the table select with a text span. So I NEED to handle role in this new form.
-
-        // I will add a new endpoint /superadmin/user/{id}/edit_full in next step to handle everything cleanly.
+        // Dynamic Action URL
         form.action = `/superadmin/user/${id}/edit_full`;
 
+        // Update Profile Link
+        document.getElementById('btn-user-profile').href = `/u/${username}`;
+
+        // Fill Fields
         form.querySelector('input[name="username"]').value = username;
         form.querySelector('input[name="email"]').value = email;
-        form.querySelector('input[name="full_name"]').value = fullName;
-        form.querySelector('input[name="utmb_index"]').value = utmb;
+        form.querySelector('input[name="full_name"]').value = fullName != 'None' ? fullName : '';
+        form.querySelector('input[name="utmb_index"]').value = utmb != 'None' ? utmb : '';
         form.querySelector('select[name="role"]').value = role;
 
         modal.showModal();

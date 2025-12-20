@@ -472,11 +472,19 @@ async def stage_track_upload(request: Request, file: UploadFile = File(...), db:
     os.makedirs(upload_dir, exist_ok=True)
     file_path = os.path.join(upload_dir, f"temp_{file_hash}.gpx")
     
+    # Handle encoding
+    content_str = ""
+    try:
+        content_str = content.decode('utf-8')
+    except UnicodeDecodeError:
+        try:
+            content_str = content.decode('latin-1')
+        except:
+             # Last resort
+             content_str = content.decode('utf-8', errors='ignore')
+
     with open(file_path, "w", encoding="utf-8") as f:
-        # We might need to handle bytes vs string here depending on calculate_file_hash input
-        # Standardize content to bytes for hash, write typically needs str for simplified or bytes for raw
-        # Let's save as is for now
-        f.write(content.decode('utf-8'))
+        f.write(content_str)
         
     return {"temp_id": file_hash, "original_name": file.filename}
 
@@ -513,11 +521,39 @@ async def upload_form(
                      meta = analytics.get_metadata()
                      metrics = analytics.calculate_metrics()
                      if metrics:
+                        # Smart Title Generation (Server-side)
+                        smart_title = meta.get("name", "Trace Importée")
+                        
+                        # If generic name, try to improve
+                        start_lat, start_lon = metrics.get('start_coords', (None, None))
+                        if start_lat and start_lon:
+                             city, region, _ = get_location_info(start_lat, start_lon)
+                             location_name = city if city != "Unknown" else region
+                             if location_name != "Unknown":
+                                 dist_str = f"{metrics.get('distance_km', 0)}km"
+                                 elev_str = f"{int(metrics.get('elevation_gain', 0))}m+"
+                                 # Format: Trail - Location - Stats
+                                 smart_title = f"Trail - {location_name} - {dist_str} {elev_str}"
+                        
+                        inferred = analytics.infer_attributes(metrics)
+                        tags_list = inferred.get("tags", [])
+                        
+                        # Add metadata keywords too
+                        if meta.get("keywords"):
+                             kws = meta["keywords"]
+                             if isinstance(kws, str):
+                                 tags_list.extend([k.strip() for k in kws.split(",") if k.strip()])
+                             elif isinstance(kws, list):
+                                 tags_list.extend(kws)
+
                         staged_file = {
                             "id": temp_id,
-                            "name": meta.get("name", "Trace Importée"),
+                            "name": smart_title,
+                            "original_name": meta.get("name"),
+                            "description": meta.get("description", ""),
                             "dist": f"{metrics.get('distance_km', 0)}km",
-                            "elev": f"{int(metrics.get('elevation_gain', 0))}m+"
+                            "elev": f"{int(metrics.get('elevation_gain', 0))}m+",
+                            "tags": ",".join(list(set(tags_list)))
                         }
                      else:
                          print(f"Metrics failed for {temp_id}")

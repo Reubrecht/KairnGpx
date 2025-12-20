@@ -368,4 +368,210 @@
         });
     }
 </script>
+<div class="flex justify-end gap-3 pt-6 border-t border-slate-100">
+    <a href="/superadmin#events"
+        class="px-6 py-3 font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition-colors">Annuler</a>
+    <button type="submit"
+        class="px-6 py-3 font-bold bg-brand-600 hover:bg-brand-700 text-white rounded-xl shadow-lg shadow-brand-500/30 transition-all flex items-center gap-2">
+        <i class="ph-bold ph-check"></i> Enregistrer
+    </button>
+</div>
+</form>
+</div>
+
+{% if event %}
+<!-- EDITIONS AND ROUTES MANAGER (Injected) -->
+<div class="lg:col-span-2 space-y-8 animate-fade-in-up">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+            <h2 class="font-bold text-slate-800 flex items-center gap-2">
+                <i class="ph-fill ph-path text-brand-500"></i> Éditions & Parcours
+            </h2>
+            <form action="/superadmin/event/{{ event.id }}/add_edition" method="POST" class="flex gap-2">
+                <input type="number" name="year" placeholder="Année"
+                    class="w-20 px-2 py-1 text-sm rounded-lg border-slate-200" required>
+                <button type="submit"
+                    class="text-xs bg-slate-900 text-white px-3 py-1 rounded-lg hover:bg-slate-800 font-bold">+
+                    Édition</button>
+            </form>
+        </div>
+
+        <div class="p-6 space-y-6">
+            {% for edition in event.editions|sort(attribute='year', reverse=True) %}
+            <div class="border border-slate-200 rounded-xl overflow-hidden">
+                <div class="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-700">Édition {{ edition.year }}</h3>
+                    <div class="text-xs text-slate-400">{{ edition.routes|length }} parcours</div>
+                </div>
+
+                <table class="w-full text-sm text-left">
+                    <thead class="text-xs text-slate-400 uppercase bg-slate-50/50">
+                        <tr>
+                            <th class="px-4 py-2">Nom</th>
+                            <th class="px-4 py-2">Distance</th>
+                            <th class="px-4 py-2">Trace</th>
+                            <th class="px-4 py-2 text-right">Lier Trace (ID/URL)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for route in edition.routes %}
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-4 py-2 font-medium">{{ route.name }}</td>
+                            <td class="px-4 py-2 text-slate-500">{{ route.distance_km }}km / {{ route.elevation_gain
+                                }}d+</td>
+                            <td class="px-4 py-2">
+                                {% if route.official_track %}
+                                <a href="/track/{{ route.official_track.id }}" target="_blank"
+                                    class="text-green-600 font-bold flex items-center gap-1 text-xs px-2 py-1 bg-green-50 rounded border border-green-100 w-fit">
+                                    <i class="ph-fill ph-check-circle"></i> OK
+                                </a>
+                                {% else %}
+                                <span class="text-slate-400 text-xs italic">Manquante</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-2 text-right">
+                                <div class="flex justify-end gap-1">
+                                    <button type="button" @click="openPicker({{ route.id }}, '{{ route.name }}')"
+                                        class="px-3 py-1.5 text-xs font-bold bg-slate-100 text-slate-600 hover:bg-brand-50 hover:text-brand-600 rounded-lg transition-colors border border-slate-200 hover:border-brand-200 flex items-center gap-2">
+                                        <i class="ph-bold ph-magnifying-glass"></i> Choisir
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+
+                        <!-- Add Route Inline -->
+                        <tr class="bg-slate-50/30">
+                            <form action="/superadmin/edition/{{ edition.id }}/add_route" method="POST">
+                                <td class="px-4 py-2"><input type="text" name="name" placeholder="Nouveau parcours..."
+                                        class="w-full px-2 py-1 text-xs rounded border-slate-200" required></td>
+                                <td class="px-4 py-2 flex gap-1">
+                                    <input type="number" step="0.1" name="distance_km" placeholder="km"
+                                        class="w-16 px-2 py-1 text-xs rounded border-slate-200">
+                                    <input type="number" name="elevation_gain" placeholder="d+"
+                                        class="w-16 px-2 py-1 text-xs rounded border-slate-200">
+                                </td>
+                                <td colspan="2" class="px-4 py-2 text-right">
+                                    <button type="submit"
+                                        class="text-xs font-bold text-slate-600 hover:text-brand-600">+ Ajouter</button>
+                                </td>
+                            </form>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+</div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Track Picker Modal -->
+<dialog id="modal-track-picker" class="modal rounded-2xl shadow-2xl backdrop:backdrop-blur-sm m-auto max-w-2xl w-full">
+    <div class="bg-white" x-data="{ 
+        query: '', 
+        tracks: [], 
+        loading: false, 
+        routeId: null,
+        routeName: '',
+        
+        async search() {
+            if (this.query.length < 2) return;
+            this.loading = true;
+            try {
+                const res = await fetch(`/api/admin/tracks?q=${this.query}`);
+                this.tracks = await res.json();
+            } catch(e) { console.error(e); }
+            this.loading = false;
+        },
+        
+        select(trackId) {
+            if(!confirm('Lier cette trace au parcours ' + this.routeName + ' ?')) return;
+            // Create and submit form dynamically
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/superadmin/routes/${this.routeId}/link_existing_track`;
+            
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'track_input';
+            input.value = trackId;
+            
+            form.appendChild(input);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }"
+        @open-track-picker.window="routeId = $event.detail.id; routeName = $event.detail.name; $el.showModal(); query=''; tracks=[]; search()">
+
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <div>
+                <h3 class="font-bold text-lg text-slate-800">Lier une trace</h3>
+                <p class="text-xs text-slate-500">Parcours : <span x-text="routeName"
+                        class="font-mono text-brand-600"></span></p>
+            </div>
+            <button onclick="this.closest('dialog').close()"
+                class="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"><i
+                    class="ph-bold ph-x"></i></button>
+        </div>
+
+        <div class="p-6 space-y-4">
+            <!-- Search -->
+            <div class="relative">
+                <i class="ph-bold ph-magnifying-glass absolute left-3 top-2.5 text-slate-400"></i>
+                <input type="text" x-model="query" @keydown.enter.prevent="search()" @input.debounce.500ms="search()"
+                    placeholder="Rechercher (Titre, Ville, User)..."
+                    class="w-full pl-10 pr-4 py-2 rounded-xl border-slate-200 bg-slate-50 focus:bg-white transition-colors">
+            </div>
+
+            <!-- Results -->
+            <div class="h-64 overflow-y-auto custom-scrollbar border border-slate-100 rounded-xl bg-slate-50/30">
+                <div x-show="loading" class="p-8 text-center text-slate-400"><i
+                        class="ph-bold ph-spinner animate-spin text-2xl"></i></div>
+
+                <template x-for="t in tracks" :key="t.id">
+                    <div
+                        class="p-3 border-b border-slate-100 hover:bg-slate-50 flex justify-between items-center group bg-white">
+                        <div class="overflow-hidden">
+                            <div class="font-bold text-slate-800 text-sm truncate w-64" x-text="t.title"></div>
+                            <div class="flex gap-2 text-[10px] text-slate-500 font-mono items-center">
+                                <span class="bg-slate-100 px-1 rounded" x-text="t.distance_km + 'km'"></span>
+                                <span class="bg-slate-100 px-1 rounded" x-text="t.elevation_gain + 'd+'"></span>
+                                <span class="text-slate-400" x-text="t.uploader"></span>
+                            </div>
+                        </div>
+                        <button @click="select(t.id)"
+                            class="px-3 py-1.5 text-xs font-bold bg-white border border-slate-200 text-slate-600 rounded-lg group-hover:bg-brand-50 group-hover:text-brand-600 group-hover:border-brand-200 transition-colors">
+                            Choisir
+                        </button>
+                    </div>
+                </template>
+
+                <div x-show="!loading && tracks.length === 0 && query.length > 1"
+                    class="p-8 text-center text-slate-400 italic text-sm">
+                    Aucune trace trouvée.
+                </div>
+                <div x-show="!loading && query.length < 2" class="p-8 text-center text-slate-300 text-sm">
+                    Recherchez une trace à lier...
+                </div>
+            </div>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
+        onclick="this.parentElement.close()">
+        <button class="cursor-default w-full h-full">close</button>
+    </form>
+</dialog>
+
+<script>
+    function openPicker(id, name) {
+        window.dispatchEvent(new CustomEvent('open-track-picker', { detail: { id, name } }));
+    }
+</script>
 {% endblock %}
