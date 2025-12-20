@@ -1230,12 +1230,51 @@ async def global_map_page(request: Request, db: Session = Depends(get_db)):
          })
 
     import json
+    
+    # --- 2. Fetch Events (with location) ---
+    # We want events that have at least one official track with coordinates
+    # For simplicity, we'll take the first track of the latest edition
+    events_data = []
+    
+    # Optimize: Join RaceEvent -> RaceEdition -> RaceRoute -> Track
+    # This might be complex in one query, let's iterate for now or do a careful join
+    # Query: RaceEvents that have editions
+    distinct_events = db.query(models.RaceEvent).all()
+    
+    for event in distinct_events:
+        # Find a valid location from its history
+        lat, lon = None, None
+        
+        # Sort editions descending
+        sorted_editions = sorted(event.editions, key=lambda x: x.year, reverse=True)
+        
+        for edition in sorted_editions:
+            for route in edition.routes:
+                if route.official_track and route.official_track.start_lat and route.official_track.start_lon:
+                    lat = route.official_track.start_lat
+                    lon = route.official_track.start_lon
+                    break
+            if lat: break
+            
+        if lat and lon:
+            events_data.append({
+                "id": event.id,
+                "name": event.name,
+                "slug": event.slug,
+                "lat": lat,
+                "lon": lon,
+                "location_city": event.city or event.region,
+                "profile_picture": event.profile_picture
+            })
+
     return templates.TemplateResponse("heatmap.html", {
         "request": request,
         "tracks": tracks, # Keep raw for count or other uses if needed
         "tracks_json": json.dumps(tracks_data),
         "users_json": json.dumps(users_data),
+        "events_json": json.dumps(events_data),
         "total_tracks": len(tracks),
+        "total_events": len(events_data),
         "user": user
     })
 

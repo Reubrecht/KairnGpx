@@ -42,39 +42,154 @@
 
     <!-- Floating Info Panel (Top Left) -->
     <div
-        class="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-slate-200 max-w-xs transition-all hover:bg-white">
-        <h2 class="text-lg font-black text-slate-800 flex items-center gap-2 mb-1">
-            <span class="bg-brand-50 text-brand-600 p-1.5 rounded-lg"><i
-                    class="ph-fill ph-globe-hemisphere-west"></i></span>
-            Carte Globale
-        </h2>
-        <p class="text-xs text-slate-500 leading-relaxed">
-            Explorez les <span class="font-bold text-slate-900">{{ total_tracks }} traces</span> de la communauté.
-            Survolez un point pour voir le parcours.
+        class="absolute top-6 left-6 z-10 bg-white/80 backdrop-blur-xl p-5 rounded-3xl shadow-2xl border border-white/40 ring-1 ring-black/5 max-w-sm transition-all hover:bg-white/95 group">
+
+        <div class="flex items-center justify-between mb-2">
+            <h2 class="text-xl font-black text-slate-800 flex items-center gap-2.5">
+                <span
+                    class="bg-gradient-to-br from-brand-500 to-brand-600 text-white p-2 rounded-xl shadow-lg shadow-brand-500/20">
+                    <i class="ph-bold ph-globe-hemisphere-west"></i>
+                </span>
+                Kairn Maps
+            </h2>
+            <div
+                class="px-2 py-1 bg-slate-100 rounded-lg text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                Beta
+            </div>
+        </div>
+
+        <p class="text-xs text-slate-500 leading-relaxed font-medium pl-1">
+            Explorez <span class="font-bold text-slate-900">{{ total_tracks }} traces</span> et <span
+                class="font-bold text-slate-900">{{ total_events }} événements</span>.
         </p>
 
         <!-- Legend / Toggles -->
-        <div class="mt-4 space-y-2 border-t border-slate-100 pt-3">
+        <div class="mt-5 space-y-3 pt-4 border-t border-slate-100/80">
+
+            <!-- Heatmap Toggle -->
             <label
-                class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer hover:text-brand-600 transition-colors">
-                <input type="checkbox" id="toggle-heatmap" checked
-                    class="rounded text-brand-600 focus:ring-brand-500 border-gray-300">
-                <span>Heatmap</span>
+                class="flex items-center justify-between group/item cursor-pointer p-2 -mx-2 rounded-xl hover:bg-slate-50 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-red-100 text-red-600 flex items-center justify-center">
+                        <i class="ph-fill ph-fire"></i>
+                    </div>
+                    <div>
+                        <span
+                            class="block text-sm font-bold text-slate-700 group-hover/item:text-brand-600 transition-colors">Heatmap</span>
+                        <span class="block text-[10px] text-slate-400 font-medium">Densité d'activité</span>
+                    </div>
+                </div>
+                <!-- Custom Switch -->
+                <div class="relative inline-block w-10 h-6 align-middle select-none transition duration-200 ease-in">
+                    <input type="checkbox" id="toggle-heatmap" checked
+                        class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer left-1 top-1 transition-transform duration-200 ease-in checked:translate-x-full checked:border-brand-500" />
+                    <div
+                        class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-200 cursor-pointer peer-checked:bg-brand-500 transition-colors">
+                    </div>
+                </div>
             </label>
+
+            <!-- Start Points Toggle -->
             <label
-                class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer hover:text-brand-600 transition-colors">
-                <input type="checkbox" id="toggle-points" checked
-                    class="rounded text-brand-600 focus:ring-brand-500 border-gray-300">
-                <span>Points de départ</span>
+                class="flex items-center justify-between group/item cursor-pointer p-2 -mx-2 rounded-xl hover:bg-slate-50 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                        <i class="ph-fill ph-map-pin"></i>
+                    </div>
+                    <div>
+                        <span
+                            class="block text-sm font-bold text-slate-700 group-hover/item:text-emerald-600 transition-colors">Traces</span>
+                        <span class="block text-[10px] text-slate-400 font-medium">Points de départ</span>
+                    </div>
+                </div>
+                <div class="relative inline-block w-10 h-6 align-middle select-none">
+                    <input type="checkbox" id="toggle-points" checked
+                        class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer left-1 top-1 transition-transform duration-200 ease-in checked:translate-x-full checked:border-emerald-500" />
+                    <div
+                        class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-200 cursor-pointer peer-checked:bg-emerald-500">
+                    </div>
+                </div>
             </label>
+
+            <!-- Events Toggle -->
             <label
-                class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer hover:text-brand-600 transition-colors">
-                <input type="checkbox" id="toggle-users" checked
-                    class="rounded text-brand-600 focus:ring-brand-500 border-gray-300">
-                <span>Membres</span>
+                class="flex items-center justify-between group/item cursor-pointer p-2 -mx-2 rounded-xl hover:bg-slate-50 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center">
+                        <i class="ph-fill ph-flag-banner"></i>
+                    </div>
+                    <div>
+                        <span
+                            class="block text-sm font-bold text-slate-700 group-hover/item:text-orange-600 transition-colors">Événements</span>
+                        <span class="block text-[10px] text-slate-400 font-medium">Compétitions à venir</span>
+                    </div>
+                </div>
+                <div class="relative inline-block w-10 h-6 align-middle select-none">
+                    <input type="checkbox" id="toggle-events" checked
+                        class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer left-1 top-1 transition-transform duration-200 ease-in checked:translate-x-full checked:border-orange-500" />
+                    <div
+                        class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-200 cursor-pointer peer-checked:bg-orange-500">
+                    </div>
+                </div>
+            </label>
+
+            <!-- Users Toggle -->
+            <label
+                class="flex items-center justify-between group/item cursor-pointer p-2 -mx-2 rounded-xl hover:bg-slate-50 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                        <i class="ph-fill ph-users"></i>
+                    </div>
+                    <div>
+                        <span
+                            class="block text-sm font-bold text-slate-700 group-hover/item:text-indigo-600 transition-colors">Membres</span>
+                        <span class="block text-[10px] text-slate-400 font-medium">Communauté</span>
+                    </div>
+                </div>
+                <div class="relative inline-block w-10 h-6 align-middle select-none">
+                    <input type="checkbox" id="toggle-users" checked
+                        class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer left-1 top-1 transition-transform duration-200 ease-in checked:translate-x-full checked:border-indigo-500" />
+                    <div
+                        class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-200 cursor-pointer peer-checked:bg-indigo-500">
+                    </div>
+                </div>
             </label>
         </div>
     </div>
+
+    <style>
+        /* Custom Switch Styles */
+        .toggle-checkbox:checked {
+            transform: translateX(100%);
+        }
+
+        .toggle-checkbox:checked+.toggle-label {
+            background-color: currentColor;
+            /* Requires text-color on parent or setting specific bg */
+        }
+
+        /* Fix background colors for specific peers since currentColor is tricky here */
+        #toggle-heatmap:checked+.toggle-label {
+            background-color: #ef4444;
+        }
+
+        /* red-500 */
+        #toggle-points:checked+.toggle-label {
+            background-color: #10b981;
+        }
+
+        /* emerald-500 */
+        #toggle-events:checked+.toggle-label {
+            background-color: #f97316;
+        }
+
+        /* orange-500 */
+        #toggle-users:checked+.toggle-label {
+            background-color: #6366f1;
+        }
+
+        /* indigo-500 */
+    </style>
 
     <!-- Map Controls (Top Right) -->
     <div class="absolute top-4 right-4 z-10 flex flex-col gap-2">
@@ -119,17 +234,23 @@
 <script id="users-json" type="application/json">
     {{ users_json | safe }}
 </script>
+<script id="events-json" type="application/json">
+    {{ events_json | safe }}
+</script>
 
 
 <script>
     // Robust Data Parsing
     let tracksRaw = [];
     let usersRaw = [];
+    let eventsRaw = [];
     try {
         const tracksEl = document.getElementById('tracks-json');
         const usersEl = document.getElementById('users-json');
+        const eventsEl = document.getElementById('events-json');
         if (tracksEl && tracksEl.textContent) tracksRaw = JSON.parse(tracksEl.textContent);
         if (usersEl && usersEl.textContent) usersRaw = JSON.parse(usersEl.textContent);
+        if (eventsEl && eventsEl.textContent) eventsRaw = JSON.parse(eventsEl.textContent);
     } catch (e) {
         console.error("Data parsing error:", e);
     }
@@ -317,7 +438,37 @@
                     }
                 });
 
-                // --- User Markers ---
+
+
+                // --- Events Markers ---
+                let eventMarkers = [];
+                if (eventsRaw) {
+                    eventsRaw.forEach(ev => {
+                        const el = document.createElement('div');
+                        el.className = 'w-8 h-8 rounded-full border-2 border-white shadow-md bg-orange-500 flex items-center justify-center text-white cursor-pointer hover:scale-110 transition-transform';
+                        el.innerHTML = '<i class="ph-bold ph-flag-banner"></i>';
+
+                        const popup = new maplibregl.Popup({ offset: 25 }).setHTML(`
+                             <div class="p-3 text-center min-w-[140px]">
+                                 <h3 class="font-bold text-slate-800 text-sm mb-1 line-clamp-2">${ev.name}</h3>
+                                 <p class="text-[10px] text-slate-500 uppercase font-bold tracking-wide mb-2">${ev.location_city || 'Localisation inconnue'}</p>
+                                 <a href="/search?q=${encodeURIComponent(ev.name)}" class="inline-block px-3 py-1.5 bg-orange-50 text-orange-600 text-xs font-bold rounded-lg hover:bg-orange-100 transition-colors">Voir l'événement</a>
+                             </div>
+                         `);
+
+                        const marker = new maplibregl.Marker({ element: el })
+                            .setLngLat([ev.lon, ev.lat])
+                            .setPopup(popup)
+                            .addTo(map);
+
+                        eventMarkers.push(marker);
+                    });
+                }
+
+                // Define userMarkers globally accessible for toggle
+                window.userMarkers = [];
+                // Re-render user markers to store reference
+                // (Clearing previous if any - though this runs on load so fine)
                 if (usersRaw) {
                     usersRaw.forEach(u => {
                         if (!u.location_lat || !u.location_lon) return;
@@ -334,11 +485,15 @@
                         }
                         const popup = new maplibregl.Popup({ offset: 25 }).setHTML(`
                              <div class="p-3 text-center min-w-[120px]">
+                                 <div class="w-12 h-12 rounded-full overflow-hidden mx-auto mb-2 border border-slate-100">
+                                      ${u.profile_picture ? `<img src="${u.profile_picture}" class="w-full h-full object-cover">` : `<div class="w-full h-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold">${u.username.substring(0, 2).toUpperCase()}</div>`} 
+                                 </div>
                                  <h3 class="font-bold text-slate-800 text-sm"><a href="/user/${encodeURIComponent(u.username)}" class="hover:text-brand-600 hover:underline">${u.username}</a></h3>
-                                 <p class="text-xs text-slate-500">${u.location_city || 'Localisation inconnue'}</p>
+                                 <p class="text-xs text-slate-500">${u.location_city || 'Membre Kairn'}</p>
                              </div>
                         `);
-                        new maplibregl.Marker({ element: el }).setLngLat([u.location_lon, u.location_lat]).setPopup(popup).addTo(map);
+                        const m = new maplibregl.Marker({ element: el }).setLngLat([u.location_lon, u.location_lat]).setPopup(popup).addTo(map);
+                        window.userMarkers.push(m);
                     });
                 }
             } catch (e) {
@@ -434,7 +589,15 @@
                 window.location.href = `/track/${trackId}`;
             });
 
+            // Expose markers globally for toggles outside this scope
+            window.eventMarkers = eventMarkers;
+
         }); // End map Load
+
+        // MOVE TOGGLES INSIDE or usage of window globals
+        // Ideally toggles should be set up once, but they depend on map layers/markers
+        // We can set them up here or ensure they access globals.
+
 
         // --- Controls Logic (Safe Global Functions) ---
         // Bind to window to ensure global access for onclick
@@ -508,9 +671,40 @@
         if (togglePoints) {
             togglePoints.addEventListener('change', (e) => {
                 const val = e.target.checked ? 'visible' : 'none';
-                map.setLayoutProperty('track-points', 'visibility', val);
-                map.setLayoutProperty('clusters', 'visibility', val);
-                map.setLayoutProperty('cluster-count', 'visibility', val);
+                if (map.getLayer('track-points')) map.setLayoutProperty('track-points', 'visibility', val);
+                if (map.getLayer('clusters')) map.setLayoutProperty('clusters', 'visibility', val);
+                if (map.getLayer('cluster-count')) map.setLayoutProperty('cluster-count', 'visibility', val);
+            });
+        }
+
+        const toggleUsers = document.getElementById('toggle-users');
+        if (toggleUsers) {
+            toggleUsers.addEventListener('change', (e) => {
+                const show = e.target.checked;
+                if (window.userMarkers) {
+                    window.userMarkers.forEach(m => {
+                        const el = m.getElement();
+                        el.style.display = show ? 'flex' : 'none'; // Flex because some are flex containers
+                        // Or strict removal: show ? m.addTo(map) : m.remove();
+                        // Display toggle is cheaper
+                        if (!show) el.classList.add('hidden');
+                        else el.classList.remove('hidden');
+                    });
+                }
+            });
+        }
+
+        const toggleEvents = document.getElementById('toggle-events');
+        if (toggleEvents) {
+            toggleEvents.addEventListener('change', (e) => {
+                const show = e.target.checked;
+                if (window.eventMarkers) {
+                    window.eventMarkers.forEach(m => {
+                        const el = m.getElement();
+                        if (!show) el.classList.add('hidden');
+                        else el.classList.remove('hidden');
+                    });
+                }
             });
         }
     }
