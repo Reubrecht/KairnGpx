@@ -42,125 +42,211 @@
     <!-- Editions List -->
     <div class="space-y-8">
         {% for edition in event.editions|sort(attribute='year', reverse=True) %}
-        <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-            <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                <div>
-                    <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                        <span class="text-brand-600">{{ edition.year }}</span>
-                        {% if edition.status == 'UPCOMING' %}
-                        <span
-                            class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full uppercase tracking-wide">À
-                            venir</span>
-                        {% elif edition.status == 'COMPLETED' %}
-                        <span
-                            class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full uppercase tracking-wide">Terminé</span>
-                        {% endif %}
-                    </h3>
-                    <p class="text-xs text-slate-500 mt-1">
-                        {% if edition.start_date %}{{ edition.start_date }}{% endif %}
-                        {% if edition.end_date %} - {{ edition.end_date }}{% endif %}
-                    </p>
-                </div>
-                <button onclick="document.getElementById('modal-add-route-{{ edition.id }}').classList.remove('hidden')"
-                    class="text-sm font-bold text-brand-600 hover:text-brand-700 px-3 py-1.5 bg-brand-50 rounded-lg transition-colors">
-                    + Ajouter Course
-                </button>
-            </div>
+        {% set is_past = edition.status == 'COMPLETED' or (edition.end_date and edition.end_date < now_date) %} <!--
+            requires now_date variable passed to template or generic check -->
 
-            <div class="divide-y divide-slate-50">
-                {% for route in edition.routes %}
-                <div class="px-6 py-4 hover:bg-slate-50 transition-colors flex items-center justify-between">
+            <div
+                class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden {% if edition.status == 'COMPLETED' %}opacity-75 grayscale{% endif %}">
+                <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                     <div>
-                        <div class="flex items-center gap-3">
-                            <h4 class="font-bold text-slate-900">{{ route.name }}</h4>
-                            <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">{{
-                                route.distance_category or 'N/A' }}</span>
+                        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <span class="text-brand-600">{{ edition.year }}</span>
+                            {% if edition.status == 'UPCOMING' %}
+                            <span
+                                class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full uppercase tracking-wide">À
+                                venir</span>
+                            {% elif edition.status == 'COMPLETED' %}
+                            <span
+                                class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full uppercase tracking-wide">Terminé</span>
+                            {% endif %}
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-1">
+                            {% if edition.start_date %}{{ edition.start_date }}{% endif %}
+                            {% if edition.end_date %} - {{ edition.end_date }}{% endif %}
+                        </p>
+                    </div>
+                    <div class="flex gap-2">
+                        {% if loop.first %}
+                        <form action="/manage/editions/{{ edition.id }}/duplicate" method="POST"
+                            onsubmit="return confirm('Créer l\'édition {{ edition.year + 1 }} basée sur celle-ci ?')">
+                            <button type="submit"
+                                class="text-xs font-bold text-slate-600 hover:text-brand-600 px-3 py-1.5 border border-slate-200 bg-white rounded-lg transition-colors flex items-center gap-1">
+                                <i class="ph-bold ph-copy"></i> Dupliquer vers {{ edition.year + 1 }}
+                            </button>
+                        </form>
+                        {% endif %}
+                        <button
+                            onclick="document.getElementById('modal-add-route-{{ edition.id }}').classList.remove('hidden')"
+                            class="text-sm font-bold text-brand-600 hover:text-brand-700 px-3 py-1.5 bg-brand-50 rounded-lg transition-colors">
+                            + Ajouter Course
+                        </button>
+                    </div>
+                </div>
+
+                <div class="divide-y divide-slate-50">
+                    {% for route in edition.routes %}
+                    <div class="px-6 py-4 hover:bg-slate-50 transition-colors flex items-center justify-between">
+                        <div>
+                            <div class="flex items-center gap-3">
+                                <h4 class="font-bold text-slate-900">{{ route.name }}</h4>
+                                <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">{{
+                                    route.distance_category or 'N/A' }}</span>
+                            </div>
+                            <div class="text-sm text-slate-500 mt-1 flex gap-4">
+                                <span><i class="ph-bold ph-arrows-left-right"></i> {{ route.distance_km }} km</span>
+                                <span><i class="ph-bold ph-trend-up"></i> {{ route.elevation_gain }} m+</span>
+                                {% if route.official_track_id %}
+                                <span class="text-green-600 flex items-center gap-1"><i
+                                        class="ph-fill ph-check-circle"></i> Trace liée</span>
+                                {% else %}
+                                <span class="text-amber-500 flex items-center gap-1"><i
+                                        class="ph-fill ph-warning-circle"></i> Pas de trace</span>
+                                {% endif %}
+                            </div>
                         </div>
-                        <div class="text-sm text-slate-500 mt-1 flex gap-4">
-                            <span><i class="ph-bold ph-arrows-left-right"></i> {{ route.distance_km }} km</span>
-                            <span><i class="ph-bold ph-trend-up"></i> {{ route.elevation_gain }} m+</span>
-                            {% if route.official_track_id %}
-                            <span class="text-green-600 flex items-center gap-1"><i class="ph-fill ph-check-circle"></i>
-                                Trace liée</span>
+                        <div class="flex gap-2">
+                            {% if not route.official_track_id %}
+                            <div class="relative" x-data="{ open: false }">
+                                <button @click="open = !open"
+                                    class="px-3 py-1.5 text-xs font-bold text-brand-600 border border-brand-200 rounded hover:bg-brand-50 transition-colors flex items-center gap-1">
+                                    <i class="ph-bold ph-plus"></i> Lier Trace
+                                </button>
+                                <div x-show="open" @click.away="open = false"
+                                    class="absolute right-0 top-8 w-48 bg-white shadow-xl rounded-lg border border-slate-100 z-10 p-1 flex flex-col gap-1">
+                                    <!-- Upload -->
+                                    <form action="/manage/routes/{{ route.id }}/upload" method="post"
+                                        enctype="multipart/form-data">
+                                        <label
+                                            class="block px-3 py-2 text-xs text-slate-600 hover:bg-slate-50 hover:text-brand-600 cursor-pointer rounded flex items-center gap-2 transition-colors">
+                                            <i class="ph-bold ph-upload-simple"></i> Upload GPX
+                                            <input type="file" name="file" class="hidden" accept=".gpx"
+                                                onchange="this.form.submit()">
+                                        </label>
+                                    </form>
+                                    <!-- Link Existing -->
+                                    <button onclick="openLinkModal({{ route.id }}, '{{ route.name }}')"
+                                        class="block w-full text-left px-3 py-2 text-xs text-slate-600 hover:bg-slate-50 hover:text-brand-600 rounded flex items-center gap-2 transition-colors">
+                                        <i class="ph-bold ph-link"></i> Choisir existante
+                                    </button>
+                                </div>
+                            </div>
                             {% else %}
-                            <span class="text-amber-500 flex items-center gap-1"><i
-                                    class="ph-fill ph-warning-circle"></i> Pas de trace</span>
+                            <a href="/track/{{ route.official_track_id }}"
+                                class="px-3 py-1.5 text-xs font-bold text-slate-600 border border-slate-200 rounded hover:bg-slate-50 transition-colors">
+                                Voir Trace
+                            </a>
                             {% endif %}
                         </div>
                     </div>
-                    <div class="flex gap-2">
-                        {% if not route.official_track_id %}
-                        <!-- Upload GPX for this route -->
-                        <form action="/manage/routes/{{ route.id }}/upload" method="post" enctype="multipart/form-data"
-                            class="inline-block">
-                            <label
-                                class="cursor-pointer px-3 py-1.5 text-xs font-bold text-brand-600 border border-brand-200 rounded hover:bg-brand-50 transition-colors">
-                                Lier GPX
-                                <input type="file" name="file" class="hidden" accept=".gpx"
-                                    onchange="this.form.submit()">
-                            </label>
-                        </form>
-                        {% else %}
-                        <a href="/track/{{ route.official_track_id }}"
-                            class="px-3 py-1.5 text-xs font-bold text-slate-600 border border-slate-200 rounded hover:bg-slate-50 transition-colors">
-                            Voir Trace
-                        </a>
-                        {% endif %}
+                    {% else %}
+                    <div class="px-6 py-8 text-center text-slate-400 italic text-sm">
+                        Aucune course pour cette édition.
                     </div>
+                    {% endfor %}
                 </div>
-                {% else %}
-                <div class="px-6 py-8 text-center text-slate-400 italic text-sm">
-                    Aucune course pour cette édition.
-                </div>
-                {% endfor %}
-            </div>
 
-            <!-- Modal Add Route for this edition -->
-            <div id="modal-add-route-{{ edition.id }}"
-                class="hidden fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-                <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
-                    <h3 class="text-xl font-bold mb-4">Ajouter une course à l'édition {{ edition.year }}</h3>
-                    <form action="/manage/editions/{{ edition.id }}/routes" method="post" class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-1">Nom de la course</label>
-                            <input type="text" name="name" required placeholder="Ex: UTMB, CCC..."
-                                class="w-full px-3 py-2 border rounded-lg">
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
+                <!-- Modal Add Route for this edition -->
+                <div id="modal-add-route-{{ edition.id }}"
+                    class="hidden fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+                        <h3 class="text-xl font-bold mb-4">Ajouter une course à l'édition {{ edition.year }}</h3>
+                        <form action="/manage/editions/{{ edition.id }}/routes" method="post" class="space-y-4">
                             <div>
-                                <label class="block text-sm font-bold text-slate-700 mb-1">Distance (km)</label>
-                                <input type="number" step="0.1" name="distance_km"
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Nom de la course</label>
+                                <input type="text" name="name" required placeholder="Ex: UTMB, CCC..."
                                     class="w-full px-3 py-2 border rounded-lg">
                             </div>
-                            <div>
-                                <label class="block text-sm font-bold text-slate-700 mb-1">D+ (m)</label>
-                                <input type="number" name="elevation_gain" class="w-full px-3 py-2 border rounded-lg">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-1">Distance (km)</label>
+                                    <input type="number" step="0.1" name="distance_km"
+                                        class="w-full px-3 py-2 border rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-1">D+ (m)</label>
+                                    <input type="number" name="elevation_gain"
+                                        class="w-full px-3 py-2 border rounded-lg">
+                                </div>
                             </div>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-1">Catégorie</label>
-                            <select name="distance_category" class="w-full px-3 py-2 border rounded-lg">
-                                <option value="XS">XS (< 25km)</option>
-                                <option value="S">S (25-44km)</option>
-                                <option value="M">M (45-74km)</option>
-                                <option value="L">L (75-114km)</option>
-                                <option value="XL">XL (> 115km)</option>
-                            </select>
-                        </div>
-                        <div class="flex justify-end gap-2 pt-4">
-                            <button type="button"
-                                onclick="document.getElementById('modal-add-route-{{ edition.id }}').classList.add('hidden')"
-                                class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">Annuler</button>
-                            <button type="submit"
-                                class="px-4 py-2 bg-brand-600 text-white font-bold rounded-lg hover:bg-brand-700">Ajouter</button>
-                        </div>
-                    </form>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Catégorie</label>
+                                <select name="distance_category" class="w-full px-3 py-2 border rounded-lg">
+                                    <option value="XS">XS (< 25km)</option>
+                                    <option value="S">S (25-44km)</option>
+                                    <option value="M">M (45-74km)</option>
+                                    <option value="L">L (75-114km)</option>
+                                    <option value="XL">XL (> 115km)</option>
+                                </select>
+                            </div>
+                            <div class="flex justify-end gap-2 pt-4">
+                                <button type="button"
+                                    onclick="document.getElementById('modal-add-route-{{ edition.id }}').classList.add('hidden')"
+                                    class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">Annuler</button>
+                                <button type="submit"
+                                    class="px-4 py-2 bg-brand-600 text-white font-bold rounded-lg hover:bg-brand-700">Ajouter</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
+
+            </div>
+            {% endfor %}
+    </div>
+
+    <!-- Modal Link Existing Track -->
+    <div id="modal-link-track"
+        class="hidden fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+        x-data="{ query: '', results: [] }">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 max-h-[80vh] flex flex-col">
+            <h3 class="text-xl font-bold mb-4">Lier une trace existante à <span id="link-route-name"
+                    class="text-brand-600"></span></h3>
+
+            <div class="mb-4">
+                <input type="text" x-model="query"
+                    @input.debounce.500ms="fetch('/api/manage/tracks_search?q='+query).then(r=>r.json()).then(d=>results=d)"
+                    placeholder="Rechercher une trace (titre)..."
+                    class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
             </div>
 
+            <div class="flex-1 overflow-y-auto space-y-2 mb-4 border border-slate-100 rounded-lg p-2 min-h-[200px]">
+                <template x-if="results.length === 0 && query.length > 2">
+                    <p class="text-center text-slate-400 py-4">Aucune trace trouvée.</p>
+                </template>
+                <template x-if="query.length <= 2">
+                    <p class="text-center text-slate-400 py-4">Tapez au moins 3 caractères...</p>
+                </template>
+                <template x-for="track in results">
+                    <form :action="'/manage/routes/'+document.getElementById('link-route-id').value+'/link_existing'"
+                        method="post">
+                        <input type="hidden" name="track_id" :value="track.id">
+                        <button type="submit"
+                            class="w-full text-left p-3 hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all group">
+                            <div class="font-bold text-slate-800 group-hover:text-brand-600" x-text="track.title"></div>
+                            <div class="text-xs text-slate-500 flex gap-3 mt-1">
+                                <span x-text="track.distance + ' km'"></span>
+                                <span x-text="track.elevation + ' m+'"></span>
+                                <span x-text="'par ' + track.uploader"></span>
+                            </div>
+                        </button>
+                    </form>
+                </template>
+            </div>
+
+            <div class="flex justify-end">
+                <button type="button" onclick="document.getElementById('modal-link-track').classList.add('hidden')"
+                    class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">Fermer</button>
+            </div>
+            <input type="hidden" id="link-route-id">
         </div>
-        {% endfor %}
     </div>
+
+    <script>
+        function openLinkModal(routeId, routeName) {
+            document.getElementById('link-route-id').value = routeId;
+            document.getElementById('link-route-name').textContent = routeName;
+            document.getElementById('modal-link-track').classList.remove('hidden');
+        }
+    </script>
 
     <!-- Modal Add Edition -->
     <div id="modal-add-edition"

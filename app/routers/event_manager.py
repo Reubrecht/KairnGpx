@@ -16,11 +16,13 @@ from ..services.analytics import GpxAnalytics
 
 router = APIRouter()
 
-# Dependency to check permissions (Mocked as any logged user for now, or admin)
+# Dependency to check permissions
 def get_manager_user(user: models.User = Depends(get_current_user)):
-    # Uncomment to restrict to Admin/Moderator
-    # if user.role not in [models.Role.ADMIN, models.Role.SUPER_ADMIN, models.Role.MODERATOR]:
-    #     raise HTTPException(status_code=403, detail="Not authorized")
+    # Restrict to Admin and Super Admin
+    if user.role not in [models.Role.ADMIN, models.Role.SUPER_ADMIN]:
+        # Also check legacy flag just in case
+        if not user.is_admin:
+             raise HTTPException(status_code=403, detail="Not authorized")
     return user
 
 @router.get("/manage/events", response_class=HTMLResponse)
@@ -349,20 +351,9 @@ async def delete_events_batch(
                         track = db.query(models.Track).filter(models.Track.id == route.official_track_id).first()
                         if track:
                             track.is_official_route = False
-                            # Optional: revert status if needed, but keeping as is to preserve file
                             
-            # 2. Delete the event (Cascades should handle children if configured, 
-            # but explicit delete of children is safer if cascade not set in DB Models)
-            # Models use default relationship which might set null or cascade depending on setup.
-            # Let's rely on SQLAlchemy ORM cascading if relationships are set up with `cascade="all, delete"`.
-            # Looking at models.py, `cascade` is not explicitly set on relationships usually defaults to strict or set null.
-            # To be safe, manual deletion of children or relying on DB constraint with CASCADE.
-            # Given models review, it's safer to just delete the event and let SQLAlchemy handle it if configured, 
-            # or it might fail if FK constraints exist without cascade.
-            # Best practice without altering models now:
-            
+            # 2. Delete children manually for safety
             for edition in event.editions:
-                # Delete routes first
                 for route in edition.routes:
                     db.delete(route)
                 db.delete(edition)
@@ -375,3 +366,109 @@ async def delete_events_batch(
         db.rollback()
         
     return RedirectResponse(url="/manage/events", status_code=303)
+
+@router.post("/manage/editions/{edition_id}/duplicate")
+async def duplicate_edition(
+    edition_id: int,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_manager_user)
+):
+    """
+    Duplicate an edition structure to the next year.
+    Copies all routes (without linked tracks) to the new edition.
+    """
+    edition = db.query(models.RaceEdition).filter(models.RaceEdition.id == edition_id).first()
+    if not edition:
+        raise HTTPException(status_code=404, detail="Edition not found")
+        
+    new_year = edition.year + 1
+    
+    # Check if exists
+    if db.query(models.RaceEdition).filter_by(event_id=edition.event_id, year=new_year).first():
+        # Ideally flash message: already exists
+        return RedirectResponse(url=f"/manage/events/{edition.event_id}", status_code=303)
+
+    # Create new edition
+    new_start = None
+    if edition.start_date:
+        try:
+            # Simple heuristic: add 365 days? Or just leave null? 
+            # User request: "dupliqué un evenement vers l'edition suivante"
+            # Let's keep dates empty to encourage setting them correct
+            pass 
+        except:
+            pass
+            
+    new_edition = models.RaceEdition(
+        event_id=edition.event_id,
+        year=new_year,
+        status=models.RaceStatus.UPCOMING,
+        start_date=None, # Reset date
+        end_date=None
+    )
+    db.add(new_edition)
+    db.flush() # Get ID
+    
+    # Copy routes
+    for route in edition.routes:
+        new_route = models.RaceRoute(
+            edition_id=new_edition.id,
+            name=route.name,
+            distance_km=route.distance_km,
+            elevation_gain=route.elevation_gain,
+            distance_category=route.distance_category,
+            official_track_id=None, # Do not link track by default (safer)
+            results_url=None
+        )
+        db.add(new_route)
+        
+    db.commit()
+    
+    return RedirectResponse(url=f"/manage/events/{edition.event_id}", status_code=303)
+
+
+@router.post("/manage/routes/{route_id}/link_existing")
+async def link_existing_track(
+    route_id: int,
+    track_id: int = Form(...),
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_manager_user)
+):
+    route = db.query(models.RaceRoute).filter(models.RaceRoute.id == route_id).first()
+    if not route:
+        raise HTTPException(status_code=404, detail="Route not found")
+        
+    track = db.query(models.Track).filter(models.Track.id == track_id).first()
+    if not track:
+        raise HTTPException(status_code=404, detail="Track not found")
+        
+    # Link
+    route.official_track_id = track.id
+    track.is_official_route = True
+    
+    # Sync info if empty
+    if not route.distance_km:
+        route.distance_km = track.distance_km
+    if not route.elevation_gain:
+        route.elevation_gain = track.elevation_gain
+        
+    db.commit()
+    return RedirectResponse(url=f"/manage/events/{route.edition.event_id}", status_code=303)
+
+@router.get("/api/manage/tracks_search")
+async def search_tracks_api(
+    q: str,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_manager_user)
+):
+    """Search tracks by title/id for the linker"""
+    if not q:
+        return []
+        
+    query = db.query(models.Track).filter(models.Track.title.ilike(f"%{q}%"))
+    results = query.limit(20).all()
+    
+    return [
+        {"id": t.id, "title": t.title, "distance": t.distance_km, "elevation": t.elevation_gain, "uploader": t.uploader_name}
+        for t in results
+    ]

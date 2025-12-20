@@ -1,0 +1,1024 @@
+[
+    {
+        "name": "La Romeufontaine",
+        "slug": "la-romeufontaine",
+        "description": "Trail hivernal classique à Font-Romeu.",
+        "region": "Pyrénées-Orientales",
+        "city": "Font Romeu",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "start_date": "2026-01-17",
+                "end_date": "2026-01-18",
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "25k",
+                        "distance_km": 25,
+                        "elevation_gain": 950,
+                        "distance_category": "S"
+                    },
+                    {
+                        "name": "15k",
+                        "distance_km": 15,
+                        "elevation_gain": 500,
+                        "distance_category": "XS"
+                    },
+                    {
+                        "name": "9k",
+                        "distance_km": 9,
+                        "elevation_gain": 300,
+                        "distance_category": "XS"
+                    },
+                    {
+                        "name": "5k",
+                        "distance_km": 5,
+                        "elevation_gain": 200,
+                        "distance_category": "XS"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Défi des remparts",
+        "slug": "defi-des-remparts",
+        "region": "Pyrénées-Orientales",
+        "city": "Salses-le-Château",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": []
+            }
+        ]
+    },
+    {
+        "name": "Ronda des Bojos",
+        "slug": "ronda-des-bojos",
+        "region": "Pyrénées-Orientales",
+        "city": "Vinça",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "start_date": "2026-02-21",
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "18k",
+                        "distance_km": 18,
+                        "elevation_gain": 800,
+                        "distance_category": "XS"
+                    },
+                    {
+                        "name": "7k",
+                        "distance_km": 7,
+                        "elevation_gain": 200,
+                        "distance_category": "XS"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "La 66 GTA - Grand Trail de l'Aspre",
+        "slug": "la-66-gta",
+        "region": "Pyrénées-Orientales",
+        "city": "Thuir",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "start_date": "2026-03-01",
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "66k",
+                        "distance_km": 66,
+                        "elevation_gain": 3000,
+                        "distance_category": "M"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Trail de Serrabone",
+        "slug": "trail-de-serrabone",
+        "region": "Pyrénées-Orientales",
+        "city": "Boule-D'Amont",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "30k",
+                        "distance_km": 30,
+                        "elevation_gain": 1880,
+                        "distance_category": "S"
+                    },
+                    {
+                        "name": "22k",
+                        "distance_km": 22,
+                        "elevation_gain": 1300,
+                        "distance_category": "XS"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Trail du Mont Hélène",
+        "slug": "trail-du-mont-helene",
+        "region": "Pyrénées-Orientales",
+        "city": "Caixas",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "14k",
+                        "distance_km": 14,
+                        "elevation_gain": 780,
+                        "distance_category": "XS"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Argelès Nature Trail",
+        "slug": "argeles-nature-trail",
+        "region": "Pyrénées-Orientales",
+        "city": "Argelès-sur-Mer",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "23k",
+                        "distance_km": 23,
+                        "elevation_gain": 1290,
+                        "distance_category": "XS"
+                    },
+                    {
+                        "name": "15k",
+                        "distance_km": 15,
+                        "elevation_gain": 780,
+                        "distance_category": "XS"
+                    },
+                    {
+                        "name": "10k (D+270)",
+                        "distance_km": 10,
+                        "elevation_gain": 270,
+                        "distance_category": "XS"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "La Salte Rocs Trail",
+        "slug": "la-salte-rocs-trail",
+        "region": "Pyrénées-Orientales",
+        "city": "Rodès",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "16k",
+                        "distance_km": 16,
+                        "elevation_gain": 880,
+                        "distance_category": "XS"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Les Sentiers Prehistoriques",
+        "slug": "les-sentiers-prehistoriques",
+        "region": "Pyrénées-Orientales",
+        "city": "Tautavel",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "12k",
+                        "distance_km": 12,
+                        "elevation_gain": 850,
+                        "distance_category": "XS"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Vallespir Skyrace",
+        "slug": "vallespir-skyrace",
+        "region": "Pyrénées-Orientales",
+        "city": "Amélie les Bains",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "22k",
+                        "distance_km": 22,
+                        "elevation_gain": 1700,
+                        "distance_category": "XS"
+                    },
+                    {
+                        "name": "10k",
+                        "distance_km": 10,
+                        "elevation_gain": 630,
+                        "distance_category": "XS"
+                    },
+                    {
+                        "name": "KV",
+                        "distance_km": 1,
+                        "elevation_gain": 250,
+                        "distance_category": "XS"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Trail Lamanère 66",
+        "slug": "trail-lamanere-66",
+        "region": "Pyrénées-Orientales",
+        "city": "Lamanère",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "17k",
+                        "distance_km": 17,
+                        "elevation_gain": 950,
+                        "distance_category": "XS"
+                    },
+                    {
+                        "name": "8k",
+                        "distance_km": 8,
+                        "elevation_gain": 300,
+                        "distance_category": "XS"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Les Lucioles",
+        "slug": "les-lucioles",
+        "region": "Pyrénées-Orientales",
+        "city": "Castelnou",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "18k",
+                        "distance_km": 18,
+                        "elevation_gain": 850,
+                        "distance_category": "XS"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Font Romeu Nature Trail",
+        "slug": "font-romeu-nature-trail",
+        "region": "Pyrénées-Orientales",
+        "city": "Font-Romeu",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "40k",
+                        "distance_km": 40,
+                        "elevation_gain": 1600,
+                        "distance_category": "S"
+                    },
+                    {
+                        "name": "26k",
+                        "distance_km": 26,
+                        "elevation_gain": 1000,
+                        "distance_category": "S"
+                    },
+                    {
+                        "name": "15k",
+                        "distance_km": 15,
+                        "elevation_gain": 600,
+                        "distance_category": "XS"
+                    },
+                    {
+                        "name": "7k",
+                        "distance_km": 7,
+                        "elevation_gain": 300,
+                        "distance_category": "XS"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Grand Trail du Canigó",
+        "slug": "grand-trail-du-canigo",
+        "region": "Pyrénées-Orientales",
+        "city": "La Bastide",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "58k",
+                        "distance_km": 58,
+                        "elevation_gain": 3930,
+                        "distance_category": "M"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Ultra Sud Canigou Montagne",
+        "slug": "ultra-sud-canigou-montagne",
+        "region": "Pyrénées-Orientales",
+        "city": "Arles-sur-Tech",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "70k",
+                        "distance_km": 70,
+                        "elevation_gain": 3500,
+                        "distance_category": "M"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Ronde des Dolmens",
+        "slug": "ronde-des-dolmens",
+        "description": "Hors critères trail standard.",
+        "region": "Pyrénées-Orientales",
+        "city": "Corbere les Cabanes",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": []
+            }
+        ]
+    },
+    {
+        "name": "Trail Coma d'Or",
+        "slug": "trail-coma-dor",
+        "region": "Pyrénées-Orientales",
+        "city": "Porté-Puymorens",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "17k",
+                        "distance_km": 17,
+                        "elevation_gain": 1000,
+                        "distance_category": "XS"
+                    },
+                    {
+                        "name": "2k",
+                        "distance_km": 2,
+                        "elevation_gain": 425,
+                        "distance_category": "XS"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Le Tour de Cabrenc",
+        "slug": "le-tour-de-cabrenc",
+        "region": "Pyrénées-Orientales",
+        "city": "Serralongue",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "16k",
+                        "distance_km": 16,
+                        "elevation_gain": 1050,
+                        "distance_category": "XS"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Championnat du Canigó",
+        "slug": "championnat-du-canigo",
+        "region": "Pyrénées-Orientales",
+        "city": "Vernet-les-Bains",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "52k",
+                        "distance_km": 52,
+                        "elevation_gain": 4700,
+                        "distance_category": "M"
+                    },
+                    {
+                        "name": "44k",
+                        "distance_km": 44,
+                        "elevation_gain": 2700,
+                        "distance_category": "S"
+                    },
+                    {
+                        "name": "32k (D+2100)",
+                        "distance_km": 32,
+                        "elevation_gain": 2100,
+                        "distance_category": "S"
+                    },
+                    {
+                        "name": "20k",
+                        "distance_km": 20,
+                        "elevation_gain": 1250,
+                        "distance_category": "XS"
+                    },
+                    {
+                        "name": "11k",
+                        "distance_km": 11,
+                        "elevation_gain": 2035,
+                        "distance_category": "XS"
+                    },
+                    {
+                        "name": "10k",
+                        "distance_km": 10,
+                        "elevation_gain": 560,
+                        "distance_category": "XS"
+                    },
+                    {
+                        "name": "9k (D+600)",
+                        "distance_km": 9,
+                        "elevation_gain": 600,
+                        "distance_category": "XS"
+                    },
+                    {
+                        "name": "6k",
+                        "distance_km": 6,
+                        "elevation_gain": 1000,
+                        "distance_category": "XS"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Trail de Sournia",
+        "slug": "trail-de-sournia",
+        "description": "Hors critères trail standard.",
+        "region": "Pyrénées-Orientales",
+        "city": "Sournia",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": []
+            }
+        ]
+    },
+    {
+        "name": "El 1258",
+        "slug": "el-1258",
+        "region": "Pyrénées-Orientales",
+        "city": "Salses-le-Château",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "start_date": "2026-08-26",
+                "end_date": "2026-08-30",
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "226k",
+                        "distance_km": 226,
+                        "elevation_gain": 8000,
+                        "distance_category": "XL"
+                    },
+                    {
+                        "name": "42k",
+                        "distance_km": 42,
+                        "elevation_gain": 2700,
+                        "distance_category": "S"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Trail des Pérics",
+        "slug": "trail-des-perics",
+        "region": "Pyrénées-Orientales",
+        "city": "Les Angles",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "23k",
+                        "distance_km": 23,
+                        "elevation_gain": 1350,
+                        "distance_category": "XS"
+                    },
+                    {
+                        "name": "9k",
+                        "distance_km": 9,
+                        "elevation_gain": 370,
+                        "distance_category": "XS"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Défi Charcot Côte Vermeille",
+        "slug": "defi-charcot-cote-vermeille",
+        "region": "Pyrénées-Orientales",
+        "city": "Port-Vendres",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "17k",
+                        "distance_km": 17,
+                        "elevation_gain": 500,
+                        "distance_category": "XS"
+                    },
+                    {
+                        "name": "9k",
+                        "distance_km": 9,
+                        "elevation_gain": 270,
+                        "distance_category": "XS"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Trenca Cames",
+        "slug": "trenca-cames",
+        "description": "Hors critères trail standard.",
+        "region": "Pyrénées-Orientales",
+        "city": "Thuir",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": []
+            }
+        ]
+    },
+    {
+        "name": "Trail du Cambre d'Aze",
+        "slug": "trail-du-cambre-d-aze",
+        "region": "Pyrénées-Orientales",
+        "city": "Eyne",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "27k",
+                        "distance_km": 27,
+                        "elevation_gain": 1700,
+                        "distance_category": "S"
+                    },
+                    {
+                        "name": "4k",
+                        "distance_km": 4,
+                        "elevation_gain": 1000,
+                        "distance_category": "XS"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Trail de Collioure",
+        "slug": "trail-de-collioure",
+        "region": "Pyrénées-Orientales",
+        "city": "Collioure",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "17k",
+                        "distance_km": 17,
+                        "elevation_gain": 825,
+                        "distance_category": "XS"
+                    },
+                    {
+                        "name": "8k",
+                        "distance_km": 8,
+                        "elevation_gain": 230,
+                        "distance_category": "XS"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "100 Miles Sud de France",
+        "slug": "100-miles-sud-de-france",
+        "region": "Pyrénées-Orientales",
+        "city": "Font-Romeu",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "start_date": "2026-10-02",
+                "end_date": "2026-10-04",
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "170k",
+                        "distance_km": 170,
+                        "elevation_gain": 7650,
+                        "distance_category": "XL"
+                    },
+                    {
+                        "name": "110k",
+                        "distance_km": 110,
+                        "elevation_gain": 5600,
+                        "distance_category": "L"
+                    },
+                    {
+                        "name": "70k",
+                        "distance_km": 70,
+                        "elevation_gain": 3600,
+                        "distance_category": "M"
+                    },
+                    {
+                        "name": "63k",
+                        "distance_km": 63,
+                        "elevation_gain": 3810,
+                        "distance_category": "M"
+                    },
+                    {
+                        "name": "56k",
+                        "distance_km": 56,
+                        "elevation_gain": 3060,
+                        "distance_category": "M"
+                    },
+                    {
+                        "name": "49k",
+                        "distance_km": 49,
+                        "elevation_gain": 2700,
+                        "distance_category": "M"
+                    },
+                    {
+                        "name": "41k",
+                        "distance_km": 41,
+                        "elevation_gain": 2000,
+                        "distance_category": "S"
+                    },
+                    {
+                        "name": "39k",
+                        "distance_km": 39,
+                        "elevation_gain": 2000,
+                        "distance_category": "S"
+                    },
+                    {
+                        "name": "38k",
+                        "distance_km": 38,
+                        "elevation_gain": 1885,
+                        "distance_category": "S"
+                    },
+                    {
+                        "name": "37k",
+                        "distance_km": 37,
+                        "elevation_gain": 2020,
+                        "distance_category": "S"
+                    },
+                    {
+                        "name": "34k",
+                        "distance_km": 34,
+                        "elevation_gain": 1590,
+                        "distance_category": "S"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Trail des Salines",
+        "slug": "trail-des-salines",
+        "region": "Pyrénées-Orientales",
+        "city": "Céret",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "24k",
+                        "distance_km": 24,
+                        "elevation_gain": 1550,
+                        "distance_category": "XS"
+                    },
+                    {
+                        "name": "16k",
+                        "distance_km": 16,
+                        "elevation_gain": 1000,
+                        "distance_category": "XS"
+                    },
+                    {
+                        "name": "8k",
+                        "distance_km": 8,
+                        "elevation_gain": 400,
+                        "distance_category": "XS"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "KV Belmaig",
+        "slug": "kv-belmaig",
+        "region": "Pyrénées-Orientales",
+        "city": "Arles-sur-Tech",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "KV",
+                        "distance_km": 3,
+                        "elevation_gain": 1000,
+                        "distance_category": "XS"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Trails de Sorède",
+        "slug": "trails-de-sorede",
+        "region": "Pyrénées-Orientales",
+        "city": "Sorède",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "27k",
+                        "distance_km": 27,
+                        "elevation_gain": 1650,
+                        "distance_category": "S"
+                    },
+                    {
+                        "name": "13k",
+                        "distance_km": 13,
+                        "elevation_gain": 500,
+                        "distance_category": "XS"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Course des Lézards",
+        "slug": "course-des-lezards",
+        "region": "Pyrénées-Orientales",
+        "city": "Eus",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "14k",
+                        "distance_km": 14,
+                        "elevation_gain": 700,
+                        "distance_category": "XS"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "les sentiers de germain",
+        "slug": "les-sentiers-de-germain",
+        "description": "Hors critères trail standard.",
+        "region": "Pyrénées-Orientales",
+        "city": "Baixas",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": []
+            }
+        ]
+    },
+    {
+        "name": "Forca Real Trail",
+        "slug": "forca-real-trail",
+        "region": "Pyrénées-Orientales",
+        "city": "Corneilla de la Rivière",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "23k",
+                        "distance_km": 23,
+                        "elevation_gain": 1000,
+                        "distance_category": "XS"
+                    },
+                    {
+                        "name": "14k",
+                        "distance_km": 14,
+                        "elevation_gain": 300,
+                        "distance_category": "XS"
+                    },
+                    {
+                        "name": "6k",
+                        "distance_km": 6,
+                        "elevation_gain": 50,
+                        "distance_category": "XS"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Madeloc SkyTrail",
+        "slug": "madeloc-skytrail",
+        "region": "Pyrénées-Orientales",
+        "city": "Banluys-sur-Mer",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "58k",
+                        "distance_km": 58,
+                        "elevation_gain": 3400,
+                        "distance_category": "M"
+                    },
+                    {
+                        "name": "44k",
+                        "distance_km": 44,
+                        "elevation_gain": 2500,
+                        "distance_category": "S"
+                    },
+                    {
+                        "name": "27k",
+                        "distance_km": 27,
+                        "elevation_gain": 1350,
+                        "distance_category": "S"
+                    },
+                    {
+                        "name": "12k",
+                        "distance_km": 12,
+                        "elevation_gain": 360,
+                        "distance_category": "XS"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Trail Nocturne de l'Ecoparc Catalan",
+        "slug": "trail-nocturne-de-l-ecoparc-catalan",
+        "region": "Pyrénées-Orientales",
+        "city": "Baixas",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "47k",
+                        "distance_km": 47,
+                        "elevation_gain": 950,
+                        "distance_category": "M"
+                    },
+                    {
+                        "name": "36k",
+                        "distance_km": 36,
+                        "elevation_gain": 650,
+                        "distance_category": "S"
+                    },
+                    {
+                        "name": "22k",
+                        "distance_km": 22,
+                        "elevation_gain": 180,
+                        "distance_category": "XS"
+                    },
+                    {
+                        "name": "14k",
+                        "distance_km": 14,
+                        "elevation_gain": 150,
+                        "distance_category": "XS"
+                    },
+                    {
+                        "name": "7k",
+                        "distance_km": 7,
+                        "elevation_gain": 140,
+                        "distance_category": "XS"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Trail du Dénivelé de Noel",
+        "slug": "trail-du-denivele-de-noel",
+        "region": "Pyrénées-Orientales",
+        "city": "Bouleternère",
+        "country": "France",
+        "editions": [
+            {
+                "year": 2026,
+                "status": "UPCOMING",
+                "routes": [
+                    {
+                        "name": "16k",
+                        "distance_km": 16,
+                        "elevation_gain": 1000,
+                        "distance_category": "XS"
+                    }
+                ]
+            }
+        ]
+    }
+]
