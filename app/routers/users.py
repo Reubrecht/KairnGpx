@@ -53,23 +53,15 @@ async def update_profile(
     # Handle Profile Picture
     if profile_picture and profile_picture.filename:
         try:
+            from ..services.image_service import ImageService
+            
             # Create profiles dir
             upload_dir = Path("app/media/profiles")
             upload_dir.mkdir(parents=True, exist_ok=True)
             
-            # Simple naming strategy: user_id.jpg (or original extension)
-            ext = profile_picture.filename.split('.')[-1].lower()
-            if ext not in ['jpg', 'jpeg', 'png', 'webp', 'gif']:
-                pass # validation could go here
-                
-            # Simple naming strategy: use UUID to avoid caching
-            import uuid
-            new_filename = f"{uuid.uuid4()}.{ext}"
-            file_path = upload_dir / new_filename
-            
-            with open(file_path, "wb") as buffer:
-                shutil.copyfileobj(profile_picture.file, buffer)
-                
+            content = await profile_picture.read()
+            new_filename = ImageService.process_profile_picture(content, upload_dir, user.username)
+
             # Update DB with web path
             user.profile_picture = f"/media/profiles/{new_filename}"
         except Exception as e:

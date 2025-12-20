@@ -634,6 +634,35 @@ async def delete_user(
             db.commit()
     return RedirectResponse(url="/superadmin#users", status_code=303)
 
+@router.post("/superadmin/user/{user_id}/upload_image")
+async def upload_user_image(
+    user_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_super_admin)
+):
+    target_user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    if file and file.filename:
+        try:
+            from ..services.image_service import ImageService
+            from pathlib import Path
+            
+            upload_dir = Path("app/media/profiles")
+            upload_dir.mkdir(parents=True, exist_ok=True)
+            
+            content = await file.read()
+            new_filename = ImageService.process_profile_picture(content, upload_dir, target_user.username)
+            
+            target_user.profile_picture = f"/media/profiles/{new_filename}"
+            db.commit()
+        except Exception as e:
+            print(f"Error admin upload profile picture: {e}")
+            
+    return RedirectResponse(url="/superadmin#users", status_code=303)
+
 
 # --- SUPER ADMIN : MODERATION ---
 

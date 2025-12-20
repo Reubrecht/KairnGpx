@@ -97,14 +97,20 @@ async def create_event(
     )
     
     if image_file and image_file.filename:
+        from ..services.image_service import ImageService
         upload_dir = Path("app/media/events")
         upload_dir.mkdir(parents=True, exist_ok=True)
-        ext = image_file.filename.split('.')[-1].lower()
-        filename = f"{slug}_{uuid.uuid4().hex[:6]}.{ext}"
-        file_path = upload_dir / filename
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(image_file.file, buffer)
-        new_event.profile_picture = f"/media/events/{filename}"
+        
+        content = await image_file.read()
+        # Events usually need wider aspect ratio or flexible, max 1600 width is good for banners
+        new_filename = ImageService.process_image(
+            content, 
+            upload_dir, 
+            filename_prefix=f"banner_{slug}",
+            max_width=1600,
+            max_height=1200
+        )
+        new_event.profile_picture = f"/media/events/{new_filename}"
 
     # Add owner
     new_event.owners.append(user)
@@ -180,14 +186,23 @@ async def update_event(
     event.description = description
     
     if image_file and image_file.filename:
+        # Process new image
+        from ..services.image_service import ImageService
         upload_dir = Path("app/media/events")
         upload_dir.mkdir(parents=True, exist_ok=True)
-        ext = image_file.filename.split('.')[-1].lower()
-        filename = f"{slug}_{uuid.uuid4().hex[:6]}.{ext}"
-        file_path = upload_dir / filename
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(image_file.file, buffer)
-        event.profile_picture = f"/media/events/{filename}"
+        
+        content = await image_file.read()
+        new_filename = ImageService.process_image(
+            content, 
+            upload_dir, 
+            filename_prefix=f"banner_{event.slug}",
+            max_width=1600,
+            max_height=1200
+        )
+        
+        # Remove old image if strictly needed, but might be safer to keep for history or cache issues
+        # For now, just update pointer
+        event.profile_picture = f"/media/events/{new_filename}"
         
     db.commit()
     return RedirectResponse(url=f"/manage/events/{event_id}", status_code=303)

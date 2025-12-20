@@ -463,6 +463,18 @@
                                             <i class="ph-bold ph-trash"></i>
                                         </button>
                                     </form>
+
+                                    <!-- Upload Image -->
+                                    <form action="/superadmin/user/{{ u.id }}/upload_image" method="POST"
+                                        enctype="multipart/form-data" class="inline-block relative">
+                                        <label
+                                            class="text-slate-400 hover:text-brand-600 p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer inline-block"
+                                            title="Changer Photo">
+                                            <i class="ph-bold ph-camera"></i>
+                                            <input type="file" name="file" class="hidden" accept="image/*"
+                                                onchange="this.form.submit()">
+                                        </label>
+                                    </form>
                                 </td>
                             </tr>
                             {% endfor %}
