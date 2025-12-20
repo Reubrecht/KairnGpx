@@ -134,10 +134,14 @@ async def event_dashboard(
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
 
+    from datetime import datetime as dt
+    now_date = dt.now().date()
+
     return templates.TemplateResponse("manager/event_dashboard.html", {
         "request": request,
         "event": event,
-        "user": user
+        "user": user,
+        "now_date": now_date
     })
 
 @router.get("/manage/events/{event_id}/edit", response_class=HTMLResponse)

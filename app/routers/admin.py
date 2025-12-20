@@ -107,12 +107,54 @@ async def api_delete_table_row(
         return {"status": "deleted"}
     raise HTTPException(status_code=404, detail="Item not found")
 
+@router.get("/api/admin/tracks")
+async def api_get_tracks(
+    q: Optional[str] = None, 
+    limit: int = 50, 
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_super_admin)
+):
+    query = db.query(models.Track)
+    
+    if q:
+        search = f"%{q}%"
+        query = query.join(models.User).filter(
+            or_(
+                models.Track.title.ilike(search),
+                models.Track.location_city.ilike(search),
+                models.Track.file_hash == q,
+                models.User.username.ilike(search),
+                models.User.email.ilike(search)
+            )
+        )
+    
+    tracks = query.order_by(models.Track.created_at.desc()).limit(limit).all()
+    
+    data = []
+    for t in tracks:
+        data.append({
+            "id": t.id,
+            "title": t.title,
+            "uploader": t.uploader_name,
+            "distance_km": t.distance_km,
+            "elevation_gain": t.elevation_gain,
+            "location": t.location_city,
+            "created_at": t.created_at.strftime("%Y-%m-%d"),
+            "visibility": t.visibility.value,
+            "is_official": t.is_official_route,
+            "status": t.verification_status.value
+        })
+    return data
+
 @router.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request, db: Session = Depends(get_db)):
     from ..dependencies import get_current_user_optional
     user = await get_current_user_optional(request, db)
     if not user or not user.is_admin:
         return RedirectResponse(url="/login?next=/admin", status_code=303)
+        
+    if user.role == models.Role.SUPER_ADMIN:
+        return RedirectResponse(url="/superadmin", status_code=303)
         
     all_users = db.query(models.User).all()
     all_tracks = db.query(models.Track).order_by(models.Track.created_at.desc()).all()

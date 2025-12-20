@@ -11,8 +11,8 @@ def run_migration():
         # Check if using SQLite or Postgres to adjust syntax if needed
         # SQLite doesn't support "ADD COLUMN IF NOT EXISTS" easily in one go, 
         # but SQLAlchemy text execution should handle standard ADD COLUMN.
-        
         # 1. Add is_email_verified
+        print(f"Connected to database: {engine.url}")
         try:
             print("Adding column 'is_email_verified'...")
             # SQLite safe syntax (no IF NOT EXISTS usually, but let's try standard SQL)

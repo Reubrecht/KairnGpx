@@ -58,6 +58,12 @@
                 <i class="ph-fill ph-users text-lg"></i>
                 Utilisateurs
             </button>
+            <button @click="currentTab = 'tracks'; window.location.hash = 'tracks'; mobileMenuOpen = false"
+                :class="{ 'bg-slate-800 text-white': currentTab === 'tracks', 'text-slate-400 hover:bg-slate-800/50 hover:text-white': currentTab !== 'tracks' }"
+                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200 text-left">
+                <i class="ph-fill ph-path text-lg"></i>
+                Toutes les Traces
+            </button>
 
             <!-- External Tool Link -->
             <a href="/manage/events"
@@ -492,6 +498,126 @@
                         </td>
                     </tr>
                     {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ALL TRACKS MANAGER -->
+<div x-show="currentTab === 'tracks'" class="animate-fade-in-up" x-data="{
+        tracks: [],
+        query: '',
+        loading: false,
+        async searchTracks() {
+            this.loading = true;
+            try {
+                const res = await fetch(`/api/admin/tracks?q=${this.query}`);
+                this.tracks = await res.json();
+            } catch(e) {
+                alert('Erreur chargement traces');
+            }
+            this.loading = false;
+        },
+        async deleteTrack(id) {
+            if(!confirm('SUPPRIMER cette trace ? Action irréversible.')) return;
+            try {
+                const form = new FormData();
+                const res = await fetch(`/track/${id}/delete`, {method: 'POST'});
+                if(res.ok || res.redirected) {
+                    this.searchTracks(); 
+                } else {
+                    alert('Erreur suppression');
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+    }" x-init="searchTracks()">
+
+    <h2 class="text-3xl font-black text-slate-900 mb-8">Gestion des Traces</h2>
+
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[500px]">
+        <!-- Search Bar -->
+        <div class="p-4 border-b border-slate-100 flex gap-4">
+            <div class="relative flex-1">
+                <i class="ph-bold ph-magnifying-glass absolute left-3 top-2.5 text-slate-400"></i>
+                <input type="text" x-model="query" @keydown.enter="searchTracks()"
+                    placeholder="Rechercher (Titre, Ville, User, Hash, Email)..."
+                    class="w-full pl-10 pr-4 py-2 rounded-xl border-slate-200 bg-slate-50 focus:bg-white transition-colors">
+            </div>
+            <button @click="searchTracks()"
+                class="bg-slate-900 text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-slate-800 transition-colors">
+                <span x-show="!loading">Rechercher</span>
+                <span x-show="loading"><i class="ph-bold ph-spinner animate-spin"></i></span>
+            </button>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm whitespace-nowrap">
+                <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-xs">
+                    <tr>
+                        <th class="px-4 py-3">Titre / Lieu</th>
+                        <th class="px-4 py-3">Stats</th>
+                        <th class="px-4 py-3">Uploader</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    <template x-for="t in tracks" :key="t.id">
+                        <tr class="hover:bg-slate-50 transition-colors group">
+                            <td class="px-4 py-3">
+                                <div class="font-bold text-slate-900 truncate max-w-[200px]" x-text="t.title"></div>
+                                <div class="text-xs text-slate-500" x-text="t.location || 'Localisation inconnue'">
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <span class="badge bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded textxs font-mono">
+                                    <span x-text="t.distance_km"></span>km
+                                </span>
+                                <span
+                                    class="badge bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-mono">
+                                    <span x-text="t.elevation_gain"></span>d+
+                                </span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="text-xs font-bold text-slate-700" x-text="t.uploader"></div>
+                                <div class="text-[10px] text-slate-400" x-text="t.created_at"></div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <span class="px-2 py-1 rounded text-[10px] font-bold uppercase border" :class="{
+                                        'bg-green-50 text-green-600 border-green-100': t.status === 'verified_by_human',
+                                        'bg-blue-50 text-blue-600 border-blue-100': t.status === 'verified_by_algo',
+                                        'bg-amber-50 text-amber-600 border-amber-100': t.status === 'pending',
+                                        'bg-slate-50 text-slate-500 border-slate-100': t.status === 'rejected'
+                                    }" x-text="t.status"></span>
+                                <template x-if="t.is_official">
+                                    <span
+                                        class="ml-1 text-[10px] bg-brand-100 text-brand-700 px-1 rounded border border-brand-200"
+                                        title="Officiel">OFF</span>
+                                </template>
+                            </td>
+                            <td
+                                class="px-4 py-3 text-right flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <a :href="`/track/${t.id}`" target="_blank"
+                                    class="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-slate-100 rounded">
+                                    <i class="ph-bold ph-arrow-square-out"></i>
+                                </a>
+                                <a :href="`/track/${t.id}/edit`" target="_blank"
+                                    class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded">
+                                    <i class="ph-bold ph-pencil-simple"></i>
+                                </a>
+                                <button @click="deleteTrack(t.id)"
+                                    class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded">
+                                    <i class="ph-bold ph-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </template>
+                    <tr x-show="tracks.length === 0 && !loading">
+                        <td colspan="5" class="p-8 text-center text-slate-400 italic">Aucune trace trouvée.</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
