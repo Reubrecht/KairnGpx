@@ -858,7 +858,21 @@ def get_raw_gpx(track_id: int, db: Session = Depends(get_db)):
     
     with open(safe_path, "r", encoding="utf-8") as f:
         content = f.read()
-    return Response(content=content, media_type="application/gpx+xml")
+    
+    # Generate filename: City - Dist - Elev - ID
+    city = track.location_city or "Track"
+    dist = f"{track.distance_km:.1f}km" if track.distance_km else "0km"
+    elev = f"{int(track.elevation_gain)}m+" if track.elevation_gain else "0m+"
+    
+    # Sanitize filename
+    clean_city = slugify(city).replace("-", " ").title()
+    filename = f"{clean_city} - {dist} - {elev} - #{track_id}.gpx"
+    
+    return Response(
+        content=content, 
+        media_type="application/gpx+xml",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
 
 @router.get("/track/{track_id}/edit", response_class=HTMLResponse)
 async def edit_track_form(track_id: int, request: Request, db: Session = Depends(get_db)):
