@@ -198,7 +198,7 @@ async def super_admin_dashboard(request: Request, db: Session = Depends(get_db))
             "title": t.title,
             "distance_km": t.distance_km,
             "elevation_gain": t.elevation_gain,
-            "geojson_url": f"/api/tracks/{t.id}/geojson" # Assuming this endpoint exists or similar
+            "geojson_url": f"/api/track/{t.id}/geojson" # Assuming this endpoint exists or similar
         }
         pending_tracks_data.append(t_data)
         

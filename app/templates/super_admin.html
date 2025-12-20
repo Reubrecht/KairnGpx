@@ -1,188 +1,240 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="min-h-screen bg-slate-50 flex flex-col md:flex-row" x-data="{ 
+<style>
+    /* Custom Scrollbar */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background-color: transparent;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: #334155;
+        border-radius: 3px;
+    }
+
+    /* Dense Table Utilities */
+    .table-dense th,
+    .table-dense td {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+    }
+
+    .table-dense th {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    /* Mobile Card Stack */
+    @media (max-width: 768px) {
+        .mobile-card-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .desktop-table {
+            display: none;
+        }
+    }
+
+    @media (min-width: 769px) {
+        .mobile-card-grid {
+            display: none;
+        }
+
+        .desktop-table {
+            display: table;
+        }
+    }
+</style>
+<!-- Layout Container -->
+<div class="flex h-screen bg-slate-50 overflow-hidden w-full" x-data="{ 
         currentTab: window.location.hash ? window.location.hash.substring(1) : 'overview',
-        mobileMenuOpen: false
+        mobileMenuOpen: false,
+        desktopSidebarCompact: false
     }">
 
-    <!-- Mobile Header -->
-    <div class="md:hidden bg-slate-900 text-white p-4 flex items-center justify-between sticky top-0 z-50">
-        <h1 class="text-lg font-black tracking-tight flex items-center gap-2">
+    <!-- Mobile Header (Visible only on mobile) -->
+    <div
+        class="md:hidden fixed top-0 left-0 right-0 h-16 bg-slate-900 z-50 flex items-center justify-between px-4 shadow-md">
+        <div class="flex items-center gap-2">
             <span class="text-brand-500 text-xl">⚡</span>
-            <span>Kairn<span class="text-slate-500 text-xs font-normal ml-1">Admin</span></span>
-        </h1>
-        <button @click="mobileMenuOpen = !mobileMenuOpen" class="p-2 text-slate-400 hover:text-white">
+            <span class="font-black text-white text-lg tracking-tight">Kairn<span
+                    class="text-slate-500 text-xs font-normal ml-1">Admin</span></span>
+        </div>
+        <button @click="mobileMenuOpen = true" class="text-slate-400 hover:text-white p-2">
             <i class="ph-bold ph-list text-2xl"></i>
         </button>
     </div>
 
-    <!-- Sidebar Backdrop -->
+    <!-- Mobile Backdrop -->
     <div x-show="mobileMenuOpen" x-transition.opacity @click="mobileMenuOpen = false"
-        class="fixed inset-0 bg-black/50 z-40 md:hidden"></div>
+        class="fixed inset-0 bg-black/60 z-50 md:hidden backdrop-blur-sm"></div>
 
-    <!-- Sidebar -->
-    <aside :class="{'translate-x-0': mobileMenuOpen, '-translate-x-full': !mobileMenuOpen}"
-        class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white flex-col transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:flex md:h-screen md:sticky md:top-0 h-full overflow-y-auto">
-        <div class="p-6 flex justify-between items-center">
-            <h1 class="text-xl font-black tracking-tight flex items-center gap-2">
-                <span class="text-brand-500 text-2xl">⚡</span>
-                <span>Kairn<span class="text-slate-500 text-sm font-normal ml-1">Admin</span></span>
-            </h1>
-            <button @click="mobileMenuOpen = false" class="md:hidden text-slate-400 hover:text-white">
-                <i class="ph-bold ph-x text-xl"></i>
+    <!-- Sidebar (Desktop & Mobile Unified Logic) -->
+    <aside :class="{
+            '-translate-x-full': !mobileMenuOpen, 
+            'translate-x-0': mobileMenuOpen,
+            'w-64': !desktopSidebarCompact,
+            'w-20': desktopSidebarCompact
+        }"
+        class="fixed md:static inset-y-0 left-0 z-50 bg-slate-900 text-white flex flex-col transition-all duration-300 ease-in-out h-full shadow-xl md:shadow-none md:translate-x-0">
+
+        <!-- Header -->
+        <div class="h-16 flex items-center justify-between px-6 border-b border-slate-800"
+            :class="{'justify-center px-0': desktopSidebarCompact}">
+            <div class="flex items-center gap-2 overflow-hidden whitespace-nowrap" x-show="!desktopSidebarCompact">
+                <span class="text-brand-500 text-xl">⚡</span>
+                <span class="font-black text-lg tracking-tight">Kairn<span
+                        class="text-slate-500 text-xs font-normal ml-1">Admin</span></span>
+            </div>
+            <!-- Toggle Compact Mode (Desktop Only) -->
+            <button @click="desktopSidebarCompact = !desktopSidebarCompact"
+                class="hidden md:block text-slate-500 hover:text-white transition-colors"
+                :class="{'mx-auto': desktopSidebarCompact}">
+                <i class="ph-bold"
+                    :class="desktopSidebarCompact ? 'ph-caret-double-right' : 'ph-caret-double-left'"></i>
             </button>
+            <!-- Close Mobile Menu -->
             <button @click="mobileMenuOpen = false" class="md:hidden text-slate-400 hover:text-white">
                 <i class="ph-bold ph-x text-xl"></i>
             </button>
         </div>
 
-        <nav class="flex-1 px-4 space-y-2">
-            <button @click="currentTab = 'overview'; window.location.hash = 'overview'; mobileMenuOpen = false"
-                :class="{ 'bg-slate-800 text-white': currentTab === 'overview', 'text-slate-400 hover:bg-slate-800/50 hover:text-white': currentTab !== 'overview' }"
-                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200 text-left">
-                <i class="ph-fill ph-squares-four text-lg"></i>
-                Vue d'ensemble
-            </button>
-            <button @click="currentTab = 'events'; window.location.hash = 'events'; mobileMenuOpen = false"
-                :class="{ 'bg-slate-800 text-white': currentTab === 'events', 'text-slate-400 hover:bg-slate-800/50 hover:text-white': currentTab !== 'events' }"
-                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200 text-left">
-                <i class="ph-fill ph-trophy text-lg"></i>
-                Courses & Événements
-            </button>
-            <button @click="currentTab = 'users'; window.location.hash = 'users'; mobileMenuOpen = false"
-                :class="{ 'bg-slate-800 text-white': currentTab === 'users', 'text-slate-400 hover:bg-slate-800/50 hover:text-white': currentTab !== 'users' }"
-                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200 text-left">
-                <i class="ph-fill ph-users text-lg"></i>
-                Utilisateurs
-                <i class="ph-fill ph-users text-lg"></i>
-                Utilisateurs
-            </button>
-            <button @click="currentTab = 'tracks'; window.location.hash = 'tracks'; mobileMenuOpen = false"
-                :class="{ 'bg-slate-800 text-white': currentTab === 'tracks', 'text-slate-400 hover:bg-slate-800/50 hover:text-white': currentTab !== 'tracks' }"
-                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200 text-left">
-                <i class="ph-fill ph-path text-lg"></i>
-                Toutes les Traces
-            </button>
+        <!-- Navigation -->
+        <nav class="flex-1 overflow-y-auto py-4 space-y-1 px-3 custom-scrollbar">
 
-            <!-- External Tool Link -->
-            <a href="/manage/events"
-                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-slate-400 hover:bg-slate-800/50 hover:text-white transition-all duration-200 text-left">
-                <i class="ph-fill ph-calendar-plus text-lg"></i>
-                Gestion Événements
-            </a>
+            <!-- Helper Mixin for Links -->
+            <template x-for="item in [
+                { id: 'overview', icon: 'ph-squares-four', label: 'Vue d\'ensemble' },
+                { id: 'events', icon: 'ph-trophy', label: 'Courses & Événements' },
+                { id: 'users', icon: 'ph-users', label: 'Utilisateurs' },
+                { id: 'tracks', icon: 'ph-path', label: 'Traces & Parcours' },
+                { id: 'moderation', icon: 'ph-shield-check', label: 'Modération', badge: {{ pending_count }} },
+                { id: 'prediction', icon: 'ph-chart-line-up', label: 'Calibration Préd.' },
+                { id: 'email', icon: 'ph-envelope-simple', label: 'Messagerie' },
+                { id: 'database', icon: 'ph-database', label: 'Base de Données' }
+            ]">
+                <button @click="currentTab = item.id; window.location.hash = item.id; mobileMenuOpen = false" :class="{ 
+                        'bg-brand-600 text-white shadow-lg shadow-brand-900/20': currentTab === item.id, 
+                        'text-slate-400 hover:bg-slate-800 hover:text-slate-200': currentTab !== item.id,
+                        'justify-center px-0': desktopSidebarCompact,
+                        'px-4': !desktopSidebarCompact
+                    }" class="w-full flex items-center py-3 rounded-xl transition-all duration-200 group relative">
 
-            <button @click="currentTab = 'prediction'; window.location.hash = 'prediction'; mobileMenuOpen = false"
-                :class="{ 'bg-slate-800 text-white': currentTab === 'prediction', 'text-slate-400 hover:bg-slate-800/50 hover:text-white': currentTab !== 'prediction' }"
-                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200 text-left">
-                <i class="ph-fill ph-chart-line-up text-lg"></i>
-                Calibration Prédictions
-            </button>
-            <button @click="currentTab = 'moderation'; window.location.hash = 'moderation'; mobileMenuOpen = false"
-                :class="{ 'bg-slate-800 text-white': currentTab === 'moderation', 'text-slate-400 hover:bg-slate-800/50 hover:text-white': currentTab !== 'moderation' }"
-                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200 text-left">
-                <i class="ph-fill ph-shield-check text-lg"></i>
-                Modération
-                {% if pending_count > 0 %}
-                <span
-                    class="ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg shadow-red-500/50">{{
-                    pending_count }}</span>
-                {% endif %}
-            </button>
-            <button @click="currentTab = 'email'; window.location.hash = 'email'; mobileMenuOpen = false"
-                :class="{ 'bg-slate-800 text-white': currentTab === 'email', 'text-slate-400 hover:bg-slate-800/50 hover:text-white': currentTab !== 'email' }"
-                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200 text-left">
-                <i class="ph-fill ph-envelope-simple text-lg"></i>
-                Messagerie
-            </button>
+                    <i
+                        :class="['ph-bold text-xl', item.icon, currentTab === item.id ? 'text-white' : 'text-slate-400 group-hover:text-white']"></i>
 
-            <div class="pt-4 pb-2">
-                <div class="px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider mb-2">Outils Techniques
+                    <span x-show="!desktopSidebarCompact" class="ml-3 font-semibold text-sm truncate"
+                        x-text="item.label"></span>
+
+                    <!-- Badge -->
+                    <template x-if="item.badge > 0">
+                        <span x-show="!desktopSidebarCompact"
+                            class="ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full"
+                            x-text="item.badge"></span>
+                    </template>
+                    <template x-if="item.badge > 0 && desktopSidebarCompact">
+                        <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+                    </template>
+
+                    <!-- Tooltip for Compact Mode -->
+                    <div x-show="desktopSidebarCompact"
+                        class="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-slate-800 text-white text-xs font-bold px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity">
+                        <span x-text="item.label"></span>
+                    </div>
+                </button>
+            </template>
+
+            <div class="pt-4 mt-4 border-t border-slate-800">
+                <div x-show="!desktopSidebarCompact"
+                    class="px-4 text-[10px] font-bold uppercase text-slate-600 tracking-wider mb-2">Outils Externes
                 </div>
-                <button @click="currentTab = 'database'; window.location.hash = 'database'; mobileMenuOpen = false"
-                    :class="{ 'bg-slate-800 text-white': currentTab === 'database', 'text-slate-400 hover:bg-slate-800/50 hover:text-white': currentTab !== 'database' }"
-                    class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200 text-left">
-                    <i class="ph-fill ph-database text-lg"></i>
-                    Base de Données
-                </button>
-                <button
-                    @click="currentTab = 'route_builder'; window.location.hash = 'route_builder'; mobileMenuOpen = false"
-                    :class="{ 'bg-slate-800 text-white': currentTab === 'route_builder', 'text-slate-400 hover:bg-slate-800/50 hover:text-white': currentTab !== 'route_builder' }"
-                    class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200 text-left">
-                    <i class="ph-fill ph-path text-lg"></i>
-                    Création Itinéraire
-                    <span class="ml-auto bg-amber-500 text-white text-[10px] px-1.5 py-0.5 rounded">WIP</span>
-                </button>
-                <button
-                    @click="currentTab = 'strava_upload'; window.location.hash = 'strava_upload'; mobileMenuOpen = false"
-                    :class="{ 'bg-slate-800 text-white': currentTab === 'strava_upload', 'text-slate-400 hover:bg-slate-800/50 hover:text-white': currentTab !== 'strava_upload' }"
-                    class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200 text-left">
-                    <i class="ph-bold ph-strava-logo text-lg"></i>
-                    Upload Strava
-                    <span class="ml-auto bg-amber-500 text-white text-[10px] px-1.5 py-0.5 rounded">WIP</span>
-                </button>
+                <a href="/"
+                    class="flex items-center py-3 px-4 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-all gap-3"
+                    :class="{'justify-center px-0': desktopSidebarCompact}">
+                    <i class="ph-bold ph-arrow-left text-xl"></i>
+                    <span x-show="!desktopSidebarCompact" class="text-sm font-semibold">Retour Site</span>
+                </a>
             </div>
+
         </nav>
 
-        <div class="p-4 border-t border-slate-800">
-            <a href="/"
-                class="flex items-center gap-2 text-slate-500 hover:text-white text-sm font-medium transition-colors">
-                <i class="ph-bold ph-arrow-left"></i> Retour au site
-            </a>
+        <!-- Footer User Profile -->
+        <div class="p-4 border-t border-slate-800 bg-slate-900/50">
+            <div class="flex items-center gap-3" :class="{'justify-center': desktopSidebarCompact}">
+                <div
+                    class="w-8 h-8 rounded-full bg-brand-500 flex items-center justify-center text-white font-bold text-xs">
+                    {{ user.username[:2].upper() }}
+                </div>
+                <div x-show="!desktopSidebarCompact" class="overflow-hidden">
+                    <div class="font-bold text-sm text-white truncate">{{ user.username }}</div>
+                    <div class="text-[10px] text-slate-500 uppercase">Super Admin</div>
+                </div>
+            </div>
         </div>
     </aside>
 
-    <!-- Main Content -->
-    <main class="flex-1 p-8 overflow-y-auto h-screen scroll-smooth">
+    <!-- Main Content Area -->
+    <main class="flex-1 h-full overflow-hidden flex flex-col pt-16 md:pt-0 relative w-full">
+        <!-- Scrollable Content -->
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth w-full">
 
-        <!-- DASHBOARD OVERVIEW -->
-        <div x-show="currentTab === 'overview'" class="animate-fade-in-up">
-            <h2 class="text-3xl font-black text-slate-900 mb-8">Vue d'ensemble</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div @click="currentTab = 'users'; window.location.hash = 'users'"
-                    class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 cursor-pointer hover:shadow-md transition-all hover:-translate-y-1">
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="p-3 bg-blue-50 text-blue-600 rounded-xl"><i class="ph-fill ph-users text-2xl"></i>
+            <!-- DASHBOARD OVERVIEW -->
+            <div x-show="currentTab === 'overview'" class="animate-fade-in-up">
+                <h2 class="text-3xl font-black text-slate-900 mb-8">Vue d'ensemble</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div @click="currentTab = 'users'; window.location.hash = 'users'"
+                        class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 cursor-pointer hover:shadow-md transition-all hover:-translate-y-1">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="p-3 bg-blue-50 text-blue-600 rounded-xl"><i
+                                    class="ph-fill ph-users text-2xl"></i>
+                            </div>
+                            <span class="text-3xl font-black text-slate-900">{{ users|length }}</span>
                         </div>
-                        <span class="text-3xl font-black text-slate-900">{{ users|length }}</span>
+                        <h3 class="font-bold text-slate-500 uppercase text-xs tracking-wider">Utilisateurs inscrits</h3>
                     </div>
-                    <h3 class="font-bold text-slate-500 uppercase text-xs tracking-wider">Utilisateurs inscrits</h3>
-                </div>
-                <div @click="currentTab = 'events'; window.location.hash = 'events'"
-                    class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 cursor-pointer hover:shadow-md transition-all hover:-translate-y-1">
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="p-3 bg-brand-50 text-brand-600 rounded-xl"><i
-                                class="ph-fill ph-trophy text-2xl"></i></div>
-                        <span class="text-3xl font-black text-slate-900">{{ events|length }}</span>
+                    <div @click="currentTab = 'events'; window.location.hash = 'events'"
+                        class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 cursor-pointer hover:shadow-md transition-all hover:-translate-y-1">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="p-3 bg-brand-50 text-brand-600 rounded-xl"><i
+                                    class="ph-fill ph-trophy text-2xl"></i></div>
+                            <span class="text-3xl font-black text-slate-900">{{ events|length }}</span>
+                        </div>
+                        <h3 class="font-bold text-slate-500 uppercase text-xs tracking-wider">Événements officiels</h3>
                     </div>
-                    <h3 class="font-bold text-slate-500 uppercase text-xs tracking-wider">Événements officiels</h3>
-                </div>
-                <div @click="currentTab = 'moderation'; window.location.hash = 'moderation'"
-                    class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 cursor-pointer hover:shadow-md transition-all hover:-translate-y-1">
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="p-3 bg-orange-50 text-orange-600 rounded-xl"><i
-                                class="ph-fill ph-map-trifold text-2xl"></i></div>
-                        <span class="text-3xl font-black text-slate-900">{{ pending_count }}</span>
+                    <div @click="currentTab = 'moderation'; window.location.hash = 'moderation'"
+                        class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 cursor-pointer hover:shadow-md transition-all hover:-translate-y-1">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="p-3 bg-orange-50 text-orange-600 rounded-xl"><i
+                                    class="ph-fill ph-map-trifold text-2xl"></i></div>
+                            <span class="text-3xl font-black text-slate-900">{{ pending_count }}</span>
+                        </div>
+                        <h3 class="font-bold text-slate-500 uppercase text-xs tracking-wider">Traces en attente</h3>
                     </div>
-                    <h3 class="font-bold text-slate-500 uppercase text-xs tracking-wider">Traces en attente</h3>
                 </div>
             </div>
         </div>
-</div>
 
-<!-- ALERTS -->
-<div x-show="window.location.href.includes('success=true')"
-    class="bg-green-100 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-6 flex items-center gap-3"
-    role="alert">
-    <i class="ph-fill ph-check-circle text-xl"></i>
-    <span class="font-bold">Email envoyé avec succès !</span>
-</div>
-<div x-show="window.location.href.includes('error=true')"
-    class="bg-red-100 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 flex items-center gap-3"
-    role="alert">
-    <i class="ph-fill ph-warning-circle text-xl"></i>
-    <span class="font-bold">Erreur lors de l'envoi de l'email. Vérifiez les logs.</span>
-</div>
+        <!-- ALERTS -->
+        <div x-show="window.location.href.includes('success=true')"
+            class="bg-green-100 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-6 flex items-center gap-3"
+            role="alert">
+            <i class="ph-fill ph-check-circle text-xl"></i>
+            <span class="font-bold">Email envoyé avec succès !</span>
+        </div>
+        <div x-show="window.location.href.includes('error=true')"
+            class="bg-red-100 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 flex items-center gap-3"
+            role="alert">
+            <i class="ph-fill ph-warning-circle text-xl"></i>
+            <span class="font-bold">Erreur lors de l'envoi de l'email. Vérifiez les logs.</span>
+        </div>
 </div>
 
 <!-- EVENTS MANAGER (TREE VIEW) -->
@@ -400,106 +452,100 @@
             </div>
         </div>
 
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm whitespace-nowrap">
-                <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-xs">
+        <!-- Desktop Table -->
+        <div class="overflow-x-auto desktop-table w-full">
+            <table class="w-full text-left font-mono text-sm whitespace-nowrap table-dense">
+                <thead class="bg-slate-50 text-slate-500 font-bold uppercase">
                     <tr>
-                        <th class="px-6 py-4">Utilisateur</th>
-                        <th class="px-6 py-4">Performance</th>
-                        <th class="px-6 py-4">Premium</th>
-                        <th class="px-6 py-4">Rôle</th>
-                        <th class="px-6 py-4 text-right">Actions</th>
+                        <th>User</th>
+                        <th>Stats</th>
+                        <th>Role</th>
+                        <th class="text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     {% for u in users %}
                     <tr class="hover:bg-slate-50 transition-colors group">
-                        <td class="px-6 py-4">
-                            <div class="flex items-center gap-3">
-                                {% if u.profile_picture %}
-                                <img src="{{ u.profile_picture }}"
-                                    class="w-8 h-8 rounded-full object-cover border border-slate-200">
-                                {% else %}
+                        <td>
+                            <div class="flex items-center gap-2">
                                 <div
-                                    class="w-8 h-8 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-bold text-xs">
+                                    class="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-600">
                                     {{ u.username[:2].upper() }}
                                 </div>
-                                {% endif %}
-                                <div>
-                                    <div class="font-bold text-slate-900">{{ u.username }}</div>
-                                    <div class="text-xs text-slate-500">{{ u.email }}</div>
-                                </div>
+                                <span class="font-bold text-slate-900">{{ u.username }}</span>
+                                <span class="text-xs text-slate-400">&lt;{{ u.email }}&gt;</span>
+                                {% if u.is_premium %}<i class="ph-fill ph-crown text-amber-500 text-xs"></i>{% endif %}
                             </div>
                         </td>
-                        <td class="px-6 py-4">
-                            {% if u.utmb_index %}
-                            <span
-                                class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-mono font-bold">UTMB:
-                                {{ u.utmb_index }}</span>
-                            {% else %}
-                            <span class="text-slate-300 text-xs">-</span>
-                            {% endif %}
+                        <td>
+                            {% if u.utmb_index %}<span class="bg-slate-100 px-1 rounded text-xs">UTMB:{{ u.utmb_index
+                                }}</span>{% endif %}
                         </td>
-                        <td class="px-6 py-4">
-                            {% if u.is_premium %}
+                        <td>
                             <span
-                                class="bg-amber-50 text-amber-600 px-2 py-1 rounded text-[10px] font-bold border border-amber-100 uppercase tracking-wide flex w-fit items-center">
-                                <i class="ph-fill ph-crown mr-1"></i> Premium
-                            </span>
-                            {% else %}
-                            <span class="text-slate-300 text-xs">-</span>
-                            {% endif %}
-                        </td>
-                        <td class="px-6 py-4">
-                            <span
-                                class="text-xs font-bold uppercase 
-                                    {% if u.role.value == 'super_admin' %}text-purple-600{% elif u.role.value == 'admin' %}text-blue-600{% elif u.role.value == 'moderator' %}text-yellow-600{% else %}text-slate-500{% endif %}">
+                                class="text-[10px] font-bold uppercase px-1 rounded border 
+                                {% if u.role.value == 'super_admin' %}bg-purple-50 text-purple-600 border-purple-100{% elif u.role.value == 'admin' %}bg-blue-50 text-blue-600 border-blue-100{% else %}bg-slate-50 text-slate-500 border-slate-100{% endif %}">
                                 {{ u.role.value }}
                             </span>
                         </td>
                         <td
-                            class="px-6 py-4 text-right opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-1">
-                            <button data-id="{{ u.id }}" data-username="{{ u.username }}" data-email="{{ u.email }}"
-                                data-utmb="{{ u.utmb_index or '' }}" data-role="{{ u.role.value }}"
-                                data-premium="{{ u.is_premium|string|lower }}" data-fullname="{{ u.full_name or '' }}"
-                                onclick="openUserEditModal(this.dataset.id, this.dataset.username, this.dataset.email, this.dataset.utmb, this.dataset.role, this.dataset.premium, this.dataset.fullname)"
-                                class="text-blue-400 hover:text-blue-600 p-1 rounded hover:bg-blue-50 transition-colors"
-                                title="Éditer">
-                                <i class="ph-bold ph-pencil-simple"></i>
-                            </button>
-                            <form action="/superadmin/user/{{ u.id }}/toggle_premium" method="POST"
-                                class="inline-block">
-                                <button title="Toggle Premium"
-                                    class="text-amber-400 hover:text-amber-600 p-1 rounded hover:bg-amber-50 transition-colors">
-                                    <i
-                                        class="ph-bold {% if u.is_premium %}ph-crown-slash{% else %}ph-crown{% endif %}"></i>
-                                </button>
-                            </form>
-                            <form action="/superadmin/user/{{ u.id }}/delete" method="POST"
-                                onsubmit="return confirm('Êtes-vous sûr ? Cette action est irréversible.');"
-                                class="inline-block">
-                                <button
-                                    class="text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-50 transition-colors">
-                                    <i class="ph-bold ph-trash"></i>
-                                </button>
+                            class="text-right flex justify-end gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
+                            <button
+                                onclick="openUserEditModal('{{ u.id }}', '{{ u.username }}', '{{ u.email }}', '{{ u.utmb_index or '' }}', '{{ u.role.value }}', '{{ u.is_premium }}', '{{ u.full_name or '' }}')"
+                                class="text-blue-500 hover:bg-blue-50 p-1 rounded"><i
+                                    class="ph-bold ph-pencil-simple"></i></button>
+
+                            <form action="/superadmin/user/{{ u.id }}/toggle_premium" method="POST" class="inline">
+                                <button class="text-amber-500 hover:bg-amber-50 p-1 rounded"><i
+                                        class="ph-bold ph-crown"></i></button>
                             </form>
 
-                            <!-- Upload Image -->
-                            <form action="/superadmin/user/{{ u.id }}/upload_image" method="POST"
-                                enctype="multipart/form-data" class="inline-block relative">
-                                <label
-                                    class="text-slate-400 hover:text-brand-600 p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer inline-block"
-                                    title="Changer Photo">
-                                    <i class="ph-bold ph-camera"></i>
-                                    <input type="file" name="file" class="hidden" accept="image/*"
-                                        onchange="this.form.submit()">
-                                </label>
+                            <form action="/superadmin/user/{{ u.id }}/delete" method="POST"
+                                onsubmit="return confirm('Supprimer ?')" class="inline">
+                                <button class="text-red-500 hover:bg-red-50 p-1 rounded"><i
+                                        class="ph-bold ph-trash"></i></button>
                             </form>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+
+        <!-- Mobile Card Grid -->
+        <div class="mobile-card-grid p-4">
+            {% for u in users %}
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3">
+                <div class="flex justify-between items-start">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600">
+                            {{ u.username[:2].upper() }}
+                        </div>
+                        <div>
+                            <div class="font-bold text-slate-900 flex items-center gap-1">
+                                {{ u.username }}
+                                {% if u.is_premium %}<i class="ph-fill ph-crown text-amber-500 text-xs"></i>{% endif %}
+                            </div>
+                            <div class="text-xs text-slate-500 break-all">{{ u.email }}</div>
+                        </div>
+                    </div>
+                    <span
+                        class="text-[10px] font-bold uppercase px-2 py-1 rounded bg-slate-50 text-slate-500 border border-slate-100">{{
+                        u.role.value }}</span>
+                </div>
+
+                <div class="flex gap-2 border-t border-slate-50 pt-3">
+                    <button
+                        onclick="openUserEditModal('{{ u.id }}', '{{ u.username }}', '{{ u.email }}', '{{ u.utmb_index or '' }}', '{{ u.role.value }}', '{{ u.is_premium }}', '{{ u.full_name or '' }}')"
+                        class="flex-1 py-2 rounded-lg bg-slate-50 text-slate-600 font-bold text-xs hover:bg-slate-100">Éditer</button>
+                    <form action="/superadmin/user/{{ u.id }}/toggle_premium" method="POST" class="flex-1">
+                        <button
+                            class="w-full py-2 rounded-lg bg-amber-50 text-amber-600 font-bold text-xs hover:bg-amber-100">Premium</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
         </div>
     </div>
 </div>
@@ -553,65 +599,64 @@
             </button>
         </div>
 
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm whitespace-nowrap">
-                <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-xs">
+        <!-- Desktop Table -->
+        <div class="overflow-x-auto desktop-table w-full">
+            <table class="w-full text-left font-mono text-sm whitespace-nowrap table-dense">
+                <thead class="bg-slate-50 text-slate-500 font-bold uppercase">
                     <tr>
-                        <th class="px-4 py-3">Titre / Lieu</th>
-                        <th class="px-4 py-3">Stats</th>
-                        <th class="px-4 py-3">Uploader</th>
-                        <th class="px-4 py-3">Status</th>
-                        <th class="px-4 py-3 text-right">Actions</th>
+                        <th>Titre / Lieu</th>
+                        <th>Stats</th>
+                        <th>Uploader</th>
+                        <th>Status</th>
+                        <th class="text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     <template x-for="t in tracks" :key="t.id">
                         <tr class="hover:bg-slate-50 transition-colors group">
-                            <td class="px-4 py-3">
-                                <div class="font-bold text-slate-900 truncate max-w-[200px]" x-text="t.title"></div>
-                                <div class="text-xs text-slate-500" x-text="t.location || 'Localisation inconnue'">
+                            <td>
+                                <div class="font-bold text-slate-900 truncate max-w-[250px]" x-text="t.title"></div>
+                                <div class="text-[10px] text-slate-500 flex items-center gap-1">
+                                    <i class="ph-bold ph-map-pin"></i> <span x-text="t.location || 'N/A'"></span>
                                 </div>
                             </td>
-                            <td class="px-4 py-3">
-                                <span class="badge bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded textxs font-mono">
-                                    <span x-text="t.distance_km"></span>km
-                                </span>
-                                <span
-                                    class="badge bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-mono">
-                                    <span x-text="t.elevation_gain"></span>d+
-                                </span>
+                            <td>
+                                <div class="flex gap-1">
+                                    <span
+                                        class="bg-slate-100 text-slate-600 px-1 py-0.5 rounded textxs font-bold font-mono border border-slate-200"
+                                        x-text="t.distance_km + 'km'"></span>
+                                    <span
+                                        class="bg-slate-100 text-slate-600 px-1 py-0.5 rounded textxs font-bold font-mono border border-slate-200"
+                                        x-text="t.elevation_gain + 'd+'"></span>
+                                </div>
                             </td>
-                            <td class="px-4 py-3">
+                            <td>
                                 <div class="text-xs font-bold text-slate-700" x-text="t.uploader"></div>
                                 <div class="text-[10px] text-slate-400" x-text="t.created_at"></div>
                             </td>
-                            <td class="px-4 py-3">
-                                <span class="px-2 py-1 rounded text-[10px] font-bold uppercase border" :class="{
-                                        'bg-green-50 text-green-600 border-green-100': t.status === 'verified_by_human',
-                                        'bg-blue-50 text-blue-600 border-blue-100': t.status === 'verified_by_algo',
+                            <td>
+                                <span class="px-1 py-0.5 rounded text-[10px] font-bold uppercase border" :class="{
+                                        'bg-green-50 text-green-600 border-green-100': t.status.includes('verified'),
                                         'bg-amber-50 text-amber-600 border-amber-100': t.status === 'pending',
-                                        'bg-slate-50 text-slate-500 border-slate-100': t.status === 'rejected'
-                                    }" x-text="t.status"></span>
+                                        'bg-red-50 text-red-600 border-red-100': t.status === 'rejected'
+                                    }" x-text="t.status.replace('verified_', 'OK ').replace('_', ' ')"></span>
                                 <template x-if="t.is_official">
                                     <span
-                                        class="ml-1 text-[10px] bg-brand-100 text-brand-700 px-1 rounded border border-brand-200"
+                                        class="ml-1 text-[10px] bg-brand-100 text-brand-700 px-1 rounded border border-brand-200 font-bold"
                                         title="Officiel">OFF</span>
                                 </template>
                             </td>
                             <td
-                                class="px-4 py-3 text-right flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                class="text-right flex justify-end gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
                                 <a :href="`/track/${t.id}`" target="_blank"
-                                    class="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-slate-100 rounded">
-                                    <i class="ph-bold ph-arrow-square-out"></i>
-                                </a>
+                                    class="p-1 text-slate-400 hover:text-brand-600 hover:bg-slate-100 rounded"><i
+                                        class="ph-bold ph-arrow-square-out"></i></a>
                                 <a :href="`/track/${t.id}/edit`" target="_blank"
-                                    class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded">
-                                    <i class="ph-bold ph-pencil-simple"></i>
-                                </a>
+                                    class="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded"><i
+                                        class="ph-bold ph-pencil-simple"></i></a>
                                 <button @click="deleteTrack(t.id)"
-                                    class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded">
-                                    <i class="ph-bold ph-trash"></i>
-                                </button>
+                                    class="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded"><i
+                                        class="ph-bold ph-trash"></i></button>
                             </td>
                         </tr>
                     </template>
@@ -620,6 +665,49 @@
                     </tr>
                 </tbody>
             </table>
+        </div>
+
+        <!-- Mobile Layout -->
+        <div class="mobile-card-grid p-4">
+            <template x-for="t in tracks" :key="t.id">
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="font-bold text-slate-900 text-sm mb-1" x-text="t.title"></div>
+                            <div class="flex gap-2 text-xs text-slate-500 font-mono">
+                                <span x-text="t.distance_km + 'km'"></span> • <span
+                                    x-text="t.elevation_gain + 'd+'"></span>
+                            </div>
+                        </div>
+                        <span class="px-2 py-1 rounded text-[10px] font-bold uppercase border" :class="{
+                            'bg-green-50 text-green-600 border-green-100': t.status.includes('verified'),
+                            'bg-amber-50 text-amber-600 border-amber-100': t.status === 'pending',
+                            'bg-red-50 text-red-600 border-red-100': t.status === 'rejected'
+                        }" x-text="t.status.split('_')[0]"></span>
+                    </div>
+
+                    <div
+                        class="flex items-center justify-between text-[10px] text-slate-400 border-t border-slate-50 pt-2">
+                        <span x-text="t.uploader"></span>
+                        <span x-text="t.location"></span>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2 mt-1">
+                        <a :href="`/track/${t.id}`" target="_blank"
+                            class="text-center py-2 bg-slate-50 rounded text-slate-600 hover:bg-slate-100 flex items-center justify-center"><i
+                                class="ph-bold ph-eye"></i></a>
+                        <a :href="`/track/${t.id}/edit`" target="_blank"
+                            class="text-center py-2 bg-blue-50 rounded text-blue-600 hover:bg-blue-100 flex items-center justify-center"><i
+                                class="ph-bold ph-pencil-simple"></i></a>
+                        <button @click="deleteTrack(t.id)"
+                            class="text-center py-2 bg-red-50 rounded text-red-600 hover:bg-red-100 flex items-center justify-center"><i
+                                class="ph-bold ph-trash"></i></button>
+                    </div>
+                </div>
+            </template>
+            <div x-show="tracks.length === 0 && !loading" class="text-center p-8 text-slate-400 italic text-sm">
+                Aucun résultat.
+            </div>
         </div>
     </div>
 </div>
