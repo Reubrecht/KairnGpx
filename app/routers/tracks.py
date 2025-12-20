@@ -422,6 +422,14 @@ async def advanced_search(
         "user": user,
     })
 
+@router.get("/import/suunto", response_class=HTMLResponse)
+async def import_suunto(request: Request, db: Session = Depends(get_db)):
+    user = await get_current_user(request, db) # Force login
+    return templates.TemplateResponse("suunto_import.html", {
+        "request": request,
+        "user": user
+    })
+
 @router.get("/upload", response_class=HTMLResponse)
 async def upload_form(request: Request, db: Session = Depends(get_db), race_route_id: Optional[int] = None):
     user = await get_current_user(request, db) # Force login

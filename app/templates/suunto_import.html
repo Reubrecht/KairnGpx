@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid p-0 h-100 d-flex flex-column" style="height: calc(100vh - 60px);">
+
+    <!-- Top Bar: Instructions & Drop Zone -->
+    <div class="bg-dark text-white p-3 shadow-sm d-flex align-items-center justify-content-between"
+        style="z-index: 10;">
+        <div class="d-flex align-items-center">
+            <div class="me-4">
+                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-route me-2"></i>Suunto Integrator</h5>
+                <small class="text-muted">1. Créez votre trace ci-dessous. 2. Exportez en GPX. 3. Glissez le fichier
+                    ici.</small>
+            </div>
+        </div>
+
+        <!-- The Drop Zone -->
+        <div id="drop-zone"
+            class="border border-2 border-dashed rounded px-4 py-2 d-flex align-items-center justify-content-center text-center transaction-all"
+            style="border-color: rgba(255,255,255,0.3) !important; background: rgba(255,255,255,0.05); cursor: pointer; min-width: 300px;">
+            <i class="fa-solid fa-file-arrow-up fs-4 me-3 text-primary"></i>
+            <div>
+                <span class="d-block fw-bold">Glissez votre GPX ici</span>
+                <small class="text-muted" style="font-size: 0.75rem;">ou cliquez pour sélectionner</small>
+            </div>
+            <input type="file" id="file-input" class="d-none" accept=".gpx">
+        </div>
+    </div>
+
+    <!-- The Iframe -->
+    <div class="flex-grow-1 position-relative bg-light">
+        <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+        <iframe src="https://routeplanner.suunto.com/" frameborder="0"
+            style="width: 100%; height: 100%; position: relative; z-index: 1;" allow="geolocation">
+        </iframe>
+    </div>
+
+</div>
+
+<!-- Loading Overlay for Upload -->
+<div id="upload-overlay"
+    class="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-75 d-flex flex-column align-items-center justify-content-center d-none"
+    style="z-index: 9999;">
+    <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+    <h4 class="text-white">Importation de la trace...</h4>
+</div>
+
+<script>
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const uploadOverlay = document.getElementById('upload-overlay');
+
+    // Drag & Drop visual feedback
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'var(--bs-primary) !important';
+        dropZone.style.background = 'rgba(13, 110, 253, 0.1)';
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'rgba(255,255,255,0.3) !important';
+        dropZone.style.background = 'rgba(255,255,255,0.05)';
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'rgba(255,255,255,0.3) !important';
+        dropZone.style.background = 'rgba(255,255,255,0.05)';
+
+        if (e.dataTransfer.files.length) {
+            handleFile(e.dataTransfer.files[0]);
+        }
+    });
+
+    // Click to select
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+        if (fileInput.files.length) {
+            handleFile(fileInput.files[0]);
+        }
+    });
+
+    function handleFile(file) {
+        if (!file.name.toLowerCase().endsWith('.gpx')) {
+            alert('Veuillez sélectionner un fichier GPX.');
+            return;
+        }
+
+        uploadOverlay.classList.remove('d-none');
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('title', file.name.replace('.gpx', '')); // Default title
+        // We can add default values or prompt user, but let's keep it 1-step for now
+        // matching the "catch" philosophy
+        formData.append('visibility', 'public');
+
+        fetch('/upload', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => {
+                if (response.redirected) {
+                    window.location.href = response.url;
+                } else {
+                    return response.text().then(text => {
+                        // If error or form re-render, we might want to handle it
+                        // strictly speaking /upload redirects on success
+                        // if it returns HTML it might be an error page or the form with errors
+                        window.location.href = '/explore'; // Fallback
+                    });
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Erreur lors de l\'upload');
+                uploadOverlay.classList.add('d-none');
+            });
+    }
+</script>
+
+<style>
+    /* Override base container styles if necessary to make this full screen-ish */
+    main {
+        padding-bottom: 0 !important;
+    }
+
+    footer {
+        display: none !important;
+        /* Hide footer for max space */
+    }
+</style>
+{% endblock %}
