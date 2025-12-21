@@ -211,6 +211,7 @@ async def super_admin_dashboard(request: Request, db: Session = Depends(get_db))
     user = await get_current_user_optional(request, db)
     
     if not user:
+        print("DEBUG: User not found, redirecting to login")
         return RedirectResponse(url="/login?next=/superadmin", status_code=303)
         
     if user.role != models.Role.SUPER_ADMIN:
