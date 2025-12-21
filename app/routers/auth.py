@@ -113,8 +113,11 @@ def register(
         return templates.TemplateResponse("register.html", {"request": request, "error": f"Erreur serveur: {str(e)}"})
 
 @router.get("/login", response_class=HTMLResponse)
-def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+def login_page(request: Request, registered: bool = False):
+    context = {"request": request}
+    if registered:
+        context["success"] = "Compte créé avec succès ! Un lien de vérification a été envoyé à votre email."
+    return templates.TemplateResponse("login.html", context)
 
 @router.post("/login")
 def login(
@@ -128,6 +131,12 @@ def login(
         if not user or not verify_password(password, user.hashed_password):
             return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"})
         
+        if not user.is_email_verified:
+            return templates.TemplateResponse("login.html", {
+                "request": request, 
+                "error": "Veuillez vérifier votre email avant de vous connecter."
+            })
+            
         access_token = create_access_token(data={"sub": user.username})
         response = RedirectResponse(url="/explore", status_code=status.HTTP_303_SEE_OTHER)
         response.set_cookie(
