@@ -93,17 +93,21 @@
                         </div>
                         <script>
                             document.addEventListener('DOMContentLoaded', () => {
-                                // Masquer la dropzone car un fichier est déjà là
+                                // Hide the drop zone once the page is ready
                                 document.getElementById('drop-zone').classList.add('hidden');
                                 document.getElementById('file').removeAttribute('required');
+
+                                // Pre-fill the title if a staged file is present
                                 document.getElementById('title-input').value = {{ staged_file.name | tojson }
                             };
 
+                            // Pre-fill the description if available
                             const desc = {{ staged_file.description | default ('') | tojson }};
                             if (desc) {
                                 document.getElementById('desc-input').value = desc;
                             }
 
+                            // Pre-fill tags if available
                             const tags = {{ staged_file.tags | default ('') | tojson }};
                             if (tags) {
                                 const tagsInput = document.querySelector('input[name="tags"]');
