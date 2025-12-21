@@ -580,7 +580,7 @@ async def upload_track(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    if file:
+    if file and file.filename:
         content = await file.read()
     elif temp_file_id:
         # Load from temp
