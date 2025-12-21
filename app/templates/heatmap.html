@@ -40,34 +40,21 @@
     <!-- Map Container -->
     <div id="map" class="absolute inset-0 z-0"></div>
 
-    <!-- Floating Title (Top Left) -->
+    <!-- Floating Stats (Top Left) -->
     <div class="absolute top-4 left-4 md:top-6 md:left-6 z-10 pointer-events-none">
-
-        <div class="flex items-center gap-2 md:gap-3">
-            <div
-                class="bg-white/90 backdrop-blur shadow-lg shadow-black/5 rounded-xl p-1.5 md:p-2.5 flex items-center justify-center pointer-events-auto transition-transform hover:scale-105">
-                <div
-                    class="bg-gradient-to-br from-brand-500 to-brand-600 text-white w-6 h-6 md:w-8 md:h-8 rounded-lg flex items-center justify-center shadow-inner">
-                    <i class="ph-bold ph-globe-hemisphere-west text-sm md:text-lg"></i>
-                </div>
-            </div>
-            <div>
-                <h1
-                    class="font-black text-lg md:text-2xl text-slate-800 drop-shadow-md tracking-tight flex items-baseline gap-2">
-                    Kairn Maps
-                    <span
-                        class="text-[9px] md:text-[10px] bg-white/90 backdrop-blur font-bold text-brand-600 px-1.5 md:px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm border border-white/50">Beta</span>
-                </h1>
-                <p class="text-xs md:text-sm font-medium text-slate-600 drop-shadow-sm flex items-center gap-2">
-                    <span class="bg-slate-800 text-white px-1.5 py-0.5 rounded text-[9px] md:text-[10px] font-bold">{{
-                        total_tracks
-                        }}</span> <span class="hidden md:inline">traces</span>
-                    <span class="w-1 h-1 rounded-full bg-slate-400"></span>
-                    <span class="bg-orange-500 text-white px-1.5 py-0.5 rounded text-[9px] md:text-[10px] font-bold">{{
-                        total_events
-                        }}</span> <span class="hidden md:inline">événements</span>
-                </p>
-            </div>
+        <div
+            class="pointer-events-auto bg-white/90 backdrop-blur shadow-sm rounded-lg px-3 py-1.5 border border-slate-200">
+            <p class="text-xs font-bold text-slate-600 flex items-center gap-2">
+                <span class="flex items-center gap-1">
+                    <span class="text-slate-800">{{ total_tracks }}</span>
+                    <span class="text-[10px] uppercase text-slate-400">traces</span>
+                </span>
+                <span class="w-px h-3 bg-slate-300 mx-1"></span>
+                <span class="flex items-center gap-1">
+                    <span class="text-orange-600">{{ total_events }}</span>
+                    <span class="text-[10px] uppercase text-slate-400">événements</span>
+                </span>
+            </p>
         </div>
     </div>
 
@@ -129,7 +116,7 @@
             <button onclick="toggleSat()" id="btn-sat"
                 class="w-10 h-10 flex items-center justify-center rounded-md hover:bg-slate-100 text-slate-600 transition-colors"
                 title="Satellite">
-                <i class="ph-bold ph-globe-hemisphere-east text-lg"></i>
+                <i class="ph-bold ph-planet text-lg"></i>
             </button>
         </div>
     </div>
@@ -206,64 +193,169 @@
         console.error("Data parsing error:", e);
     }
 
+    // --- Spiderfy Logic Helpers ---
+
+    // 1. Group items by location key (rounded lat/lon)
+    function groupItemsByLocation(items, type) {
+        const groups = {};
+        items.forEach(item => {
+            const lat = item.lat || item.location_lat || item.start_lat;
+            const lon = item.lon || item.location_lon || item.start_lon;
+
+            if (lat == null || lon == null) return;
+
+            // Use 5 decimals for ~1m precision grouping
+            const key = `${lat.toFixed(5)},${lon.toFixed(5)}`;
+            if (!groups[key]) {
+                groups[key] = { lat: lat, lon: lon, items: [] };
+            }
+            // Add type for rendering logic
+            item._type = type;
+            groups[key].items.push(item);
+        });
+        return groups;
+    }
+
+    // 2. Spiderfy Groups
+    // Returns { markers: [ {lat, lon, data...} ], legs: [ {from, to} ] }
+    function spiderfyGroups(groups) {
+        const markers = [];
+        const legs = [];
+
+        Object.values(groups).forEach(group => {
+            const count = group.items.length;
+            const centerLat = group.lat;
+            const centerLon = group.lon;
+
+            if (count === 1) {
+                // No overlap, keep original
+                const item = group.items[0];
+                item._displayLat = centerLat;
+                item._displayLon = centerLon;
+                markers.push(item);
+            } else {
+                // Spiral/Circle Logic
+                const angleStep = (2 * Math.PI) / count;
+                const radius = 0.0003; // ~30 meters offset
+
+                group.items.forEach((item, index) => {
+                    const angle = index * angleStep;
+                    // Simple circle offset
+                    const offsetLat = centerLat + (radius * Math.cos(angle) * 0.7); // 0.7 aspect ratio adjustment
+                    const offsetLon = centerLon + (radius * Math.sin(angle));
+
+                    item._displayLat = offsetLat;
+                    item._displayLon = offsetLon;
+                    markers.push(item);
+
+                    // Create leg
+                    legs.push({
+                        from: [centerLon, centerLat],
+                        to: [offsetLon, offsetLat]
+                    });
+                });
+            }
+        });
+
+        return { markers, legs };
+    }
+
+    // --- Pre-process Data ---
+
+    // Group Users
+    const userGroups = groupItemsByLocation(usersRaw || [], 'user');
+    const userSpider = spiderfyGroups(userGroups);
+    const processedUsers = userSpider.markers;
+    const userLegs = userSpider.legs;
+
+    // Group Events
+    const eventGroups = groupItemsByLocation(eventsRaw || [], 'event');
+    const eventSpider = spiderfyGroups(eventGroups);
+    const processedEvents = eventSpider.markers;
+    const eventLegs = eventSpider.legs;
+
+    // Tracks? (Only cluster leaves logic for now, or just use tracksRaw if needed)
+    // For tracks, we modify separate tracksGeoJSON if we want to "spiderfy" them permanently?
+    // User asked for "Zoom In" logic. 
+    // Standard approach: Use markers.
+    // For now, let's stick to modifying Users and Events as they are Markers.
+    // For Tracks, let's see if we can apply same logic.
+    // Tracks are points in a GeoJSON source. Modifying the Coordinates in GeoJSON source
+    // is equivalent to spiderfying.
+    const trackGroups = groupItemsByLocation(tracksRaw || [], 'track');
+    const trackSpider = spiderfyGroups(trackGroups);
+    // Merge legs
+    const allLegs = [...userLegs, ...eventLegs, ...trackSpider.legs];
+
+    // Convert Spiderfied Tracks back to GeoJSON features
+    const spiderfiedTracksFeatures = trackSpider.markers.map(t => ({
+        "type": "Feature",
+        "geometry": {
+            "type": "Point",
+            "coordinates": [t._displayLon, t._displayLat] // Use computed offset
+        },
+        "properties": {
+            "id": t.id,
+            "title": t.title,
+            "distance": t.distance_km,
+            "elevation": t.elevation_gain,
+            "mag": 1
+        }
+    }));
+
+
     // Check MapLibre Availability
     if (typeof maplibregl === 'undefined') {
         console.error("MapLibre GL JS not loaded.");
         document.getElementById('map').innerHTML = '<div class="flex items-center justify-center h-full text-red-500 font-bold">Erreur de chargement de la carte (librairie manquante).</div>';
     } else {
 
-        // Convert to GeoJSON FeatureCollection
+        // Use Pre-processed Tracks for GeoJSON
         const tracksGeoJSON = {
             "type": "FeatureCollection",
-            "features": tracksRaw
-                .filter(t => t.start_lat != null && t.start_lon != null)
-                .map(t => ({
-                    "type": "Feature",
-                    "geometry": {
-                        "type": "Point",
-                        "coordinates": [t.start_lon, t.start_lat]
-                    },
-                    "properties": {
-                        "id": t.id,
-                        "title": t.title,
-                        "distance": t.distance_km,
-                        "elevation": t.elevation_gain,
-                        "mag": 1 // For heatmap weight
-                    }
-                }))
+            "features": spiderfiedTracksFeatures
+        };
+
+        // Legs GeoJSON
+        const legsGeoJSON = {
+            "type": "FeatureCollection",
+            "features": allLegs.map(leg => ({
+                "type": "Feature",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [leg.from, leg.to]
+                }
+            }))
         };
 
         // Global State
         let hoveredTrackId = null;
-        let currentPopup = null; // Track current popup to remove it
+        let currentPopup = null;
         let is3D = false;
         let isSat = false;
 
         // --- Map Initialization ---
         const map = new maplibregl.Map({
             container: 'map',
-            style: '/static/style.json', // Local style
-            center: [2.2137, 46.2276], // Default France center (fallback)
+            style: '/static/style.json',
+            center: [2.2137, 46.2276],
             zoom: 5.5,
             pitch: 0,
             bearing: 0,
             antialias: true
         });
 
-        // Geolocation: Center on user
+        // Geolocation
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(position => {
                 const { latitude, longitude } = position.coords;
-                // Fly to user location
                 map.flyTo({
                     center: [longitude, latitude],
-                    zoom: 9, // Closer zoom when located
+                    zoom: 9,
                     essential: true
                 });
             }, error => {
                 console.warn("Geolocation access denied or failed:", error);
-                // Fallback: Fit bounds of all tracks if no geo (or just keep default France)
-                // Existing logic below handles fitBounds if we want:
                 fitBoundsToTracks();
             });
         } else {
@@ -291,16 +383,24 @@
             try {
                 // --- Sources ---
 
+                // 0. Spider Legs Source (Lines)
+                map.addSource('spider-legs', {
+                    type: 'geojson',
+                    data: legsGeoJSON
+                });
+
                 // 1. Tracks Source (Points)
                 map.addSource('tracks', {
                     type: 'geojson',
                     data: tracksGeoJSON,
                     cluster: true,
-                    clusterMaxZoom: 9, // Changed from 12 to 9 to show points earlier
-                    clusterRadius: 50
+                    clusterMaxZoom: 10, // Higher zoom than before to de-cluster earlier
+                    clusterRadius: 40 // Smaller radius to split earlier
                 });
 
-                // 2. Heatmap Source
+                // 2. Heatmap Source (Original Data for heatmap correctness?)
+                // Actually heatmap relies on density, spiderfying spreads points out.
+                // It might slightly diffuse the heatmap but that's acceptable or even desired for precision.
                 map.addSource('heatmap-source', {
                     type: 'geojson',
                     data: tracksGeoJSON
@@ -337,6 +437,21 @@
                     }
                 });
 
+                // Z. Spider Legs Layer (Draw these BELOW markers but ABOVE map)
+                // Add before heatmap? No, heatmap is base. Add before points.
+                map.addLayer({
+                    id: 'spider-legs-layer',
+                    type: 'line',
+                    source: 'spider-legs',
+                    layout: { 'line-join': 'round', 'line-cap': 'round' },
+                    paint: {
+                        'line-color': '#94a3b8', // Slate-400
+                        'line-width': 1,
+                        'line-opacity': 0.7
+                    }
+                });
+
+
                 // B. Track Line Layer (Hover)
                 map.addLayer({
                     id: 'hover-track-line',
@@ -357,9 +472,9 @@
                     source: 'tracks',
                     filter: ['!', ['has', 'point_count']],
                     paint: {
-                        'circle-radius': 6,
+                        'circle-radius': 5,
                         'circle-color': '#10b981',
-                        'circle-stroke-width': 2,
+                        'circle-stroke-width': 1.5,
                         'circle-stroke-color': '#ffffff',
                         'circle-opacity': 0.9
                     }
@@ -392,9 +507,10 @@
 
 
                 // --- Events Markers ---
-                let eventMarkers = [];
-                if (eventsRaw) {
-                    eventsRaw.forEach(ev => {
+                // Use processedEvents (spiderfied)
+                window.eventMarkers = [];
+                if (processedEvents) {
+                    processedEvents.forEach(ev => {
                         const el = document.createElement('div');
                         el.className = 'w-8 h-8 rounded-full border-2 border-white shadow-md bg-orange-500 flex items-center justify-center text-white cursor-pointer hover:scale-110 transition-transform';
                         el.innerHTML = '<i class="ph-bold ph-flag-banner"></i>';
@@ -402,27 +518,26 @@
                         const popup = new maplibregl.Popup({ offset: 25 }).setHTML(`
                              <div class="p-3 text-center min-w-[140px]">
                                  <h3 class="font-bold text-slate-800 text-sm mb-1 line-clamp-2">${ev.name}</h3>
-                                 <p class="text-[10px] text-slate-500 uppercase font-bold tracking-wide mb-2">${ev.location_city || 'Localisation inconnue'}</p>
-                                 <a href="/search?q=${encodeURIComponent(ev.name)}" class="inline-block px-3 py-1.5 bg-orange-50 text-orange-600 text-xs font-bold rounded-lg hover:bg-orange-100 transition-colors">Voir l'événement</a>
+                                 <p class="text-[10px] text-slate-500 uppercase font-bold tracking-wide mb-2">${ev.location_city || 'Location Unknown'}</p>
+                                 <a href="/search?q=${encodeURIComponent(ev.name)}" class="inline-block px-3 py-1.5 bg-orange-50 text-orange-600 text-xs font-bold rounded-lg hover:bg-orange-100 transition-colors">See Event</a>
                              </div>
                          `);
 
                         const marker = new maplibregl.Marker({ element: el })
-                            .setLngLat([ev.lon, ev.lat])
+                            .setLngLat([ev._displayLon, ev._displayLat]) // Use offset coords
                             .setPopup(popup)
                             .addTo(map);
 
-                        eventMarkers.push(marker);
+                        // Keep reference to element for toggling
+                        marker.category = 'event';
+                        window.eventMarkers.push(marker);
                     });
                 }
 
-                // Define userMarkers globally accessible for toggle
+                // --- Users Markers ---
                 window.userMarkers = [];
-                // Re-render user markers to store reference
-                // (Clearing previous if any - though this runs on load so fine)
-                if (usersRaw) {
-                    usersRaw.forEach(u => {
-                        if (!u.location_lat || !u.location_lon) return;
+                if (processedUsers) {
+                    processedUsers.forEach(u => {
                         const el = document.createElement('div');
                         el.className = 'w-10 h-10 rounded-full border-2 border-white shadow-md bg-white overflow-hidden cursor-pointer hover:scale-110 transition-transform';
                         if (u.profile_picture) {
@@ -431,19 +546,26 @@
                             img.className = 'w-full h-full object-cover';
                             el.appendChild(img);
                         } else {
+                            // Fallback avatar
                             el.className += ' flex items-center justify-center bg-indigo-500 text-white font-bold text-xs';
-                            el.innerText = u.username.substring(0, 2).toUpperCase();
+                            el.innerText = u.username ? u.username.substring(0, 2).toUpperCase() : '??';
                         }
+
                         const popup = new maplibregl.Popup({ offset: 25 }).setHTML(`
                              <div class="p-3 text-center min-w-[120px]">
-                                 <div class="w-12 h-12 rounded-full overflow-hidden mx-auto mb-2 border border-slate-100">
-                                      ${u.profile_picture ? `<img src="${u.profile_picture}" class="w-full h-full object-cover">` : `<div class="w-full h-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold">${u.username.substring(0, 2).toUpperCase()}</div>`} 
-                                 </div>
-                                 <h3 class="font-bold text-slate-800 text-sm"><a href="/user/${encodeURIComponent(u.username)}" class="hover:text-brand-600 hover:underline">${u.username}</a></h3>
-                                 <p class="text-xs text-slate-500">${u.location_city || 'Membre Kairn'}</p>
+                                  <div class="w-12 h-12 rounded-full overflow-hidden mx-auto mb-2 border border-slate-100">
+                                       ${u.profile_picture ? `<img src="${u.profile_picture}" class="w-full h-full object-cover">` : `<div class="w-full h-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold">${u.username ? u.username.substring(0, 2).toUpperCase() : '?'}</div>`} 
+                                  </div>
+                                  <h3 class="font-bold text-slate-800 text-sm"><a href="/user/${encodeURIComponent(u.username)}" class="hover:text-brand-600 hover:underline">${u.username}</a></h3>
+                                  <p class="text-xs text-slate-500">${u.location_city || 'Member'}</p>
                              </div>
                         `);
-                        const m = new maplibregl.Marker({ element: el }).setLngLat([u.location_lon, u.location_lat]).setPopup(popup).addTo(map);
+
+                        const m = new maplibregl.Marker({ element: el })
+                            .setLngLat([u._displayLon, u._displayLat])
+                            .setPopup(popup)
+                            .addTo(map);
+
                         window.userMarkers.push(m);
                     });
                 }
@@ -451,22 +573,15 @@
                 console.error("Map Load Error:", e);
             }
 
-            // --- Interactions ---
+            // ... Interactions same as before ...
 
             // 1. Hover on Track Points
             map.on('mouseenter', 'track-points', async (e) => {
                 map.getCanvas().style.cursor = 'pointer';
-
                 const feature = e.features[0];
                 const trackId = feature.properties.id;
 
-                // Remove existing popup if any
-                if (currentPopup) {
-                    currentPopup.remove();
-                    currentPopup = null;
-                }
-
-                // Clear previous trace immediately to avoid confusion
+                if (currentPopup) { currentPopup.remove(); currentPopup = null; }
                 if (hoveredTrackId !== trackId) {
                     map.getSource('hover-track').setData({ "type": "FeatureCollection", "features": [] });
                 }
@@ -479,32 +594,22 @@
                             <span class="font-mono font-bold text-brand-600">${feature.properties.distance.toFixed(1)}km</span>
                             <span>${Math.round(feature.properties.elevation)}m+</span>
                         </div>
-                        <p class="text-[10px] text-slate-400 mt-2 italic">Cliquez pour voir les détails</p>
+                        <p class="text-[10px] text-slate-400 mt-2 italic">Click for details</p>
                     </div>
                 `;
 
-                // Create new popup
-                currentPopup = new maplibregl.Popup()
-                    .setLngLat(coordinates)
-                    .setHTML(description)
-                    .addTo(map);
+                currentPopup = new maplibregl.Popup().setLngLat(coordinates).setHTML(description).addTo(map);
 
-                // Fetch Trace
                 if (hoveredTrackId !== trackId) {
                     hoveredTrackId = trackId;
                     document.getElementById('loading-indicator').classList.remove('hidden');
-
                     try {
                         const res = await fetch(`/api/track/${trackId}/geojson`);
                         if (res.ok) {
                             const geojson = await res.json();
-                            if (geojson) {
-                                map.getSource('hover-track').setData(geojson);
-                            }
+                            if (geojson) map.getSource('hover-track').setData(geojson);
                         }
-                    } catch (err) {
-                        console.error("Failed to load trace", err);
-                    } finally {
+                    } catch (err) { } finally {
                         document.getElementById('loading-indicator').classList.add('hidden');
                     }
                 }
@@ -514,44 +619,21 @@
                 map.getCanvas().style.cursor = '';
             });
 
-            // Cluster Click -> Zoom
             map.on('click', 'clusters', (e) => {
                 const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
                 const clusterId = features[0].properties.cluster_id;
                 map.getSource('tracks').getClusterExpansionZoom(clusterId, (err, zoom) => {
                     if (err) return;
-                    map.easeTo({
-                        center: features[0].geometry.coordinates,
-                        zoom: zoom
-                    });
+                    map.easeTo({ center: features[0].geometry.coordinates, zoom: zoom });
                 });
             });
+            map.on('mouseenter', 'clusters', () => map.getCanvas().style.cursor = 'pointer');
+            map.on('mouseleave', 'clusters', () => map.getCanvas().style.cursor = '');
+            map.on('click', 'track-points', (e) => window.location.href = `/track/${e.features[0].properties.id}`);
 
-            map.on('mouseenter', 'clusters', () => {
-                map.getCanvas().style.cursor = 'pointer';
-            });
-            map.on('mouseleave', 'clusters', () => {
-                map.getCanvas().style.cursor = '';
-            });
+        }); // End Load
 
-            // Click to go to detail
-            map.on('click', 'track-points', (e) => {
-                const trackId = e.features[0].properties.id;
-                window.location.href = `/track/${trackId}`;
-            });
-
-            // Expose markers globally for toggles outside this scope
-            window.eventMarkers = eventMarkers;
-
-        }); // End map Load
-
-        // MOVE TOGGLES INSIDE or usage of window globals
-        // Ideally toggles should be set up once, but they depend on map layers/markers
-        // We can set them up here or ensure they access globals.
-
-
-        // --- Controls Logic (Safe Global Functions) ---
-        // Bind to window to ensure global access for onclick
+        // --- Controls Logic ---
         window.zoomIn = function () { if (map) map.zoomIn(); };
         window.zoomOut = function () { if (map) map.zoomOut(); };
 
@@ -561,31 +643,21 @@
             const btn = document.getElementById('btn-3d');
             if (is3D) {
                 map.easeTo({ pitch: 60, bearing: -17.6, duration: 1000 });
-                // Add Terrain if not already
                 if (!map.getSource('terrain')) {
                     map.addSource('terrain', {
                         "type": "raster-dem",
-                        "tiles": [
-                            "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"
-                        ],
-                        "encoding": "terrarium",
-                        "tileSize": 256,
-                        "maxzoom": 15
+                        "tiles": ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"],
+                        "encoding": "terrarium", "tileSize": 256, "maxzoom": 15
                     });
                 }
                 map.setTerrain({ 'source': 'terrain', 'exaggeration': 1.2 });
-
                 if (btn) {
                     btn.classList.add('text-brand-600', 'bg-brand-50', 'ring-1', 'ring-brand-500/20');
                     btn.classList.remove('hover:bg-slate-100', 'text-slate-600');
                 }
             } else {
                 map.easeTo({ pitch: 0, bearing: 0, duration: 1000 });
-                // Remove terrain after transition
-                setTimeout(() => {
-                    if (!is3D && map) map.setTerrain(null);
-                }, 1000);
-
+                setTimeout(() => { if (!is3D && map) map.setTerrain(null); }, 1000);
                 if (btn) {
                     btn.classList.remove('text-brand-600', 'bg-brand-50', 'ring-1', 'ring-brand-500/20');
                     btn.classList.add('hover:bg-slate-100', 'text-slate-600');
@@ -599,19 +671,13 @@
             const btn = document.getElementById('btn-sat');
             if (isSat) {
                 if (!map.getLayer('satellite-layer')) {
-                    // Try to place behind heatmap if it exists, otherwise just add
                     const beforeId = map.getLayer('heatmap-layer') ? 'heatmap-layer' : null;
                     map.addLayer({
-                        'id': 'satellite-layer',
-                        'type': 'raster',
+                        'id': 'satellite-layer', 'type': 'raster',
                         'source': {
-                            'type': 'raster',
-                            'tiles': [
-                                'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-                            ],
+                            'type': 'raster', 'tiles': ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
                             'tileSize': 256
-                        },
-                        'paint': {}
+                        }, 'paint': {}
                     }, beforeId);
                 } else {
                     map.setLayoutProperty('satellite-layer', 'visibility', 'visible');
@@ -621,9 +687,7 @@
                     btn.classList.remove('hover:bg-slate-100', 'text-slate-600');
                 }
             } else {
-                if (map.getLayer('satellite-layer')) {
-                    map.setLayoutProperty('satellite-layer', 'visibility', 'none');
-                }
+                if (map.getLayer('satellite-layer')) map.setLayoutProperty('satellite-layer', 'visibility', 'none');
                 if (btn) {
                     btn.classList.remove('text-brand-600', 'bg-brand-50', 'ring-1', 'ring-brand-500/20');
                     btn.classList.add('hover:bg-slate-100', 'text-slate-600');
@@ -631,71 +695,86 @@
             }
         };
 
-        // Toggle Layer Logic
+        // Fixed Toggle Logic
+        // Uses dataset or robust class checking
         window.toggleLayer = function (layerType) {
             if (!map) return;
             const btn = document.getElementById(`btn-${layerType}`);
+            // Check state via class presence of active style
+            // Better: use a data attribute for state, but class check is fine if consistent
             let isActive = false;
 
-            // Define active visual classes per type
-            let activeClasses = [];
+            // Helper to check active state
+            const isBtnActive = (b, colorClass) => b.classList.contains(colorClass);
 
             switch (layerType) {
                 case 'heatmap':
                     if (map.getLayer('heatmap-layer')) {
-                        const isHeatmapVisible = map.getLayoutProperty('heatmap-layer', 'visibility') !== 'none';
-                        isActive = !isHeatmapVisible;
+                        const vis = map.getLayoutProperty('heatmap-layer', 'visibility');
+                        isActive = (vis !== 'none'); // Current state
+                        // Toggle
+                        isActive = !isActive;
                         map.setLayoutProperty('heatmap-layer', 'visibility', isActive ? 'visible' : 'none');
+                        updateBtnState(btn, isActive, 'red');
                     }
-                    activeClasses = ['text-red-600', 'bg-red-50', 'ring-1', 'ring-red-500/20'];
                     break;
-
                 case 'points':
                     if (map.getLayer('track-points')) {
-                        const isPointsVisible = map.getLayoutProperty('track-points', 'visibility') !== 'none';
-                        isActive = !isPointsVisible;
-                        const val = isActive ? 'visible' : 'none';
-                        map.setLayoutProperty('track-points', 'visibility', val);
-                        if (map.getLayer('clusters')) map.setLayoutProperty('clusters', 'visibility', val);
-                        if (map.getLayer('cluster-count')) map.setLayoutProperty('cluster-count', 'visibility', val);
-                    }
-                    activeClasses = ['text-emerald-600', 'bg-emerald-50', 'ring-1', 'ring-emerald-500/20'];
-                    break;
+                        const vis = map.getLayoutProperty('track-points', 'visibility');
+                        isActive = (vis !== 'none');
+                        isActive = !isActive;
+                        const v = isActive ? 'visible' : 'none';
+                        map.setLayoutProperty('track-points', 'visibility', v);
+                        if (map.getLayer('clusters')) map.setLayoutProperty('clusters', 'visibility', v);
+                        if (map.getLayer('cluster-count')) map.setLayoutProperty('cluster-count', 'visibility', v);
+                        // Also toggle legs and their spider points if we treat tracks as markers? 
+                        // Current logic modified tracksGeoJSON for tracks points, so they hide with 'track-points'.
+                        // However, legs are in 'spider-legs-layer'.
+                        if (map.getLayer('spider-legs-layer')) map.setLayoutProperty('spider-legs-layer', 'visibility', v);
 
+                        updateBtnState(btn, isActive, 'emerald');
+                    }
+                    break;
                 case 'events':
-                    isActive = !btn.classList.contains('bg-orange-50');
+                    // Check if currently active based on button
+                    isActive = isBtnActive(btn, 'bg-orange-50');
+                    isActive = !isActive; // Toggle
+
                     if (window.eventMarkers) {
                         window.eventMarkers.forEach(m => {
                             const el = m.getElement();
-                            if (!isActive) el.classList.add('hidden');
-                            else el.classList.remove('hidden');
+                            if (isActive) el.classList.remove('hidden');
+                            else el.classList.add('hidden');
                         });
                     }
-                    activeClasses = ['text-orange-600', 'bg-orange-50', 'ring-1', 'ring-orange-500/20'];
+                    updateBtnState(btn, isActive, 'orange');
                     break;
-
                 case 'users':
-                    isActive = !btn.classList.contains('bg-indigo-50');
+                    isActive = isBtnActive(btn, 'bg-indigo-50');
+                    isActive = !isActive;
+
                     if (window.userMarkers) {
                         window.userMarkers.forEach(m => {
                             const el = m.getElement();
-                            if (!isActive) el.classList.add('hidden');
-                            else el.classList.remove('hidden');
+                            if (isActive) el.classList.remove('hidden');
+                            else el.classList.add('hidden');
                         });
                     }
-                    activeClasses = ['text-indigo-600', 'bg-indigo-50', 'ring-1', 'ring-indigo-500/20'];
+                    updateBtnState(btn, isActive, 'indigo');
                     break;
             }
+        };
 
-            // Toggle UI
-            if (isActive) {
+        function updateBtnState(btn, active, color) {
+            const classes = [`text-${color}-600`, `bg-${color}-50`, 'ring-1', `ring-${color}-500/20`];
+            if (active) {
                 btn.classList.remove('text-slate-600', 'hover:bg-slate-100');
-                btn.classList.add(...activeClasses);
+                btn.classList.add(...classes);
             } else {
-                btn.classList.remove(...activeClasses);
+                btn.classList.remove(...classes);
                 btn.classList.add('text-slate-600', 'hover:bg-slate-100');
             }
-        };
+        }
     }
 </script>
 {% endblock %}

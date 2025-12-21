@@ -66,75 +66,72 @@
                             KAIRN</span>
                         <!-- Mobile shortened version removed as image handles it well, or keep text hidden on mobile -->
                     </a>
+                </div>
 
-                    <div class="flex items-center gap-2">
-                        <!-- Global Search / Filter Toggle -->
-                        <button id="top-bar-search-btn"
-                            class="p-2 text-slate-500 hover:text-brand-600 transition-colors rounded-full hover:bg-slate-50 focus:outline-none"
-                            title="Rechercher / Filtrer">
-                            <i class="ph-bold ph-magnifying-glass text-xl"></i>
-                        </button>
-                        <!-- Script for Search Button Logic -->
-                        <script>
-                            document.getElementById('top-bar-search-btn').addEventListener('click', () => {
-                                if (window.location.pathname === '/explore') {
-                                    // Dispatch event for index.html to handle
-                                    window.dispatchEvent(new CustomEvent('toggle-explore-filters'));
-                                } else {
-                                    window.location.href = '/explore';
-                                }
-                            });
-                        </script>
-                    </div>
+                <!-- Right Side (User or Login) -->
+                <div class="flex items-center gap-2 md:gap-4">
 
-                    <!-- Right Side (User or Login) -->
+                    <!-- Global Search / Filter Toggle (Moved Here) -->
+                    <button id="top-bar-search-btn"
+                        class="p-2 text-slate-500 hover:text-brand-600 transition-colors rounded-full hover:bg-slate-50 focus:outline-none"
+                        title="Rechercher / Filtrer">
+                        <i class="ph-bold ph-magnifying-glass text-xl"></i>
+                    </button>
+                    <script>
+                        document.getElementById('top-bar-search-btn').addEventListener('click', () => {
+                            if (window.location.pathname === '/explore') {
+                                window.dispatchEvent(new CustomEvent('toggle-explore-filters'));
+                            } else {
+                                window.location.href = '/explore';
+                            }
+                        });
+                    </script>
+
+                    <!-- Auth Links (Always Visible) -->
                     <div class="flex items-center gap-2 md:gap-4">
-
-                        <!-- Auth Links (Always Visible) -->
-                        <div class="flex items-center gap-2 md:gap-4">
-                            {% if user %}
-                            {% if user.is_admin %}
-                            <a href="/superadmin"
-                                class="relative text-sm font-bold text-slate-700 mr-2 hover:text-brand-600 flex items-center gap-1">
-                                <i class="ph-bold ph-shield-check text-lg"></i>
-                                <span class="hidden md:inline">Admin</span>
-                                <span id="admin-badge"
-                                    class="hidden absolute -top-1 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">0</span>
-                            </a>
-                            {% endif %}
-                            <a href="/profile" class="flex items-center gap-2 group">
-                                {% if user.profile_picture %}
-                                <img src="{{ user.profile_picture }}" alt="{{ user.username }}"
-                                    class="w-8 h-8 rounded-full object-cover border border-slate-200 group-hover:border-brand-500 transition-colors">
-                                {% else %}
-                                <div
-                                    class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-xs border border-slate-200 group-hover:bg-brand-50 group-hover:text-brand-600 transition-colors">
-                                    {{ user.username[:1].upper() }}
-                                </div>
-                                {% endif %}
-                                <span
-                                    class="text-sm font-bold text-slate-700 hover:text-brand-600 truncate max-w-[100px] md:max-w-none hidden md:inline">{{
-                                    user.username }}</span>
-                            </a>
-                            <a href="/logout"
-                                class="text-xs md:text-sm font-medium text-red-500 hover:text-red-600 transition-colors">
-                                <span class="hidden md:inline">Déconnexion</span>
-                                <span class="md:hidden">Sortir</span>
-                            </a>
+                        {% if user %}
+                        {% if user.is_admin %}
+                        <a href="/superadmin"
+                            class="relative text-sm font-bold text-slate-700 mr-2 hover:text-brand-600 flex items-center gap-1">
+                            <i class="ph-bold ph-shield-check text-lg"></i>
+                            <span class="hidden md:inline">Admin</span>
+                            <span id="admin-badge"
+                                class="hidden absolute -top-1 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">0</span>
+                        </a>
+                        {% endif %}
+                        <a href="/profile" class="flex items-center gap-2 group">
+                            {% if user.profile_picture %}
+                            <img src="{{ user.profile_picture }}" alt="{{ user.username }}"
+                                class="w-8 h-8 rounded-full object-cover border border-slate-200 group-hover:border-brand-500 transition-colors">
                             {% else %}
-                            <a href="/login"
-                                class="text-sm font-bold text-slate-600 hover:text-brand-600 transition-colors">Connexion</a>
-                            <a href="/register"
-                                class="bg-brand-600 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-bold shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition-all">Inscription</a>
+                            <div
+                                class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-xs border border-slate-200 group-hover:bg-brand-50 group-hover:text-brand-600 transition-colors">
+                                {{ user.username[:1].upper() }}
+                            </div>
                             {% endif %}
-                        </div>
-
-
-
-
+                            <span
+                                class="text-sm font-bold text-slate-700 hover:text-brand-600 truncate max-w-[100px] md:max-w-none hidden md:inline">{{
+                                user.username }}</span>
+                        </a>
+                        <a href="/logout"
+                            class="text-xs md:text-sm font-medium text-red-500 hover:text-red-600 transition-colors">
+                            <span class="hidden md:inline">Déconnexion</span>
+                            <span class="md:hidden">Sortir</span>
+                        </a>
+                        {% else %}
+                        <a href="/login"
+                            class="text-sm font-bold text-slate-600 hover:text-brand-600 transition-colors">Connexion</a>
+                        <a href="/register"
+                            class="bg-brand-600 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-bold shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition-all">Inscription</a>
+                        {% endif %}
                     </div>
+
+
+
+
                 </div>
             </div>
+        </div>
 
 
     </nav>
@@ -163,28 +160,29 @@
                 <a href="/explore"
                     class="flex flex-col items-center justify-center w-full h-full text-slate-400 hover:text-brand-600 active:text-brand-600 transition-colors group"
                     title="Explorer">
-                    <i class="ph-bold ph-compass text-3xl group-hover:scale-110 transition-transform"></i>
+                    <i class="ph-light ph-compass text-3xl group-hover:scale-110 transition-transform"></i>
                 </a>
 
                 <!-- Carte -->
                 <a href="/map"
                     class="flex flex-col items-center justify-center w-full h-full text-slate-400 hover:text-brand-600 active:text-brand-600 transition-colors group"
                     title="Carte">
-                    <i class="ph-bold ph-globe-hemisphere-west text-3xl group-hover:scale-110 transition-transform"></i>
+                    <i
+                        class="ph-light ph-globe-hemisphere-west text-3xl group-hover:scale-110 transition-transform"></i>
                 </a>
 
                 <!-- Importer -->
                 <a href="/upload"
                     class="flex flex-col items-center justify-center w-full h-full text-slate-400 hover:text-brand-600 active:text-brand-600 transition-colors group"
                     title="Importer">
-                    <i class="ph-bold ph-upload-simple text-3xl group-hover:scale-110 transition-transform"></i>
+                    <i class="ph-light ph-upload-simple text-3xl group-hover:scale-110 transition-transform"></i>
                 </a>
 
                 <!-- Créer -->
                 <a href="/import/suunto"
                     class="flex flex-col items-center justify-center w-full h-full text-slate-400 hover:text-brand-600 active:text-brand-600 transition-colors group"
                     title="Créer">
-                    <i class="ph-bold ph-path text-3xl group-hover:scale-110 transition-transform"></i>
+                    <i class="ph-light ph-path text-3xl group-hover:scale-110 transition-transform"></i>
                 </a>
             </div>
         </div>
