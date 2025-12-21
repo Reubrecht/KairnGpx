@@ -32,6 +32,7 @@ def register(
     username: str = Form(...),
     email: str = Form(...),
     password: str = Form(...),
+    password_confirm: str = Form(...),
     full_name: str = Form(None),
     invitation_code: str = Form(None),
     
@@ -54,6 +55,10 @@ def register(
                      "request": request, 
                      "error": "Code d'invitation incorrect. L'inscription est restreinte."
                  })
+
+        # Check passwords match
+        if password != password_confirm:
+            return templates.TemplateResponse("register.html", {"request": request, "error": "Les mots de passe ne correspondent pas."})
 
         # Check if user exists
         if db.query(models.User).filter(or_(models.User.username == username, models.User.email == email)).first():
@@ -190,5 +195,35 @@ def verify_email(request: Request, token: str, db: Session = Depends(get_db)):
     return templates.TemplateResponse("login.html", {
         "request": request,
         "success": "Email vérifié avec succès ! Vous pouvez maintenant vous connecter."
+    })
+
+
+@router.get("/resend-verification", response_class=HTMLResponse)
+def resend_verification_page(request: Request):
+    return templates.TemplateResponse("resend_verification.html", {"request": request})
+
+@router.post("/resend-verification", response_class=HTMLResponse)
+def resend_verification(request: Request, email: str = Form(...), db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == email).first()
+    
+    # Generic message to prevent email enumeration
+    success_msg = "Si un compte existe avec cet email, un nouveau lien a été envoyé."
+    
+    if user and not user.is_email_verified:
+        # Generate new token just in case
+        user.email_verification_token = str(uuid.uuid4())
+        db.commit()
+        
+        email_service = EmailService()
+        email_service.send_verification_email(user.email, user.email_verification_token)
+    elif user and user.is_email_verified:
+         return templates.TemplateResponse("resend_verification.html", {
+            "request": request,
+            "success": "Ce compte est déjà vérifié. Vous pouvez vous connecter."
+        })
+
+    return templates.TemplateResponse("resend_verification.html", {
+        "request": request,
+        "success": success_msg
     })
 
