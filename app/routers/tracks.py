@@ -436,33 +436,6 @@ async def import_suunto(request: Request, db: Session = Depends(get_db)):
         "user": user
     })
 
-@router.get("/upload", response_class=HTMLResponse)
-async def upload_form(request: Request, db: Session = Depends(get_db), race_route_id: Optional[int] = None):
-    user = await get_current_user(request, db) # Force login
-    
-    prefill_race = None
-    if race_route_id:
-        route = db.query(models.RaceRoute).filter(models.RaceRoute.id == race_route_id).first()
-        if route:
-            prefill_race = {
-                "id": route.id,
-                "name": route.edition.event.name,
-                "year": route.edition.year,
-                "route_name": route.name,
-                "category": route.distance_category
-            }
-
-    race_events = db.query(models.RaceEvent).order_by(models.RaceEvent.name).all()
-
-    return templates.TemplateResponse("upload.html", {
-        "request": request,
-        "status_options": [],
-        "technicity_options": [],
-        "terrain_options": [],
-        "user": user,
-        "prefill_race": prefill_race,
-        "race_events": race_events
-    })
 
 @router.post("/upload/stage")
 async def stage_track_upload(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
@@ -572,7 +545,7 @@ async def upload_form(
 
     return templates.TemplateResponse("upload.html", {
         "request": request,
-        "status_options": [],
+        "status_options": ["TRAINING", "OFFICIAL_RACE"],
         "technicity_options": [],
         "terrain_options": [],
         "user": user,

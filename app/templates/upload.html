@@ -87,8 +87,10 @@
                         <script>
                             document.addEventListener('DOMContentLoaded', () => {
                                 document.getElementById('drop-zone').classList.add('hidden');
-                                document.getElementById('title-input').value = {{ staged_file.name | tojson }};
-                            
+                                document.getElementById('suunto-drop-zone-container').classList.add('hidden');
+                                document.getElementById('title-input').value = {{ staged_file.name | tojson }
+                            };
+
                             const desc = {{ staged_file.description | default ('') | tojson }};
                             if (desc) {
                                 document.getElementById('desc-input').value = desc;
@@ -126,11 +128,17 @@
                             <span class="text-base">Importer depuis Strava</span>
                         </button>
 
-                        <a href="/import/suunto"
-                            class="flex justify-center items-center gap-3 py-4 px-4 shadow-sm text-sm font-bold rounded-xl text-white bg-[#000000] hover:bg-gray-800 transition-all group">
-                            <i class="fa-solid fa-route text-lg"></i>
-                            <span class="text-base">Créer via Suunto App</span>
-                        </a>
+                        <div id="suunto-drop-zone-container">
+                            <div id="suunto-drop-zone"
+                                class="bg-black border-2 border-dashed border-slate-600 rounded-xl px-6 py-4 flex items-center justify-center text-center cursor-pointer hover:bg-slate-900 hover:border-brand-500 transition-all min-h-[60px] text-white">
+                                <i class="ph-bold ph-upload-simple text-2xl mr-3 text-brand-500"></i>
+                                <div>
+                                    <span class="block font-bold text-sm">Glissez votre GPX Suunto ici</span>
+                                    <span class="block text-xs text-slate-400">ou cliquez pour sélectionner</span>
+                                </div>
+                                <input type="file" id="suunto-file-input" class="hidden" accept=".gpx">
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -632,6 +640,36 @@
     });
 
     dropZone.addEventListener('click', () => fileInput.click());
+
+    // Suunto Drop Zone Logic
+    const suuntoDropZone = document.getElementById('suunto-drop-zone');
+    const suuntoFileInput = document.getElementById('suunto-file-input');
+
+    if (suuntoDropZone && suuntoFileInput) {
+        suuntoDropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            suuntoDropZone.classList.add('border-brand-500', 'bg-slate-800');
+        });
+
+        suuntoDropZone.addEventListener('dragleave', () => {
+            suuntoDropZone.classList.remove('border-brand-500', 'bg-slate-800');
+        });
+
+        suuntoDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            suuntoDropZone.classList.remove('border-brand-500', 'bg-slate-800');
+            if (e.dataTransfer.files.length) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        suuntoDropZone.addEventListener('click', () => suuntoFileInput.click());
+        suuntoFileInput.addEventListener('change', () => {
+            if (suuntoFileInput.files.length) {
+                handleFile(suuntoFileInput.files[0]);
+            }
+        });
+    }
 
     function handleFile(file) {
         // Update UI

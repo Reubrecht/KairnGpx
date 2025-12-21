@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="fr text-slate-100">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenue sur Kairn</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0f172a;
+            margin: 0;
+            padding: 0;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #0f172a;
+        }
+
+        .header {
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 32px;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -1px;
+            text-decoration: none;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 40px;
+            text-align: center;
+            margin: 0 20px;
+        }
+
+        .hero h1 {
+            font-size: 28px;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 16px;
+            line-height: 1.2;
+        }
+
+        .hero p {
+            font-size: 16px;
+            color: #94a3b8;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .features {
+            padding: 40px 20px;
+        }
+
+        .feature-item {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: rgba(30, 41, 59, 0.5);
+            border-radius: 16px;
+            border-left: 4px solid #10b981;
+        }
+
+        .feature-title {
+            font-weight: 700;
+            font-size: 18px;
+            color: #ffffff;
+            margin-bottom: 8px;
+        }
+
+        .feature-description {
+            font-size: 14px;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background-color: #10b981;
+            color: #ffffff !important;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-weight: 800;
+            text-decoration: none;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            margin-top: 20px;
+        }
+
+        .footer {
+            padding: 40px 20px;
+            text-align: center;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .footer a {
+            color: #94a3b8;
+            text-decoration: underline;
+        }
+
+        @media screen and (max-width: 600px) {
+            .hero {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Logo -->
+        <div class="header">
+            <a href="https://kairn.app" class="logo">MY KAIRN</a>
+        </div>
+
+        <!-- Hero Section -->
+        <div class="hero">
+            <h1>Bienvenue dans l'aventure 🏔️</h1>
+            <p>
+                Vous avez été sélectionné pour tester la version bêta de <strong>Kairn</strong>.
+                Une plateforme nouvelle génération conçue par des traileurs, pour des traileurs.
+            </p>
+            {% if beta_code %}
+            <div
+                style="background: rgba(16, 185, 129, 0.1); border: 1px dashed #10b981; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+                <span
+                    style="display: block; color: #94a3b8; font-size: 12px; margin-bottom: 5px; text-transform: uppercase; font-weight: 600;">Votre
+                    code d'accès bêta :</span>
+                <span
+                    style="font-family: monospace; font-size: 24px; color: #10b981; font-weight: 800; letter-spacing: 2px;">{{
+                    beta_code }}</span>
+            </div>
+            {% endif %}
+            <a href="{{ login_url|default('https://kairn.app') }}" class="cta-button">DÉCOUVRIR LA PLATEFORME</a>
+        </div>
+
+        <!-- Features -->
+        <div class="features">
+            <div class="feature-item" style="border-left-color: #8b5cf6;">
+                <div class="feature-title">🧠 Analyse IA (Google Gemini 2.0)</div>
+                <div class="feature-description">
+                    Importez vos fichiers GPX et laissez notre IA analyser la technicité, le terrain et générer des
+                    descriptions engageantes automatiquement.
+                </div>
+            </div>
+
+            <div class="feature-item" style="border-left-color: #3b82f6;">
+                <div class="feature-title">🏃‍♂️ Prédiction de Performance</div>
+                <div class="feature-description">
+                    Estimez votre temps d'arrivée sur n'importe quelle course officielle en couplant votre index ITRA
+                    avec l'analyse de technicité du parcours.
+                </div>
+            </div>
+
+            <div class="feature-item" style="border-left-color: #f59e0b;">
+                <div class="feature-title">🗺️ Cartographie & Exploration</div>
+                <div class="feature-description">
+                    Visualisez vos traces sur des cartes interactives en 3D, découvrez de nouveaux parcours près de chez
+                    vous et parcourez la bibliothèque d'événements officiels.
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Cet email vous a été envoyé car vous avez demandé un accès bêta à Kairn.</p>
+            <p>&copy; 2025 Kairn. Fait avec passion pour la montagne.</p>
+            <p><a href="#">Se désabonner</a> • <a href="https://kairn.app">Visiter le site</a></p>
+        </div>
+    </div>
+</body>
+
+</html>
