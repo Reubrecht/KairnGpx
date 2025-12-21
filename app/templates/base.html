@@ -50,7 +50,7 @@
     </style>
 </head>
 
-<body class="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen flex flex-col">
+<body class="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen flex flex-col pb-20 md:pb-0 md:pb-24">
 
     <!-- Navigation -->
     <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 backdrop-blur-md bg-white/90">
@@ -67,113 +67,76 @@
                         <!-- Mobile shortened version removed as image handles it well, or keep text hidden on mobile -->
                     </a>
 
-                    <div class="hidden md:flex items-center gap-1">
-                        <a href="/explore"
-                            class="px-4 py-2 text-sm font-medium rounded-full text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-all">Explorer</a>
-                        <a href="/map"
-                            class="px-4 py-2 text-sm font-medium rounded-full text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-all">Carte
-                            Globale</a>
-                        <a href="/upload"
-                            class="px-4 py-2 text-sm font-medium rounded-full text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-all">Importer</a>
-                        <a href="/import/suunto"
-                            class="px-4 py-2 text-sm font-medium rounded-full text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-all">Créer
-                            (Suunto)</a>
-                    </div>
-                </div>
-
-                <!-- Right Side (User or Login) -->
-                <div class="flex items-center gap-2 md:gap-4">
-
-                    <!-- Auth Links (Always Visible) -->
-                    <div class="flex items-center gap-2 md:gap-4">
-                        {% if user %}
-                        {% if user.is_admin %}
-                        <a href="/superadmin"
-                            class="relative text-sm font-bold text-slate-700 mr-2 hover:text-brand-600 flex items-center gap-1">
-                            <i class="ph-bold ph-shield-check text-lg"></i>
-                            <span class="hidden md:inline">Admin</span>
-                            <span id="admin-badge"
-                                class="hidden absolute -top-1 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">0</span>
-                        </a>
-                        {% endif %}
-                        <a href="/profile" class="flex items-center gap-2 group">
-                            {% if user.profile_picture %}
-                            <img src="{{ user.profile_picture }}" alt="{{ user.username }}"
-                                class="w-8 h-8 rounded-full object-cover border border-slate-200 group-hover:border-brand-500 transition-colors">
-                            {% else %}
-                            <div
-                                class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-xs border border-slate-200 group-hover:bg-brand-50 group-hover:text-brand-600 transition-colors">
-                                {{ user.username[:1].upper() }}
-                            </div>
-                            {% endif %}
-                            <span
-                                class="text-sm font-bold text-slate-700 hover:text-brand-600 truncate max-w-[100px] md:max-w-none hidden md:inline">{{
-                                user.username }}</span>
-                        </a>
-                        <a href="/logout"
-                            class="text-xs md:text-sm font-medium text-red-500 hover:text-red-600 transition-colors">
-                            <span class="hidden md:inline">Déconnexion</span>
-                            <span class="md:hidden">Sortir</span>
-                        </a>
-                        {% else %}
-                        <a href="/login"
-                            class="text-sm font-bold text-slate-600 hover:text-brand-600 transition-colors">Connexion</a>
-                        <a href="/register"
-                            class="bg-brand-600 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-bold shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition-all">Inscription</a>
-                        {% endif %}
-                    </div>
-
-
-                    <!-- Mobile Install Button -->
-                    <div class="md:hidden relative group">
-                        <button
-                            class="p-2 rounded-md text-slate-600 hover:text-brand-600 hover:bg-slate-100 focus:outline-none">
-                            <i class="ph ph-download-simple text-2xl"></i>
+                    <div class="flex items-center gap-2">
+                        <!-- Global Search / Filter Toggle -->
+                        <button id="top-bar-search-btn"
+                            class="p-2 text-slate-500 hover:text-brand-600 transition-colors rounded-full hover:bg-slate-50 focus:outline-none"
+                            title="Rechercher / Filtrer">
+                            <i class="ph-bold ph-magnifying-glass text-xl"></i>
                         </button>
-                        <!-- Tooltip -->
-                        <div
-                            class="absolute right-0 top-full mt-2 w-32 bg-slate-800 text-white text-xs font-bold py-1 px-2 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none text-center transform -translate-x-2">
-                            Installer l'app
-                        </div>
+                        <!-- Script for Search Button Logic -->
+                        <script>
+                            document.getElementById('top-bar-search-btn').addEventListener('click', () => {
+                                if (window.location.pathname === '/explore') {
+                                    // Dispatch event for index.html to handle
+                                    window.dispatchEvent(new CustomEvent('toggle-explore-filters'));
+                                } else {
+                                    window.location.href = '/explore';
+                                }
+                            });
+                        </script>
                     </div>
 
-                    <!-- Mobile Menu Button -->
-                    <button id="mobile-menu-btn"
-                        class="md:hidden p-2 rounded-md text-slate-600 hover:text-brand-600 hover:bg-slate-100 focus:outline-none">
-                        <i class="ph ph-list text-2xl"></i>
-                    </button>
+                    <!-- Right Side (User or Login) -->
+                    <div class="flex items-center gap-2 md:gap-4">
 
+                        <!-- Auth Links (Always Visible) -->
+                        <div class="flex items-center gap-2 md:gap-4">
+                            {% if user %}
+                            {% if user.is_admin %}
+                            <a href="/superadmin"
+                                class="relative text-sm font-bold text-slate-700 mr-2 hover:text-brand-600 flex items-center gap-1">
+                                <i class="ph-bold ph-shield-check text-lg"></i>
+                                <span class="hidden md:inline">Admin</span>
+                                <span id="admin-badge"
+                                    class="hidden absolute -top-1 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">0</span>
+                            </a>
+                            {% endif %}
+                            <a href="/profile" class="flex items-center gap-2 group">
+                                {% if user.profile_picture %}
+                                <img src="{{ user.profile_picture }}" alt="{{ user.username }}"
+                                    class="w-8 h-8 rounded-full object-cover border border-slate-200 group-hover:border-brand-500 transition-colors">
+                                {% else %}
+                                <div
+                                    class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-xs border border-slate-200 group-hover:bg-brand-50 group-hover:text-brand-600 transition-colors">
+                                    {{ user.username[:1].upper() }}
+                                </div>
+                                {% endif %}
+                                <span
+                                    class="text-sm font-bold text-slate-700 hover:text-brand-600 truncate max-w-[100px] md:max-w-none hidden md:inline">{{
+                                    user.username }}</span>
+                            </a>
+                            <a href="/logout"
+                                class="text-xs md:text-sm font-medium text-red-500 hover:text-red-600 transition-colors">
+                                <span class="hidden md:inline">Déconnexion</span>
+                                <span class="md:hidden">Sortir</span>
+                            </a>
+                            {% else %}
+                            <a href="/login"
+                                class="text-sm font-bold text-slate-600 hover:text-brand-600 transition-colors">Connexion</a>
+                            <a href="/register"
+                                class="bg-brand-600 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-bold shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition-all">Inscription</a>
+                            {% endif %}
+                        </div>
+
+
+
+
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Mobile Menu (Hidden by default) -->
-        <div id="mobile-menu"
-            class="hidden md:hidden bg-white border-t border-slate-100 absolute w-full left-0 top-16 shadow-lg z-40">
-            <div class="px-4 pt-2 pb-6 space-y-1">
-                <a href="/explore"
-                    class="block px-3 py-3 rounded-md text-base font-medium text-slate-700 hover:text-brand-600 hover:bg-brand-50">Explorer</a>
-                <a href="/map"
-                    class="block px-3 py-3 rounded-md text-base font-medium text-slate-700 hover:text-brand-600 hover:bg-brand-50">Carte
-                    Globale</a>
-                <a href="/upload"
-                    class="block px-3 py-3 rounded-md text-base font-medium text-slate-700 hover:text-brand-600 hover:bg-brand-50">Importer
-                    une Trace</a>
-                <a href="/import/suunto"
-                    class="block px-3 py-3 rounded-md text-base font-medium text-slate-700 hover:text-brand-600 hover:bg-brand-50">Créer
-                    (Suunto)</a>
-            </div>
-        </div>
 
-        <script>
-            const btn = document.getElementById('mobile-menu-btn');
-            const menu = document.getElementById('mobile-menu');
-            if (btn && menu) {
-                btn.addEventListener('click', () => {
-                    menu.classList.toggle('hidden');
-                });
-            }
-        </script>
     </nav>
 
     <!-- Main Content -->
@@ -191,6 +154,41 @@
             <p class="text-slate-700 text-xs">v{{ version }}</p>
         </div>
     </footer>
+
+    <!-- Bottom Navigation Bar (Fixed) -->
+    <nav class="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 z-50 pb-[env(safe-area-inset-bottom)]">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-around items-center h-16">
+                <!-- Explorer -->
+                <a href="/explore"
+                    class="flex flex-col items-center justify-center w-full h-full text-slate-400 hover:text-brand-600 active:text-brand-600 transition-colors group"
+                    title="Explorer">
+                    <i class="ph-bold ph-compass text-3xl group-hover:scale-110 transition-transform"></i>
+                </a>
+
+                <!-- Carte -->
+                <a href="/map"
+                    class="flex flex-col items-center justify-center w-full h-full text-slate-400 hover:text-brand-600 active:text-brand-600 transition-colors group"
+                    title="Carte">
+                    <i class="ph-bold ph-globe-hemisphere-west text-3xl group-hover:scale-110 transition-transform"></i>
+                </a>
+
+                <!-- Importer -->
+                <a href="/upload"
+                    class="flex flex-col items-center justify-center w-full h-full text-slate-400 hover:text-brand-600 active:text-brand-600 transition-colors group"
+                    title="Importer">
+                    <i class="ph-bold ph-upload-simple text-3xl group-hover:scale-110 transition-transform"></i>
+                </a>
+
+                <!-- Créer -->
+                <a href="/import/suunto"
+                    class="flex flex-col items-center justify-center w-full h-full text-slate-400 hover:text-brand-600 active:text-brand-600 transition-colors group"
+                    title="Créer">
+                    <i class="ph-bold ph-path text-3xl group-hover:scale-110 transition-transform"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
 
     <!-- Scripts -->
     <script>
