@@ -36,7 +36,8 @@
                             <label for="profile-upload"
                                 class="text-xs text-brand-600 font-bold cursor-pointer hover:underline">Modifier</label>
                             <p class="text-[10px] text-slate-400 mt-1">Recommandé : Carré 500x500px, JPG/PNG.
-                                <br>Auto-recadrage activé.</p>
+                                <br>Auto-recadrage activé.
+                            </p>
                         </div>
                     </div>
 
@@ -97,6 +98,34 @@
                         <input type="url" name="strava_url" value="{{ user.strava_url or '' }}"
                             placeholder="https://www.strava.com/athletes/..."
                             class="w-full rounded-lg border-slate-200 text-sm focus:border-brand-500 focus:ring-brand-500">
+                    </div>
+
+                    <!-- Notification Preferences -->
+                    <div class="pt-4 border-t border-slate-100">
+                        <h4 class="text-sm font-bold text-slate-900 mb-3">Notifications</h4>
+                        <div class="space-y-2">
+                            <label class="flex items-center space-x-3">
+                                <input type="checkbox" name="notify_newsletter" value="true" {% if not
+                                    user.notification_preferences or user.notification_preferences.get('newsletter',
+                                    True) %}checked{% endif %}
+                                    class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 rounded">
+                                <span class="text-sm text-slate-700">Newsletter & Mises à jour</span>
+                            </label>
+                            <label class="flex items-center space-x-3">
+                                <input type="checkbox" name="notify_messages" value="true" {% if not
+                                    user.notification_preferences or user.notification_preferences.get('messages', True)
+                                    %}checked{% endif %}
+                                    class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 rounded">
+                                <span class="text-sm text-slate-700">Nouveaux messages</span>
+                            </label>
+                            <label class="flex items-center space-x-3">
+                                <input type="checkbox" name="notify_tracks" value="true" {% if not
+                                    user.notification_preferences or user.notification_preferences.get('tracks', True)
+                                    %}checked{% endif %}
+                                    class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 rounded">
+                                <span class="text-sm text-slate-700">Nouvelles traces</span>
+                            </label>
+                        </div>
                     </div>
 
                     <!-- Performance Stats -->

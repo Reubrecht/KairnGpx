@@ -102,6 +102,10 @@ class User(Base):
     # Email Verification
     is_email_verified = Column(Boolean, default=False)
     email_verification_token = Column(String, nullable=True)
+    
+    # Notifications
+    notification_preferences = Column(JSON, default=lambda: {"newsletter": True, "messages": True, "tracks": True})
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Profile

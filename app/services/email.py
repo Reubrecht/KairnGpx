@@ -121,3 +121,22 @@ class EmailService:
         )
         
         return self.send_email(to_email, "Vérifiez votre compte MyKairn", html)
+
+    def send_bulk_email(self, recipients: list[str], subject: str, message: str):
+        """
+        Sends an email to multiple recipients (BCC style or individual loop).
+        For simplicity and better deliverability tracking, we'll loop.
+        """
+        success_count = 0
+        
+        # Prepare content once
+        html_content = self._get_html_template(
+            title=subject,
+            body_content=message
+        )
+        
+        for email in recipients:
+            if self.send_email(email, subject, html_content):
+                success_count += 1
+                
+        return success_count

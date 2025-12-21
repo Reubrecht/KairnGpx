@@ -45,6 +45,11 @@ async def update_profile(
     location_country: Optional[str] = Form(None),
     location_lat: Optional[float] = Form(None),
     location_lon: Optional[float] = Form(None),
+
+    # Notifications
+    notify_newsletter: Optional[bool] = Form(False),
+    notify_messages: Optional[bool] = Form(False),
+    notify_tracks: Optional[bool] = Form(False),
     
     db: Session = Depends(get_db)
 ):
@@ -83,7 +88,21 @@ async def update_profile(
     if location_lon is not None: user.location_lon = location_lon
     if location_city is not None: user.location_city = location_city
     if location_region is not None: user.location_region = location_region
+    if location_region is not None: user.location_region = location_region
     if location_country is not None: user.location_country = location_country
+
+    # Update Notifications
+    # We construct the JSON object. Since HTML checkboxes only send value if checked,
+    # and we default to False in args, this works for unchecking.
+    # Note: If form didn't include them at all (e.g. from a different form), we might overwrite with False.
+    # But this is the main profile form.
+    user.notification_preferences = {
+        "newsletter": notify_newsletter,
+        "messages": notify_messages,
+        "tracks": notify_tracks
+    }
+    from sqlalchemy.orm.attributes import flag_modified
+    flag_modified(user, "notification_preferences")
     
     db.commit()
     

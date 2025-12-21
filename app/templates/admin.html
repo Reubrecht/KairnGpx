@@ -13,26 +13,61 @@
     </div>
 
     <!-- Users Management -->
-    <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-12">
-        <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-12" x-data="{ selectedUsers: [], allSelected: false }">
+        <div class="px-4 py-5 sm:px-6 border-b border-gray-200 flex justify-between items-center">
             <h3 class="text-lg leading-6 font-medium text-gray-900">Utilisateurs ({{ users|length }})</h3>
+
+            <!-- Bulk Actions -->
+            <div x-show="selectedUsers.length > 0" class="flex items-center gap-4" x-transition>
+                <span class="text-sm text-gray-500"><span x-text="selectedUsers.length"></span> sélectionné(s)</span>
+                <button @click="$dispatch('open-email-modal')"
+                    class="bg-brand-600 text-white px-3 py-1.5 rounded-md text-sm font-bold shadow-sm hover:bg-brand-700 transition-colors">
+                    Envoyer un email
+                </button>
+            </div>
         </div>
         <ul role="list" class="divide-y divide-gray-200">
+            <!-- Header for Select All -->
+            <li class="px-4 py-2 bg-gray-50 flex items-center">
+                <div class="flex items-center ml-1">
+                    <input type="checkbox"
+                        @change="allSelected = !allSelected; selectedUsers = allSelected ? [{% for u in users %}'{{u.id}}',{% endfor %}] : []"
+                        class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 rounded">
+                </div>
+                <div class="ml-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Tout sélectionner</div>
+            </li>
+
             {% for u in users %}
-            <li class="px-4 py-4 sm:px-6 flex justify-between items-center">
+            <li class="px-4 py-4 sm:px-6 flex justify-between items-center hover:bg-gray-50 transition-colors">
                 <div class="flex items-center">
-                    <div class="text-sm font-medium text-brand-600 truncate">{{ u.username }}</div>
-                    <div class="ml-2 flex-shrink-0 flex">
-                        <p
-                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                            {{ u.email }}
-                        </p>
-                        {% if u.is_admin %}
-                        <p
-                            class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                            Admin
-                        </p>
-                        {% endif %}
+                    <div class="flex items-center h-5">
+                        <input type="checkbox" value="{{ u.id }}" x-model="selectedUsers"
+                            class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 rounded">
+                    </div>
+                    <div class="ml-4">
+                        <div class="text-sm font-medium text-brand-600 truncate">{{ u.username }}</div>
+                        <div class="flex items-center mt-1">
+                            <p
+                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                {{ u.email }}
+                            </p>
+                            {% if u.is_admin %}
+                            <p
+                                class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                Admin
+                            </p>
+                            {% endif %}
+
+                            <!-- Prefs Indicator (Optional) -->
+                            {% if u.notification_preferences %}
+                            <div class="ml-2 flex gap-1">
+                                {% if not u.notification_preferences.get('newsletter') %}
+                                <span class="text-[10px] text-gray-400 border border-gray-200 px-1 rounded"
+                                    title="Désabonné Newsletter">No News</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
                 <div class="flex space-x-2">
@@ -47,6 +82,53 @@
             </li>
             {% endfor %}
         </ul>
+
+        <!-- Email Modal -->
+        <div x-data="{ open: false }" @open-email-modal.window="open = true" @keydown.escape.window="open = false"
+            x-show="open" class="fixed z-50 inset-0 overflow-y-auto" style="display: none;">
+            <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+                    <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+                </div>
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                <div
+                    class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                    <form action="/api/admin/send_email" method="POST">
+                        <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Envoyer un email groupé</h3>
+                            <input type="hidden" name="user_ids" :value="selectedUsers.join(',')">
+
+                            <div class="mb-4">
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Sujet</label>
+                                <input type="text" name="subject" required
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Message (HTML
+                                    supporté)</label>
+                                <textarea name="message" rows="6" required
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"></textarea>
+                            </div>
+
+                            <div class="bg-blue-50 p-3 rounded text-xs text-blue-700">
+                                <p>L'email sera envoyé à <span x-text="selectedUsers.length" class="font-bold"></span>
+                                    destinataires.</p>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                            <button type="submit"
+                                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                                Envoyer
+                            </button>
+                            <button type="button" @click="open = false"
+                                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                                Annuler
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Tracks Management -->

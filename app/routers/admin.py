@@ -13,6 +13,7 @@ from ..services.prediction_config_manager import PredictionConfigManager
 from ..services.import_service import process_race_import
 from ..services.analytics import GpxAnalytics
 from ..services.ai_analyzer import AiAnalyzer
+from ..services.email import EmailService
 
 router = APIRouter()
 
@@ -43,6 +44,29 @@ async def api_normalize_event(
     analyzer = AiAnalyzer()
     normalized = analyzer.normalize_event(name, region, website, description)
     return normalized
+
+@router.post("/api/admin/send_email")
+async def api_send_email(
+    user_ids: str = Form(...), # Comma separated IDs
+    subject: str = Form(...),
+    message: str = Form(...),
+    current_user: models.User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    ids = [int(id.strip()) for id in user_ids.split(",") if id.strip().isdigit()]
+    
+    # Fetch users with emails
+    recipients = db.query(models.User.email).filter(
+        models.User.id.in_(ids),
+        models.User.email.isnot(None)
+    ).all()
+    
+    recipient_emails = [r[0] for r in recipients]
+    
+    email_service = EmailService()
+    count = email_service.send_bulk_email(recipient_emails, subject, message)
+    
+    return RedirectResponse(url=f"/admin?success=Sent {count} emails", status_code=303)
 
 @router.get("/api/admin/pending_count")
 async def get_pending_count(
