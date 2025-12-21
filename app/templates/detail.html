@@ -206,6 +206,10 @@
                                 (reviews|length) + (executions|length) }}</span>
                             {% endif %}
                         </button>
+                        <button onclick="switchTab('roadbook')" id="tab-roadbook"
+                            class="border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors">
+                            <i class="ph-fill ph-book-open-text"></i> Roadbook
+                        </button>
                     </nav>
                 </div>
 
@@ -626,6 +630,115 @@
                 </div>
             </div>
 
+            <!-- TAB CONTENT: ROADBOOK -->
+            <div id="content-roadbook" class="hidden animate-in fade-in duration-300">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- INPUTS COLUMN -->
+                    <div class="lg:col-span-1 space-y-6">
+                        <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                            <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <i class="ph-fill ph-sliders-horizontal"></i> Paramètres
+                            </h3>
+                            <!-- Target Time -->
+                            <div class="mb-5">
+                                <label class="block text-sm font-bold text-slate-700 mb-2">Objectif (Temps)</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="number" id="target-h" value="10" min="0"
+                                        class="w-20 rounded-lg border-slate-300 focus:border-brand-500 focus:ring-brand-500 text-center font-mono font-bold"
+                                        placeholder="HH">
+                                    <span class="text-slate-400 font-bold">:</span>
+                                    <input type="number" id="target-m" value="00" min="0" max="59"
+                                        class="w-20 rounded-lg border-slate-300 focus:border-brand-500 focus:ring-brand-500 text-center font-mono font-bold"
+                                        placeholder="MM">
+                                </div>
+                                <p class="text-xs text-slate-500 mt-2">Temps total espéré.</p>
+                            </div>
+                            <!-- Start Time -->
+                            <div class="mb-5">
+                                <label class="block text-sm font-bold text-slate-700 mb-2">Heure de Départ</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="number" id="start-h" value="6" min="0" max="23"
+                                        class="w-full rounded-lg border-slate-300 focus:border-brand-500 focus:ring-brand-500 text-center font-mono"
+                                        placeholder="HH">
+                                    <span class="text-slate-400 font-bold">h</span>
+                                    <input type="number" id="start-m" value="00" min="0" max="59"
+                                        class="w-full rounded-lg border-slate-300 focus:border-brand-500 focus:ring-brand-500 text-center font-mono"
+                                        placeholder="MM">
+                                </div>
+                            </div>
+                            <!-- ACTIONS -->
+                            <div class="flex flex-col gap-3 mt-8">
+                                <button onclick="calculateRoadbook()"
+                                    class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-brand-200 flex items-center justify-center gap-2">
+                                    <i class="ph-bold ph-calculator"></i> Calculer
+                                </button>
+                                <button onclick="exportRoadbook()"
+                                    class="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
+                                    <i class="ph-bold ph-file-png"></i> Exporter Image
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- WAYPOINTS MANAGEMENT -->
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                            <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <i class="ph-fill ph-flag"></i> Points de passage
+                            </h3>
+                            <div id="waypoints-list" class="space-y-3 mb-4">
+                                <!-- Dynamic List -->
+                            </div>
+                            <div class="pt-4 border-t border-slate-100">
+                                <label class="block text-xs font-bold text-slate-500 mb-2">Ajouter un point (KM)</label>
+                                <div class="flex gap-2">
+                                    <input type="number" id="new-wp-km" step="0.1" placeholder="Ex: 12.5"
+                                        class="w-24 rounded-lg border-slate-300 text-sm">
+                                    <input type="text" id="new-wp-name" placeholder="Nom (Refuge...)"
+                                        class="flex-1 rounded-lg border-slate-300 text-sm">
+                                    <button onclick="addWaypoint()"
+                                        class="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-lg">
+                                        <i class="ph-bold ph-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RESULTS COLUMN -->
+                    <div class="lg:col-span-2">
+                        <div
+                            class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[500px]">
+                            <div
+                                class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+                                <h3 class="font-bold text-slate-800">Résultats</h3>
+                                <span class="text-xs font-mono text-slate-500" id="result-meta">Prêt à calculer</span>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm text-left">
+                                    <thead
+                                        class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-100">
+                                        <tr>
+                                            <th class="px-6 py-3 font-bold">Lieu</th>
+                                            <th class="px-6 py-3 font-bold text-right">Km</th>
+                                            <th class="px-6 py-3 font-bold text-right">D+ Cumul</th>
+                                            <th class="px-6 py-3 font-bold text-right text-brand-600">Temps</th>
+                                            <th class="px-6 py-3 font-bold text-right">Heure</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="roadbook-results-body" class="divide-y divide-slate-100">
+                                        <!-- JS Content -->
+                                        <tr>
+                                            <td colspan="5" class="px-6 py-12 text-center text-slate-400 italic">
+                                                Configurez vos objectifs et lancez le calcul.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -672,7 +785,8 @@
         document.getElementById('content-community').classList.remove('block');
 
         // Reset Tab Styles
-        const tabs = ['details', 'community'];
+        // Reset Tab Styles
+        const tabs = ['details', 'community', 'roadbook'];
         tabs.forEach(t => {
             const btn = document.getElementById('tab-' + t);
             btn.classList.remove('border-brand-500', 'text-brand-600', 'font-bold');
@@ -799,6 +913,172 @@
             `;
         }).join('');
     }
+
+    // --- ROADBOOK LOGIC ---
+    let waypoints = [
+        // { km: 0, name: "Départ", userDefined: false }
+        // { km: TRACK_TOTAL_KM, name: "Arrivée", userDefined: false }
+    ]; // We will init this on load
+    const TRACK_ID = {{ track.id }};
+    const TRACK_TOTAL_KM = {{ track.distance_km }};
+
+    function initRoadbook() {
+        // Init default waypoints if empty
+        if (waypoints.length === 0) {
+            // waypoints.push({ km: 0, name: "Départ", userDefined: false });
+            // waypoints.push({ km: TRACK_TOTAL_KM, name: "Arrivée", userDefined: false });
+            // Render
+            renderWaypointsList();
+        }
+    }
+
+    function renderWaypointsList() {
+        const list = document.getElementById('waypoints-list');
+        // Sort
+        waypoints.sort((a, b) => a.km - b.km);
+
+        list.innerHTML = waypoints.map((wp, idx) => `
+            <div class="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100 group">
+                <div class="flex items-center gap-3">
+                    <span class="font-mono font-bold text-slate-500 text-xs w-12 text-right">${wp.km} km</span>
+                    <span class="font-bold text-slate-700 text-sm truncate max-w-[120px]" title="${wp.name}">${wp.name}</span>
+                </div>
+                
+                    <button onclick="removeWaypoint(${idx})" class="text-slate-300 hover:text-red-500 px-2">
+                        <i class="ph-fill ph-trash"></i>
+                    </button>
+                
+            </div>
+        `).join('');
+    }
+
+    function addWaypoint() {
+        const kmInput = document.getElementById('new-wp-km');
+        const nameInput = document.getElementById('new-wp-name');
+
+        const km = parseFloat(kmInput.value);
+        const name = nameInput.value || `Point ${km}km`;
+
+        if (isNaN(km) || km < 0 || km > TRACK_TOTAL_KM) {
+            alert("Kilométrage invalide (Max: " + TRACK_TOTAL_KM + "km)");
+            return;
+        }
+
+        waypoints.push({ km: km, name: name, type: 'ravito' });
+        renderWaypointsList();
+
+        // Reset inputs
+        kmInput.value = '';
+        nameInput.value = '';
+    }
+
+    function removeWaypoint(idx) {
+        waypoints.splice(idx, 1);
+        renderWaypointsList();
+    }
+
+    async function calculateRoadbook() {
+        const h = parseInt(document.getElementById('target-h').value) || 0;
+        const m = parseInt(document.getElementById('target-m').value) || 0;
+        const totalMin = (h * 60) + m;
+
+        if (totalMin <= 0) {
+            alert("Veuillez définir un temps objectif > 0");
+            return;
+        }
+
+        const startH = parseInt(document.getElementById('start-h').value) || 6;
+        const startM = parseInt(document.getElementById('start-m').value) || 0;
+        const startHourDecimal = startH + (startM / 60.0);
+
+        // Prep Payload
+        const payload = {
+            track_id: TRACK_ID,
+            target_time_minutes: totalMin,
+            start_time_hour: startHourDecimal,
+            waypoints: waypoints
+        };
+
+        // Loader
+        document.getElementById('roadbook-results-body').innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-slate-500"><div class="animate-spin inline-block w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full mb-2"></div><br>Calcul en cours...</td></tr>`;
+
+        try {
+            const res = await fetch('/api/strategy/calculate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) throw new Error("Erreur calcul");
+
+            const data = await res.json();
+            renderResults(data);
+
+        } catch (e) {
+            console.error(e);
+            alert("Erreur lors du calcul: " + e.message);
+        }
+    }
+
+    function renderResults(data) {
+        const tbody = document.getElementById('roadbook-results-body');
+        const points = data.points;
+
+        tbody.innerHTML = points.map(p => `
+            <tr class="hover:bg-slate-50 transition-colors">
+                <td class="px-6 py-4 font-bold text-slate-800">${p.name}</td>
+                <td class="px-6 py-4 text-right font-mono text-slate-600">${p.km}</td>
+                <td class="px-6 py-4 text-right font-mono text-slate-600">+${p.d_plus_cumul}m</td>
+                <td class="px-6 py-4 text-right font-mono font-black text-brand-600">${p.time_race}</td>
+                <td class="px-6 py-4 text-right font-mono text-slate-800 bg-slate-50/50">${p.time_day}</td>
+            </tr>
+        `).join('');
+
+        document.getElementById('result-meta').textContent = "Calcul effectué (Scientific Method)";
+    }
+
+    async function exportRoadbook() {
+        const h = parseInt(document.getElementById('target-h').value) || 0;
+        const m = parseInt(document.getElementById('target-m').value) || 0;
+        const totalMin = (h * 60) + m;
+
+        const startH = parseInt(document.getElementById('start-h').value) || 6;
+        const startM = parseInt(document.getElementById('start-m').value) || 0;
+        const startHourDecimal = startH + (startM / 60.0);
+
+        const payload = {
+            track_id: TRACK_ID,
+            target_time_minutes: totalMin,
+            start_time_hour: startHourDecimal,
+            waypoints: waypoints
+        };
+
+        try {
+            const res = await fetch('/api/strategy/export', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) throw new Error("Erreur export");
+
+            // Download Blob
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "roadbook_{{track.slug}}.png";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+
+        } catch (e) {
+            alert("Erreur export: " + e.message);
+        }
+    }
+
+    // Auto Init
+    initRoadbook();
 
     function selectStravaActivity(activity) {
         // Fill Form

@@ -432,5 +432,35 @@ class TrackExecution(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     track = relationship("Track", back_populates="executions")
-    user = relationship("User", back_populates="executions")
+
+class PacingMethod(str, enum.Enum):
+    TARGET_TIME = "TARGET_TIME"
+    CONSTANT_PACE = "CONSTANT_PACE"
+    FATIGUE_DRIFT = "FATIGUE_DRIFT"
+
+
+class RaceStrategy(Base):
+    __tablename__ = "race_strategies"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    track_id = Column(Integer, ForeignKey("tracks.id"))
+    
+    title = Column(String, default="Ma Stratégie")
+    target_time_minutes = Column(Integer, nullable=True) # E.g. 900 for 15h
+    pacing_method = Column(Enum(PacingMethod), default=PacingMethod.TARGET_TIME)
+    
+    # JSON list of points: [{ "km": 12.5, "name": "Refuge", "type": "ravito" }, ...]
+    points = Column(JSON, default=[]) 
+    
+    # Store other params like start time (datetime or time string), fatigue factors etc.
+    # e.g. { "start_time": "06:00", "fatigue_factor": 1.05 }
+    global_params = Column(JSON, default={})
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User", backref="strategies")
+    track = relationship("Track", backref="strategies")
+
 

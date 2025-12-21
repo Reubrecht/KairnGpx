@@ -5,7 +5,8 @@ from dotenv import load_dotenv
 
 from . import models, database
 from .version import __version__ as app_version
-from .routers import auth, pages, tracks, users, races, admin, strava_auth, webhooks, event_manager
+
+from .routers import auth, pages, tracks, users, races, admin, strava_auth, webhooks, event_manager, strategy
 
 if os.path.exists("local.env"):
     load_dotenv("local.env")
@@ -28,5 +29,6 @@ app.include_router(races.router)
 app.include_router(admin.router)
 app.include_router(event_manager.router)
 app.include_router(webhooks.router)
+app.include_router(strategy.router)
 
 # Note: Templates are configured in dependencies.py and used in routers
