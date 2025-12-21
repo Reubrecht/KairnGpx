@@ -44,6 +44,21 @@ async def api_normalize_event(
     normalized = analyzer.normalize_event(name, region, website, description)
     return normalized
 
+@router.get("/api/admin/pending_count")
+async def get_pending_count(
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_admin)
+):
+    pending_tracks_count = db.query(models.Track).filter(
+        models.Track.verification_status == models.VerificationStatus.PENDING
+    ).count()
+    
+    pending_events_count = db.query(models.EventRequest).filter(
+        models.EventRequest.status == "PENDING"
+    ).count()
+    
+    return {"count": pending_tracks_count + pending_events_count}
+
 # --- SUPER ADMIN : DB TOOL ---
 
 @router.get("/api/admin/db/tables")

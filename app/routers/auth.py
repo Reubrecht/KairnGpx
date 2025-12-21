@@ -91,7 +91,6 @@ def register(
                 ext = profile_picture.filename.split('.')[-1].lower()
                 if ext in ['jpg', 'jpeg', 'png', 'webp', 'gif']:
                     # Use UUID for filename to avoid caching issues
-                    import uuid
                     new_filename = f"{uuid.uuid4()}.{ext}"
                     file_path = upload_dir / new_filename
                     
