@@ -432,6 +432,7 @@ class TrackExecution(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     track = relationship("Track", back_populates="executions")
+    user = relationship("User", back_populates="executions")
 
 class PacingMethod(str, enum.Enum):
     TARGET_TIME = "TARGET_TIME"
