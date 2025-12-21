@@ -87,10 +87,10 @@
                         <script>
                             document.addEventListener('DOMContentLoaded', () => {
                                 document.getElementById('drop-zone').classList.add('hidden');
-                                document.getElementById('title-input').value = {{ staged_file.name | tojson }};;
+                                document.getElementById('title-input').value = {{ staged_file.name | tojson }
+                            };
 
                             const desc = {{ staged_file.description | default ('') | tojson }};
-                            }};
                             if (desc) {
                                 document.getElementById('desc-input').value = desc;
                             }
