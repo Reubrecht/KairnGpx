@@ -454,7 +454,7 @@ async def upload_form(request: Request, db: Session = Depends(get_db), race_rout
 
     race_events = db.query(models.RaceEvent).order_by(models.RaceEvent.name).all()
 
-    return templates.TemplateResponse("upload_fixed.html", {
+    return templates.TemplateResponse("upload.html", {
         "request": request,
         "status_options": [],
         "technicity_options": [],
@@ -570,7 +570,7 @@ async def upload_form(
 
     race_events = db.query(models.RaceEvent).order_by(models.RaceEvent.name).all()
 
-    return templates.TemplateResponse("upload_fixed.html", {
+    return templates.TemplateResponse("upload.html", {
         "request": request,
         "status_options": [],
         "technicity_options": [],
@@ -623,7 +623,7 @@ async def upload_track(
 
     existing_track = db.query(models.Track).filter(models.Track.file_hash == file_hash).first()
     if existing_track:
-        return templates.TemplateResponse("upload_fixed.html", {
+        return templates.TemplateResponse("upload.html", {
             "request": request,
             "error": f"Cette trace existe déjà : '{existing_track.title}' (importée le {existing_track.created_at.strftime('%d/%m/%Y')})",
             "user": current_user,
