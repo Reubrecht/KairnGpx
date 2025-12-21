@@ -3,7 +3,6 @@
 {% block content %}
 <div class="min-h-[calc(100vh-64px)] bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-3xl mx-auto">
-
         <div class="text-center mb-10">
             <h1 class="text-4xl font-extrabold text-slate-900 tracking-tight">Importer une Trace</h1>
             <p class="mt-2 text-lg text-slate-600">Partagez votre aventure avec la communauté Kairn.</p>
@@ -28,16 +27,7 @@
                 </div>
             </div>
             {% endif %}
-            <form action="/upload" method="post" enctype="multipart/form-data" class="divide-y divide-slate-100" x-data="{ 
-                      activityStatus: 'TRAINING',
-                      isRace: {{ 'true' if prefill_race else 'false' }},
-                      checkStatus(val) {
-                          this.activityStatus = val;
-                          if (val === 'OFFICIAL_RACE') this.isRace = true;
-                      }
-                  }">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-
+            <form action="/upload" method="post" enctype="multipart/form-data" class="divide-y divide-slate-100">
                 {% if prefill_race %}
                 <input type="hidden" name="linked_race_route_id" value="{{ prefill_race.id }}">
                 {% endif %}
@@ -97,9 +87,6 @@
                         <script>
                             document.addEventListener('DOMContentLoaded', () => {
                                 document.getElementById('drop-zone').classList.add('hidden');
-                                const fileInput = document.getElementById('file');
-                                if (fileInput) fileInput.removeAttribute('required');
-
                                 document.getElementById('title-input').value = {{ staged_file.name | tojson }
                             };
 
