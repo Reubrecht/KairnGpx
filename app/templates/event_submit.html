@@ -473,8 +473,8 @@
 
 {% block scripts %}
 <!-- Track Picker Modal -->
-<dialog id="modal-track-picker" class="modal rounded-2xl shadow-2xl backdrop:backdrop-blur-sm m-auto max-w-2xl w-full">
-    <div class="bg-white" x-data="{ 
+<dialog id="modal-track-picker" class="modal rounded-2xl shadow-2xl backdrop:backdrop-blur-sm m-auto max-w-2xl w-full"
+    x-data="{ 
         query: '', 
         tracks: [], 
         loading: false, 
@@ -508,8 +508,8 @@
             form.submit();
         }
     }"
-        @open-track-picker.window="routeId = $event.detail.id; routeName = $event.detail.name; $el.showModal(); query=''; tracks=[]; search()">
-
+    @open-track-picker.window="routeId = $event.detail.id; routeName = $event.detail.name; $el.showModal(); query=''; tracks=[]; search()">
+    <div class="bg-white">
         <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
             <div>
                 <h3 class="font-bold text-lg text-slate-800">Lier une trace</h3>

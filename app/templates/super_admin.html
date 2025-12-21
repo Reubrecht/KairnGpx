@@ -917,16 +917,49 @@
                     <i class="ph-duotone ph-envelope-open text-brand-600"></i> Messagerie
                 </h2>
 
-                <div class="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm max-w-2xl">
-                    <form action="/superadmin/email/send" method="POST" class="space-y-6">
+                <div class="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm max-w-2xl" x-data="{
+                    selectedUsers: [],
+                    userSearch: '',
+                    removeUser(id) {
+                        this.selectedUsers = this.selectedUsers.filter(u => u.id !== id);
+                    },
+                    submitForm(e) {
+                         const ids = this.selectedUsers.map(u => u.id).join(',');
+                         if(!ids) {
+                             alert('Veuillez sélectionner au moins un destinataire.');
+                             e.preventDefault();
+                             return;
+                         }
+                         document.getElementById('hidden-user-ids').value = ids;
+                    }
+                }">
+                    <form action="/api/admin/send_email" method="POST" class="space-y-6" @submit="submitForm">
+                        <input type="hidden" name="user_ids" id="hidden-user-ids">
+
                         <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-2">Destinataire</label>
-                            <div class="relative">
-                                <i class="ph-bold ph-at absolute left-3 top-3 text-slate-400"></i>
-                                <input type="email" name="recipient" placeholder="client@exemple.com" required
-                                    class="w-full pl-10 pr-4 py-2.5 rounded-xl border-slate-200 focus:border-brand-500 focus:ring-brand-500 transition-shadow">
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Destinataires</label>
+
+                            <!-- Selected Chips -->
+                            <div
+                                class="flex flex-wrap gap-2 mb-3 min-h-[40px] p-2 bg-slate-50 rounded-xl border border-slate-200">
+                                <template x-for="u in selectedUsers" :key="u.id">
+                                    <span
+                                        class="bg-white border border-slate-200 text-slate-700 px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm">
+                                        <span x-text="u.username"></span>
+                                        <button type="button" @click="removeUser(u.id)"
+                                            class="text-slate-400 hover:text-red-500 ml-1"><i
+                                                class="ph-bold ph-x"></i></button>
+                                    </span>
+                                </template>
+                                <span x-show="selectedUsers.length === 0"
+                                    class="text-slate-400 text-xs italic py-1 self-center">Aucun destinataire
+                                    sélectionné</span>
                             </div>
-                            <p class="text-xs text-slate-400 mt-1">Entrez l'adresse email complète du destinataire.</p>
+
+                            <button type="button" onclick="document.getElementById('modal-select-users').showModal()"
+                                class="w-full py-2.5 rounded-xl border-2 border-dashed border-slate-300 text-slate-500 font-bold hover:border-brand-500 hover:text-brand-600 hover:bg-brand-50 transition-colors flex items-center justify-center gap-2">
+                                <i class="ph-bold ph-plus"></i> Ajouter des destinataires
+                            </button>
                         </div>
 
                         <div>
@@ -939,7 +972,7 @@
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Message</label>
                             <div class="relative">
-                                <textarea name="content" rows="8" placeholder="Bonjour, ..." required
+                                <textarea name="message" rows="8" placeholder="Bonjour, ..." required
                                     class="w-full px-4 py-3 rounded-xl border-slate-200 focus:border-brand-500 focus:ring-brand-500 transition-shadow font-mono text-sm"></textarea>
                                 <div class="absolute bottom-3 right-3 text-xs text-slate-400 pointer-events-none">HTML
                                     supporté
@@ -960,6 +993,62 @@
                             </button>
                         </div>
                     </form>
+
+                    <!-- USER SELECTION MODAL (Inside x-data scope to share state easiest, or use global event bus. Let's put it here for direct access to selectedUsers) -->
+                    <dialog id="modal-select-users" class="modal">
+                        <div
+                            class="modal-box bg-white rounded-2xl p-6 w-11/12 max-w-2xl h-[80vh] flex flex-col fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 shadow-2xl z-50">
+                            <h3 class="font-bold text-lg mb-4 text-slate-900">Sélectionner des utilisateurs</h3>
+
+                            <input type="text" x-model="userSearch" placeholder="Rechercher..."
+                                class="w-full px-4 py-2 rounded-xl border-slate-200 mb-4 bg-slate-50 focus:bg-white transition-colors">
+
+                            <div class="flex-1 overflow-y-auto min-h-0 border border-slate-100 rounded-xl">
+                                <table class="w-full text-left text-sm">
+                                    <thead class="bg-slate-50 text-slate-500 font-bold sticky top-0  z-10">
+                                        <tr>
+                                            <th class="p-3 w-10"><i class="ph-bold ph-check"></i></th>
+                                            <th class="p-3">Utilisateur</th>
+                                            <th class="p-3">Email</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        {% for u in users %}
+                                        <tr x-show="!userSearch || '{{ u.username|lower }}'.includes(userSearch.toLowerCase()) || '{{ u.email|lower }}'.includes(userSearch.toLowerCase())"
+                                            class="hover:bg-brand-50 cursor-pointer transition-colors"
+                                            @click="const idx = selectedUsers.findIndex(x => x.id === {{ u.id }}); 
+                                                    if(idx >= 0) selectedUsers.splice(idx, 1); 
+                                                    else selectedUsers.push({id: {{ u.id }}, username: '{{ u.username }}', email: '{{ u.email }}'})">
+                                            <td class="p-3">
+                                                <div class="w-5 h-5 rounded border flex items-center justify-center transition-colors"
+                                                    :class="selectedUsers.find(x => x.id === {{ u.id }}) ? 'bg-brand-500 border-brand-500 text-white' : 'border-slate-300 text-transparent'">
+                                                    <i class="ph-bold ph-check text-xs"></i>
+                                                </div>
+                                            </td>
+                                            <td class="p-3 font-bold text-slate-700">{{ u.username }}</td>
+                                            <td class="p-3 text-slate-500 font-mono text-xs">{{ u.email }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div
+                                class="modal-action pt-4 flex justify-between items-center border-t border-slate-100 mt-4">
+                                <span class="text-xs font-bold text-slate-500"><span
+                                        x-text="selectedUsers.length"></span> sélectionnés</span>
+                                <div class="flex gap-2">
+                                    <button type="button"
+                                        onclick="document.getElementById('modal-select-users').close()"
+                                        class="btn btn-sm bg-brand-600 text-white hover:bg-brand-700 border-none rounded-lg px-4">Valider</button>
+                                </div>
+                            </div>
+                        </div>
+                        <form method="dialog" class="modal-backdrop fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
+                            onclick="document.getElementById('modal-select-users').close()">
+                            <button class="cursor-default w-full h-full">close</button>
+                        </form>
+                    </dialog>
                 </div>
             </div>
 

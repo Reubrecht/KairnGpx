@@ -66,7 +66,7 @@ async def api_send_email(
     email_service = EmailService()
     count = email_service.send_bulk_email(recipient_emails, subject, message)
     
-    return RedirectResponse(url=f"/admin?success=Sent {count} emails", status_code=303)
+    return RedirectResponse(url=f"/superadmin#email?success=Sent {count} emails", status_code=303)
 
 @router.get("/api/admin/pending_count")
 async def get_pending_count(
