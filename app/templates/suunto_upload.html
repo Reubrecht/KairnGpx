@@ -27,7 +27,7 @@
                 </div>
             </div>
             {% endif %}
-            <form action="/upload" method="post" enctype="multipart/form-data" class="divide-y divide-slate-100">
+            <form action="/suunto-upload" method="post" enctype="multipart/form-data" class="divide-y divide-slate-100">
                 {% if prefill_race %}
                 <input type="hidden" name="linked_race_route_id" value="{{ prefill_race.id }}">
                 {% endif %}
@@ -96,15 +96,15 @@
                             };
 
                             const descInputElem = document.getElementById('desc-input');
-                            const descText = {{ staged_file.description | default ('') | tojson }};
-                            if (descInputElem && descText) {
-                                descInputElem.value = descText;
+                            const descValue = {{ staged_file.description | default ('') | tojson }};
+                            if (descInputElem && descValue) {
+                                descInputElem.value = descValue;
                             }
 
-                            const tagsText = {{ staged_file.tags | default ('') | tojson }};
+                            const tagsValue = {{ staged_file.tags | default ('') | tojson }};
                             const tagsInputElem = document.querySelector('input[name="tags"]');
-                            if (tagsInputElem && tagsText) {
-                                tagsInputElem.value = tagsText;
+                            if (tagsInputElem && tagsValue) {
+                                tagsInputElem.value = tagsValue;
                             }
                             });
                         </script>

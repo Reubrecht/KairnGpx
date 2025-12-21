@@ -768,6 +768,106 @@ async def upload_track(
 
     return RedirectResponse(url=f"/track/{new_track.id}", status_code=status.HTTP_303_SEE_OTHER)
 
+@router.get("/suunto-upload", response_class=HTMLResponse)
+async def suunto_upload_form(
+    request: Request, 
+    db: Session = Depends(get_db), 
+    race_route_id: Optional[int] = None,
+    temp_id: Optional[str] = None
+):
+    user = await get_current_user(request, db)
+    prefill_race = None
+    if race_route_id:
+        route = db.query(models.RaceRoute).filter(models.RaceRoute.id == race_route_id).first()
+        if route:
+            prefill_race = {
+                "id": route.id,
+                "name": route.edition.event.name,
+                "year": route.edition.year,
+                "route_name": route.name,
+                "category": route.distance_category
+            }
+            
+    staged_file = None
+    if temp_id:
+        file_path = os.path.join("app/uploads", f"temp_{temp_id}.gpx")
+        if os.path.exists(file_path):
+             try:
+                 with open(file_path, 'r', encoding="utf-8") as f:
+                     analytics = GpxAnalytics(f.read())
+                     meta = analytics.get_metadata()
+                     metrics = analytics.calculate_metrics()
+                     if metrics:
+                        smart_title = meta.get("name", "Trace Suunto")
+                        start_lat, start_lon = metrics.get('start_coords', (None, None))
+                        if start_lat and start_lon:
+                             city, region, _ = get_location_info(start_lat, start_lon)
+                             location_name = city if city != "Unknown" else region
+                             if location_name != "Unknown":
+                                 dist_str = f"{metrics.get('distance_km', 0)}km"
+                                 elev_str = f"{int(metrics.get('elevation_gain', 0))}m+"
+                                 smart_title = f"Trail - {location_name} - {dist_str} {elev_str}"
+                        
+                        inferred = analytics.infer_attributes(metrics)
+                        tags_list = inferred.get("tags", [])
+                        if meta.get("keywords"):
+                             kws = meta["keywords"]
+                             tags_list.extend([k.strip() for k in (kws.split(",") if isinstance(kws, str) else kws) if k.strip()])
+
+                        staged_file = {
+                            "id": temp_id,
+                            "name": smart_title,
+                            "original_name": meta.get("name"),
+                            "description": meta.get("description", ""),
+                            "dist": f"{metrics.get('distance_km', 0)}km",
+                            "elev": f"{int(metrics.get('elevation_gain', 0))}m+",
+                            "tags": ",".join(list(set(tags_list)))
+                        }
+             except Exception as e:
+                 print(f"Error loading staged file {temp_id}: {e}")
+
+    race_events = db.query(models.RaceEvent).order_by(models.RaceEvent.name).all()
+
+    return templates.TemplateResponse("suunto_upload.html", {
+        "request": request,
+        "status_options": ["TRAINING", "OFFICIAL_RACE"],
+        "user": user,
+        "prefill_race": prefill_race,
+        "staged_file": staged_file,
+        "race_events": race_events
+    })
+
+@router.post("/suunto-upload")
+async def suunto_upload_track(
+    request: Request,
+    title: str = Form(...),
+    description: str = Form(None),
+    environment: List[str] = Form([]),
+    visibility: str = Form("public"),
+    activity_type: str = Form("TRAIL_RUNNING"),
+    tags: str = Form(None), 
+    water_points_count: int = Form(0),
+    scenery_rating: int = Form(None),
+    is_official_bot: bool = Form(False),
+    linked_race_route_id: Optional[int] = Form(None),
+    race_name: Optional[str] = Form(None),
+    race_year: Optional[int] = Form(None),
+    race_route_name: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None),
+    temp_file_id: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    # Delegate to the main upload logic to maintain consistency
+    return await upload_track(
+        request=request, title=title, description=description, environment=environment,
+        visibility=visibility, activity_type=activity_type, tags=tags,
+        water_points_count=water_points_count, scenery_rating=scenery_rating,
+        is_official_bot=is_official_bot, linked_race_route_id=linked_race_route_id,
+        race_name=race_name, race_year=race_year, race_route_name=race_route_name,
+        file=file, temp_file_id=temp_file_id, db=db, current_user=current_user
+    )
+
 @router.get("/track/{track_identifier}", response_class=HTMLResponse)
 async def track_detail(track_identifier: str, request: Request, db: Session = Depends(get_db)):
     user = await get_current_user_optional(request, db)

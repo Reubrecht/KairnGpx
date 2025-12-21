@@ -103,7 +103,7 @@
             })
             .then(data => {
                 if (data.temp_id) {
-                    window.location.href = '/upload?temp_id=' + data.temp_id;
+                    window.location.href = '/suunto-upload?temp_id=' + data.temp_id;
                 } else {
                     throw new Error('No temp_id returned');
                 }
