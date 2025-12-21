@@ -92,8 +92,7 @@
                                 if (suuntoContainerElem) suuntoContainerElem.classList.add('hidden');
 
                                 const titleInputElem = document.getElementById('title-input');
-                                if (titleInputElem) titleInputElem.value = {{ staged_file.name | tojson }
-                            };
+                                if (titleInputElem) titleInputElem.value = {{ staged_file.name | tojson }};
 
                             const descInputElem = document.getElementById('desc-input');
                             const descText = {{ staged_file.description | default ('') | tojson }};
