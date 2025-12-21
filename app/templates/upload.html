@@ -3,7 +3,6 @@
 {% block content %}
 <div class="min-h-[calc(100vh-64px)] bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-3xl mx-auto">
-
         <div class="text-center mb-10">
             <h1 class="text-4xl font-extrabold text-slate-900 tracking-tight">Importer une Trace</h1>
             <p class="mt-2 text-lg text-slate-600">Partagez votre aventure avec la communauté Kairn.</p>
@@ -88,10 +87,10 @@
                         <script>
                             document.addEventListener('DOMContentLoaded', () => {
                                 document.getElementById('drop-zone').classList.add('hidden');
-                                document.getElementById('title-input').value = {{ staged_file.name | tojson }
-                            };
+                                document.getElementById('title-input').value = {{ staged_file.name | tojson }};;
 
                             const desc = {{ staged_file.description | default ('') | tojson }};
+                            }};
                             if (desc) {
                                 document.getElementById('desc-input').value = desc;
                             }
