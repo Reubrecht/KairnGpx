@@ -54,6 +54,15 @@ def run_migration():
                 ("betrail_score", "FLOAT"),
                 ("favorite_activity", "TEXT"),
                 ("achievements", "JSON"),
+                # Missing columns found during analysis
+                ("role", "TEXT DEFAULT 'user'"),
+                ("is_premium", "BOOLEAN DEFAULT FALSE"),
+                ("prediction_config", "JSON"),
+                ("is_email_verified", "BOOLEAN DEFAULT FALSE"),
+                ("email_verification_token", "TEXT"),
+                ("created_at", "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP"),
+                ("full_name", "TEXT"),
+                ("bio", "TEXT"),
             ]
 
             for col_name, col_type in columns_to_add:
