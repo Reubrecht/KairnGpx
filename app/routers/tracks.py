@@ -180,6 +180,12 @@ async def explore(
             # Fallback sort by date
             tracks.sort(key=lambda x: x.created_at, reverse=True)
 
+        # --- PRIMARY SORT: ACTIVITY TYPE (TRAIL FIRST) ---
+        # Request: "les première trace affiché dans explore doivent etre les traces trail running"
+        # We rely on Python's stable sort to keep the previous order (Distance or Date) within the activity groups.
+        tracks.sort(key=lambda x: 0 if x.activity_type == models.ActivityType.TRAIL_RUNNING else 1)
+
+
         # --- PAGINATION / LIMIT ---
         total_tracks_count = len(tracks)
         tracks = tracks[:limit]

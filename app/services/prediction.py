@@ -60,7 +60,13 @@ class RaceTimePredictor:
         """
         Calculate predicted times for different intensity levels.
         Now includes 'Reality Factor' based on community executions.
+        Only available for TRAIL_RUNNING and RUNNING.
         """
+        # 0. Check Activity Type
+        allowed_activities = [models.ActivityType.TRAIL_RUNNING, models.ActivityType.RUNNING]
+        if track.activity_type not in allowed_activities:
+            return {"prediction_available": False}
+
         
         cfg = PredictionConfigManager.get_config()
         
