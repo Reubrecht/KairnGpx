@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="KairnGen" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>Boucle du Pic du Jer</name>
+    <desc>Une belle montée progressive suivie d'une descente technique.</desc>
+  </metadata>
+  <trk>
+    <name>Boucle du Pic du Jer</name>
+    <trkseg>
+      <trkpt lat="43.0900" lon="-0.0500"><ele>400</ele><time>2025-06-01T09:00:00Z</time></trkpt>
+      <trkpt lat="43.0910" lon="-0.0490"><ele>450</ele><time>2025-06-01T09:10:00Z</time></trkpt>
+      <trkpt lat="43.0920" lon="-0.0480"><ele>500</ele><time>2025-06-01T09:20:00Z</time></trkpt>
+      <trkpt lat="43.0930" lon="-0.0470"><ele>550</ele><time>2025-06-01T09:30:00Z</time></trkpt>
+      <trkpt lat="43.0940" lon="-0.0460"><ele>600</ele><time>2025-06-01T09:40:00Z</time></trkpt>
+      <trkpt lat="43.0950" lon="-0.0450"><ele>700</ele><time>2025-06-01T09:50:00Z</time></trkpt>
+      <trkpt lat="43.0960" lon="-0.0440"><ele>800</ele><time>2025-06-01T10:00:00Z</time></trkpt>
+      <trkpt lat="43.0970" lon="-0.0430"><ele>900</ele><time>2025-06-01T10:15:00Z</time></trkpt>
+      <trkpt lat="43.0980" lon="-0.0420"><ele>950</ele><time>2025-06-01T10:30:00Z</time></trkpt>
+      <trkpt lat="43.0960" lon="-0.0430"><ele>850</ele><time>2025-06-01T10:45:00Z</time></trkpt>
+      <trkpt lat="43.0940" lon="-0.0450"><ele>750</ele><time>2025-06-01T11:00:00Z</time></trkpt>
+      <trkpt lat="43.0920" lon="-0.0470"><ele>650</ele><time>2025-06-01T11:15:00Z</time></trkpt>
+      <trkpt lat="43.0900" lon="-0.0500"><ele>400</ele><time>2025-06-01T11:30:00Z</time></trkpt>
+    </trkseg>
+  </trk>
+</gpx>
