@@ -40,9 +40,13 @@ local.env
 *.swo
 
 # Project Specific
-app/uploads/*.gpx
+# Project Specific
+app/uploads/*
 !app/uploads/.gitkeep
-kairn.db
+app/data/*
+!app/data/.gitkeep
+app/media/*
+!app/media/.gitkeep
 
 # OS
 .DS_Store

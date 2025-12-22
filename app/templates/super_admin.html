@@ -237,7 +237,7 @@
             </div>
 
 
-            <!-- EVENTS MANAGER (TREE VIEW) -->
+            <!-- EVENTS MANAGER (SIMPLIFIED) -->
             <div x-show="currentTab === 'events'" class="animate-fade-in-up" x-data="{ eventQuery: '' }" x-cloak>
                 <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                     <h2 class="text-3xl font-black text-slate-900 shrink-0">Catalogue des Courses</h2>
@@ -245,214 +245,70 @@
                     <div class="flex-1 w-full max-w-md mx-4">
                         <div class="relative">
                             <i class="ph-bold ph-magnifying-glass absolute left-3 top-2.5 text-slate-400"></i>
-                            <input type="text" x-model="eventQuery" placeholder="Rechercher (Nom, Slug, Année)..."
+                            <input type="text" x-model="eventQuery" placeholder="Rechercher (Nom, Slug)..."
                                 class="w-full pl-10 pr-4 py-2 rounded-xl border-slate-200 bg-white focus:ring-2 focus:ring-brand-500 transition-shadow shadow-sm">
                         </div>
                     </div>
 
                     <div class="flex gap-2 shrink-0">
-                        <button onclick="document.getElementById('modal-import-races').showModal()"
-                            class="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-4 py-2 rounded-xl font-bold text-sm flex items-center transition-all">
-                            <i class="ph-bold ph-upload-simple mr-2"></i> Import JSON
-                        </button>
-                        <a href="/superadmin/event/new"
+                        <a href="/manage/events/quick-create"
                             class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-brand-500/30 transition-all">
-                            <i class="ph-bold ph-plus mr-2"></i> Nouvel Événement
+                            <i class="ph-bold ph-lightning mr-2"></i> Ajout Rapide
                         </a>
                     </div>
                 </div>
 
-                <div class="space-y-4">
-                    {% for event in events %}
-                    <div x-show="!eventQuery || $el.textContent.toLowerCase().includes(eventQuery.toLowerCase())"
-                        x-data="{ 
-                        open: (window.location.hash === '#event-{{ event.id }}'),
-                        init() {
-                            if (this.open) {
-                                setTimeout(() => this.$el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
-                            }
-                        }
-                    }" id="event-{{ event.id }}"
-                        class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                        <!-- Event Header -->
-                        <div class="p-4 flex items-center justify-between bg-slate-50/50 hover:bg-slate-50 transition-colors cursor-pointer"
-                            onclick="window.location.href='/superadmin/event/{{ event.id }}/edit'">
-                            <div class="flex items-center gap-4">
-                                <button @click.stop="open = !open"
-                                    class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 transition-transform duration-200 hover:text-brand-600 hover:border-brand-300"
-                                    :class="{ 'rotate-90': open }">
-                                    <i class="ph-bold ph-caret-right"></i>
-                                </button>
-                                <div>
-                                    <h3 class="font-bold text-slate-900 text-lg hover:text-brand-600 transition-colors">
-                                        {{
-                                        event.name }}</h3>
-                                    <div class="flex items-center gap-2 text-xs text-slate-500">
-                                        <span class="bg-slate-200 px-1.5 py-0.5 rounded text-slate-600 font-mono">{{
-                                            event.slug }}</span>
-                                        <span>•</span>
-                                        <span>{{ event.editions|length }} éditions</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <a href="/superadmin/event/{{ event.id }}/edit"
-                                    class="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
-                                    title="Éditer">
-                                    <i class="ph-bold ph-pencil-simple"></i>
-                                </a>
-                                <form action="/superadmin/events/{{ event.id }}/delete" method="POST"
-                                    onsubmit="return confirm('Supprimer cet événement et TOUTES ses éditions/parcours ?');">
-                                    <button type="submit" @click.stop
-                                        class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                        title="Supprimer">
-                                        <i class="ph-bold ph-trash"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-
-                        <!-- Nested Editions -->
-                        <div x-show="open" x-collapse class="border-t border-slate-100">
-                            <div class="p-4 pl-16 space-y-4 bg-slate-50/30">
-                                <!-- Add Edition Button -->
-                                <form action="/superadmin/event/{{ event.id }}/add_edition" method="POST"
-                                    class="flex gap-2 mb-4">
-                                    <input type="number" name="year" placeholder="Année (ex: 2026)"
-                                        class="w-24 px-3 py-1.5 text-sm rounded-lg border-slate-200" required>
-                                    <button type="submit"
-                                        class="text-xs font-bold bg-white border border-slate-200 px-3 py-1.5 rounded-lg hover:border-brand-500 hover:text-brand-600 transition-colors">+
-                                        Ajouter Édition</button>
-                                </form>
-
-                                {% for edition in event.editions %}
-                                <div x-data="{ edOpen: false }"
-                                    class="bg-white rounded-xl border border-slate-200/60 overflow-hidden">
-                                    <div class="p-3 flex items-center justify-between cursor-pointer hover:bg-slate-50"
-                                        @click="edOpen = !edOpen">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto desktop-table w-full">
+                        <table class="w-full text-left font-mono text-sm whitespace-nowrap table-dense">
+                            <thead class="bg-slate-50 text-slate-500 font-bold uppercase">
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Slug</th>
+                                    <th>Éditions</th>
+                                    <th class="text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                {% for event in events %}
+                                <tr class="hover:bg-slate-50 transition-colors group"
+                                    x-show="!eventQuery || $el.innerText.toLowerCase().includes(eventQuery.toLowerCase())">
+                                    <td>
                                         <div class="flex items-center gap-3">
-                                            <i class="ph-bold ph-caret-right text-xs text-slate-400 transition-transform"
-                                                :class="{ 'rotate-90': edOpen }"></i>
-                                            <span class="font-bold text-slate-800">Édition {{ edition.year }}</span>
-                                            <span class="text-xs text-slate-400">({{ edition.routes|length }}
-                                                parcours)</span>
+                                            {% if event.profile_picture %}
+                                            <img src="{{ event.profile_picture }}"
+                                                class="w-8 h-8 rounded object-cover border border-slate-200">
+                                            {% else %}
+                                            <div
+                                                class="w-8 h-8 rounded bg-slate-100 flex items-center justify-center text-slate-400">
+                                                <i class="ph-bold ph-trophy"></i>
+                                            </div>
+                                            {% endif %}
+                                            <span class="font-bold text-slate-900">{{ event.name }}</span>
                                         </div>
-                                        <div class="flex gap-2">
-                                            <!-- Add Route Modal Trigger (We'll use a generic form populated by JS ideally, but let's keep it simple inline for now) -->
-                                        </div>
-                                    </div>
-
-                                    <!-- Routes List -->
-                                    <div x-show="edOpen"
-                                        class="border-t border-slate-100 p-3 pl-8 bg-slate-50/50 overflow-x-auto">
-                                        <table class="w-full text-sm text-left">
-                                            <thead class="text-xs text-slate-400 uppercase font-bold">
-                                                <tr>
-                                                    <th class="py-2">Nom</th>
-                                                    <th class="py-2">Distance</th>
-                                                    <th class="py-2">D+</th>
-                                                    <th class="py-2">Trace Officielle</th>
-                                                    <th class="py-2 text-right">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody class="divide-y divide-slate-100">
-                                                {% for route in edition.routes %}
-                                                <tr class="group hover:bg-slate-100/50 transition-colors">
-                                                    <td class="py-2 font-medium text-slate-700">{{ route.name }}</td>
-                                                    <td class="py-2 text-slate-500">{{ route.distance_km }} km</td>
-                                                    <td class="py-2 text-slate-500">{{ route.elevation_gain }} m</td>
-                                                    <td class="py-2">
-                                                        {% if route.official_track %}
-                                                        <a href="/track/{{ route.official_track.id }}" target="_blank"
-                                                            class="flex items-center gap-1 text-green-600 text-xs font-bold hover:underline">
-                                                            <i class="ph-fill ph-check-circle"></i> Liée
-                                                        </a>
-                                                        {% else %}
-                                                        <span class="text-slate-400 text-xs italic">Aucune</span>
-                                                        {% endif %}
-                                                    </td>
-                                                    <td class="py-2 text-right relative"
-                                                        x-data="{ showLinkMenu: false }">
-                                                        <button @click="showLinkMenu = !showLinkMenu"
-                                                            class="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-600">
-                                                            <i class="ph-bold ph-dots-three-vertical"></i>
-                                                        </button>
-
-                                                        <!-- Dropdown to Upload/Link -->
-                                                        <div x-show="showLinkMenu" @click.away="showLinkMenu = false"
-                                                            class="absolute right-0 top-8 w-48 bg-white shadow-xl rounded-lg border border-slate-100 z-10 p-1 flex flex-col gap-1">
-                                                            <div
-                                                                class="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase bg-slate-50">
-                                                                Gestion Trace</div>
-                                                            <form
-                                                                action="/superadmin/routes/{{ route.id }}/link_existing_track"
-                                                                method="POST" class="p-2 border-b border-slate-100">
-                                                                <div class="flex items-center gap-1">
-                                                                    <input type="text" name="track_input"
-                                                                        placeholder="ID ou URL..."
-                                                                        class="w-full text-[10px] px-2 py-1 rounded border-slate-200 focus:border-brand-500"
-                                                                        required>
-                                                                    <button type="submit"
-                                                                        class="p-1 text-brand-600 hover:bg-brand-50 rounded">
-                                                                        <i class="ph-bold ph-check"></i>
-                                                                    </button>
-                                                                </div>
-                                                            </form>
-                                                            <form action="/superadmin/routes/{{ route.id }}/link_track"
-                                                                method="POST" enctype="multipart/form-data">
-                                                                <label
-                                                                    class="block px-3 py-2 text-xs text-slate-600 hover:bg-slate-50 hover:text-brand-600 cursor-pointer rounded flex items-center gap-2 transition-colors">
-                                                                    <i class="ph-bold ph-upload-simple text-sm"></i>
-                                                                    Importer GPX
-                                                                    <input type="file" name="file" class="hidden"
-                                                                        accept=".gpx"
-                                                                        onchange="if(confirm('Importer cette trace pour {{ route.name }} ?')) this.form.submit()">
-                                                                </label>
-                                                            </form>
-                                                            {% if route.official_track %}
-                                                            <a href="/track/{{ route.official_track.id }}/edit"
-                                                                class="block px-3 py-2 text-xs text-slate-600 hover:bg-slate-50 hover:text-brand-600 rounded flex items-center gap-2 transition-colors">
-                                                                <i class="ph-bold ph-pencil-simple text-sm"></i> Éditer
-                                                                Trace
-                                                            </a>
-                                                            {% endif %}
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                                {% endfor %}
-
-                                                <!-- New Route Row -->
-                                                <tr>
-                                                    <form action="/superadmin/edition/{{ edition.id }}/add_route"
-                                                        method="POST">
-                                                        <td class="py-2"><input type="text" name="name"
-                                                                placeholder="Nom du parcours"
-                                                                class="w-full px-2 py-1 text-xs rounded border-slate-200"
-                                                                required>
-                                                        </td>
-                                                        <td class="py-2"><input type="number" step="0.1"
-                                                                name="distance_km" placeholder="km"
-                                                                class="w-16 px-2 py-1 text-xs rounded border-slate-200">
-                                                        </td>
-                                                        <td class="py-2"><input type="number" name="elevation_gain"
-                                                                placeholder="d+"
-                                                                class="w-16 px-2 py-1 text-xs rounded border-slate-200">
-                                                        </td>
-                                                        <td colspan="2" class="py-2 text-right">
-                                                            <button type="submit"
-                                                                class="text-xs bg-slate-800 text-white px-2 py-1 rounded hover:bg-slate-700">Ajouter</button>
-                                                        </td>
-                                                    </form>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
+                                    </td>
+                                    <td>
+                                        <span class="text-xs bg-slate-100 px-2 py-1 rounded text-slate-600">{{
+                                            event.slug }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="text-slate-500">{{ event.editions|length }} éditions</span>
+                                    </td>
+                                    <td class="text-right">
+                                        <a href="/manage/events/{{ event.id }}"
+                                            class="text-brand-600 hover:bg-brand-50 px-3 py-1.5 rounded font-bold text-xs inline-flex items-center gap-1">
+                                            <i class="ph-bold ph-gear"></i> Gérer
+                                        </a>
+                                        <a href="/manage/events/{{ event.id }}/edit"
+                                            class="text-slate-400 hover:text-slate-600 px-2 py-1.5 rounded">
+                                            <i class="ph-bold ph-pencil-simple"></i>
+                                        </a>
+                                    </td>
+                                </tr>
                                 {% endfor %}
-                            </div>
-                        </div>
+                            </tbody>
+                        </table>
                     </div>
-                    {% endfor %}
                 </div>
             </div>
 

@@ -265,33 +265,7 @@ async def new_event_page(
     db: Session = Depends(get_db), 
     current_user: models.User = Depends(get_current_super_admin)
 ):
-    # If request_id is provided, pre-fill data
-    req_name = ""
-    req_slug = ""
-    req_website = ""
-    
-    if request_id:
-        req = db.query(models.EventRequest).filter(models.EventRequest.id == request_id).first()
-        if req:
-            req_name = req.event_name
-            # Simplified slugify logic for pre-fill
-            import re
-            import unicodedata
-            
-            s = unicodedata.normalize('NFKD', req.event_name).encode('ascii', 'ignore').decode('utf-8')
-            s = re.sub(r'[^\w\s-]', '', s).strip().lower()
-            req_slug = re.sub(r'[-\s]+', '-', s)
-            
-            req_website = req.website
-
-    return templates.TemplateResponse("event_submit.html", {
-        "request": request,
-        "event": None,
-        "request_id": request_id,
-        "request_name": req_name,
-        "request_slug": req_slug,
-        "request_website": req_website
-    })
+    return RedirectResponse(url="/manage/events/quick-create", status_code=303)
 
 @router.get("/superadmin/event/{event_id}/edit", response_class=HTMLResponse)
 async def edit_event_page(
@@ -300,14 +274,7 @@ async def edit_event_page(
     db: Session = Depends(get_db), 
     current_user: models.User = Depends(get_current_super_admin)
 ):
-    event = db.query(models.RaceEvent).filter(models.RaceEvent.id == event_id).first()
-    if not event:
-         raise HTTPException(status_code=404, detail="Event not found")
-         
-    return templates.TemplateResponse("event_submit.html", {
-        "request": request,
-        "event": event
-    })
+    return RedirectResponse(url=f"/manage/events/{event_id}/edit", status_code=303)
 
 @router.post("/superadmin/events")
 async def create_event(

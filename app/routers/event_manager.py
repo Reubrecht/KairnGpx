@@ -66,6 +66,17 @@ async def new_event_form(
         "user": user
     })
 
+@router.get("/manage/events/quick-create", response_class=HTMLResponse)
+async def quick_create_form(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_manager_user)
+):
+    return templates.TemplateResponse("manager/event_quick_create.html", {
+        "request": request,
+        "user": user
+    })
+
 @router.post("/manage/events")
 async def create_event(
     name: str = Form(...),
@@ -491,3 +502,48 @@ async def search_tracks_api(
         {"id": t.id, "title": t.title, "distance": t.distance_km, "elevation": t.elevation_gain, "uploader": t.uploader_name}
         for t in results
     ]
+
+@router.post("/manage/unified/create")
+async def create_unified_event(
+    event_name: str = Form(...),
+    year: int = Form(...),
+    route_name: str = Form(...),
+    distance_category: str = Form(None),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_manager_user)
+):
+    """
+    Unified endpoint to create Event + Edition + Route + Track in one go.
+    """
+    from ..services.unified_event_service import UnifiedEventService
+    
+    # Validation
+    if not file or not file.filename:
+        raise HTTPException(status_code=400, detail="Fichier GPX requis")
+        
+    try:
+        content = await file.read()
+        service = UnifiedEventService(db, user)
+        
+        result = await service.create_event_hierarchy(
+            event_name=event_name,
+            year=year,
+            route_name=route_name,
+            gpx_content=content,
+            distance_category=distance_category
+        )
+        
+        # Verify success by checking result (optional, since it raises if fails)
+        event = result["event"]
+        
+        return RedirectResponse(
+            url=f"/manage/events/{event.id}", 
+            status_code=status.HTTP_303_SEE_OTHER
+        )
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"Unified Create Error: {e}")
+        raise HTTPException(status_code=500, detail="Une erreur est survenue lors de la création")
