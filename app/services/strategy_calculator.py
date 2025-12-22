@@ -11,7 +11,14 @@ class StrategyCalculator:
         self.total_dist = metrics.get('distance_km', 0)
         self.total_elev_gain = metrics.get('elevation_gain', 0)
 
-    def calculate_splits(self, target_time_minutes: int, waypoints: List[Dict[str, Any]], start_time_hour: float = 6.0) -> Dict[str, Any]:
+    def calculate_splits(
+        self, 
+        target_time_minutes: int, 
+        waypoints: List[Dict[str, Any]], 
+        start_time_hour: float = 6.0,
+        fatigue_factor: float = 1.0,
+        technicity_score: float = 1.0
+    ) -> Dict[str, Any]:
         """
         Calculate splits based on Target Time and Topography Cost.
         
@@ -19,28 +26,12 @@ class StrategyCalculator:
             target_time_minutes: Total goal time in minutes.
             waypoints: List of dicts [{'km': 10, 'name': 'Point A'}, ...] (Must be sorted by KM)
             start_time_hour: Start time in decimal hours (e.g. 6.5 for 06:30)
+            fatigue_factor: 1.0 = Constant pace, 1.5 = Significant slowdown at end.
+            technicity_score: Global multiplier for difficulty (not used in simple distribution, but could affect nutrition).
             
         Returns:
             Dict containing 'segments' (splits between waypoints) and 'total_stats'.
         """
-        if not self.points:
-            return {}
-
-        # 1. Resample Track into micro-segments (e.g. every 100m or existing points)
-        # For variable density GPX, we should iterate points and accumulate cost.
-        # Cost Formula (Energy Cost):
-        # 1 km flat = 1 unit
-        # 100m D+ = 1 km flat (10% gradient is 2x cost of flat?) -> Standard equivalent distance: Dist + D+/100
-        # Slope penalty: steep slopes cost more energy per meter gained.
-        
-        # Micro-segment accumulation
-        micro_segments = []
-        
-        cumulative_dist = 0.0
-        last_p = self.points[0]
-        cumulative_cost = 0.0
-        
-        # Prepare Waypoints: Ensure Start (0km) and End (Total) exist
         sorted_waypoints = sorted(waypoints, key=lambda x: float(x['km']))
         
         # Filter duplicates or out of bounds
@@ -173,28 +164,25 @@ class StrategyCalculator:
         
         # --- FATIGUE SIMULATION ---
         # With fatigue, the "cost" of the final km is higher than the first.
-        # We want to increase cost progressively.
-        # Linear drift?
-        # Let's Apply a drift factor to the pace_factor over the accumulation?
-        # Simpler: Re-weight the segment costs.
-        # Cost_i_weighted = Cost_i * (1 + (CumulativeCost_i / TotalCost) * FatiguePercent)
-        
-        FATIGUE_FACTOR = 0.20 # +20% effort cost by end of race
+        # Cost_i_weighted = Cost_i * (1 + (CumulativeCost_i / TotalCost) * (FatigueFactor - 1))
         
         weighted_total_cost = 0
+        
+        # Prepare for iteration
         for seg in segment_costs:
             # Approx relative position
-            # This is rough, ideally we integrate over micro-segments, but segment-level is okay for display.
-            # Use current weighted_total as progress? No, use raw cost progress.
             progress = (weighted_total_cost / total_track_cost) if total_track_cost > 0 else 0
             
-            # Drift: 1.0 -> 1.2
-            drift = 1.0 + (progress * FATIGUE_FACTOR)
+            # Drift: 1.0 -> fatigue_factor
+            # If factor is 1.2 (+20%), drift goes from 1.0 to 1.2
+            drift = 1.0 + (progress * (fatigue_factor - 1.0))
             
             seg['weighted_cost'] = seg['cost'] * drift
-            # weighted_total_cost += seg['cost'] # Wait, progress should be based on RAW cost
-            # But the sum for time distribution must be based on WEIGHTED cost.
+            # weighted_total_cost += seg['cost'] # Keep using raw cost for linear progression? 
+            # Actually, fatigue builds up based on effort.
             
+            # Simple approx: use the previous cumulative raw cost for progress
+        
         # Re-sum
         total_weighted_cost = sum(s['weighted_cost'] for s in segment_costs)
         

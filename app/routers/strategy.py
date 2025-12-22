@@ -26,6 +26,9 @@ class CalculationRequest(BaseModel):
     target_time_minutes: int
     start_time_hour: float = 6.0
     waypoints: List[Waypoint]
+    fatigue_factor: float = 1.0
+    technicity_score: float = 1.0
+    nutrition_strategy: Optional[str] = None
 
 class StrategySaveRequest(CalculationRequest):
     title: str
@@ -61,7 +64,9 @@ async def calculate_strategy(
         result = calculator.calculate_splits(
             target_time_minutes=request.target_time_minutes,
             waypoints=waypoints_data,
-            start_time_hour=request.start_time_hour
+            start_time_hour=request.start_time_hour,
+            fatigue_factor=request.fatigue_factor,
+            technicity_score=request.technicity_score
         )
         
         return result
@@ -91,7 +96,12 @@ async def save_strategy(
         target_time_minutes=request.target_time_minutes,
         pacing_method=models.PacingMethod.TARGET_TIME,
         points=[w.dict() for w in request.waypoints],
-        global_params={"start_time": request.start_time_hour}
+        global_params={
+            "start_time": request.start_time_hour,
+            "fatigue_factor": request.fatigue_factor,
+            "technicity_score": request.technicity_score
+        },
+        nutrition_strategy=request.nutrition_strategy
     )
     
     db.add(new_strategy)

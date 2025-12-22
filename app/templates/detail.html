@@ -639,20 +639,30 @@
                             <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
                                 <i class="ph-fill ph-sliders-horizontal"></i> Paramètres
                             </h3>
+
                             <!-- Target Time -->
                             <div class="mb-5">
                                 <label class="block text-sm font-bold text-slate-700 mb-2">Objectif (Temps)</label>
                                 <div class="flex items-center gap-2">
-                                    <input type="number" id="target-h" value="10" min="0"
+                                    <input type="number" id="target-h" min="0"
                                         class="w-20 rounded-lg border-slate-300 focus:border-brand-500 focus:ring-brand-500 text-center font-mono font-bold"
                                         placeholder="HH">
                                     <span class="text-slate-400 font-bold">:</span>
-                                    <input type="number" id="target-m" value="00" min="0" max="59"
+                                    <input type="number" id="target-m" min="0" max="59"
                                         class="w-20 rounded-lg border-slate-300 focus:border-brand-500 focus:ring-brand-500 text-center font-mono font-bold"
                                         placeholder="MM">
                                 </div>
-                                <p class="text-xs text-slate-500 mt-2">Temps total espéré.</p>
+                                <p class="text-xs text-slate-500 mt-2">
+                                    {% if user_prediction and user_prediction.prediction_available %}
+                                    Estimé: <span class="font-bold text-brand-600 cursor-pointer hover:underline"
+                                        onclick="prefillTargetTime('{{ user_prediction.times.push }}')">{{
+                                        user_prediction.times.push }}</span>
+                                    {% else %}
+                                    Temps total espéré.
+                                    {% endif %}
+                                </p>
                             </div>
+
                             <!-- Start Time -->
                             <div class="mb-5">
                                 <label class="block text-sm font-bold text-slate-700 mb-2">Heure de Départ</label>
@@ -666,16 +676,55 @@
                                         placeholder="MM">
                                 </div>
                             </div>
+
+                            <!-- Advanced Params -->
+                            <div class="mb-5 space-y-4">
+                                <div>
+                                    <div class="flex justify-between mb-1">
+                                        <label class="text-xs font-bold text-slate-700">Gestion Fatigue</label>
+                                        <span id="fatigue-val" class="text-xs font-mono text-slate-500">Normal</span>
+                                    </div>
+                                    <input type="range" id="fatigue-factor" min="1.0" max="1.5" step="0.05" value="1.05"
+                                        oninput="updateRangeLabel('fatigue', this.value)"
+                                        class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-600">
+                                </div>
+                                <div>
+                                    <div class="flex justify-between mb-1">
+                                        <label class="text-xs font-bold text-slate-700">Technicité</label>
+                                        <span id="technicity-val"
+                                            class="text-xs font-mono text-slate-500">Moyenne</span>
+                                    </div>
+                                    <input type="range" id="technicity-score" min="0.8" max="1.5" step="0.1" value="1.0"
+                                        oninput="updateRangeLabel('technicity', this.value)"
+                                        class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-600">
+                                </div>
+                            </div>
+
+                            <!-- Nutrition Strategy -->
+                            <div class="mb-5">
+                                <label class="block text-sm font-bold text-slate-700 mb-2">Stratégie Nutrition</label>
+                                <textarea id="nutrition-strategy" rows="4"
+                                    class="w-full text-xs rounded-lg border-slate-300 focus:border-brand-500 focus:ring-brand-500"
+                                    placeholder="Ex: 50g glucides/h, boire 500ml/h..."></textarea>
+                            </div>
+
                             <!-- ACTIONS -->
                             <div class="flex flex-col gap-3 mt-8">
                                 <button onclick="calculateRoadbook()"
                                     class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-brand-200 flex items-center justify-center gap-2">
                                     <i class="ph-bold ph-calculator"></i> Calculer
                                 </button>
-                                <button onclick="exportRoadbook()"
-                                    class="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
-                                    <i class="ph-bold ph-file-png"></i> Exporter Image
-                                </button>
+
+                                <div class="grid grid-cols-2 gap-3">
+                                    <button onclick="saveStrategy()"
+                                        class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
+                                        <i class="ph-bold ph-floppy-disk"></i> Sauver
+                                    </button>
+                                    <button onclick="exportPdf()"
+                                        class="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
+                                        <i class="ph-bold ph-file-pdf"></i> PDF Pro
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -927,8 +976,43 @@
         if (waypoints.length === 0) {
             // waypoints.push({ km: 0, name: "Départ", userDefined: false });
             // waypoints.push({ km: TRACK_TOTAL_KM, name: "Arrivée", userDefined: false });
-            // Render
             renderWaypointsList();
+        }
+
+        // Auto-fill target time if available
+        {% if user_prediction and user_prediction.prediction_available %}
+        prefillTargetTime('{{ user_prediction.times.push }}');
+        {% endif %}
+    }
+
+    function prefillTargetTime(timeStr) {
+        // Format "12h30" or "12:30"
+        let h = 0, m = 0;
+        if (timeStr.includes('h')) {
+            const parts = timeStr.split('h');
+            h = parseInt(parts[0]);
+            m = parseInt(parts[1]) || 0;
+        } else if (timeStr.includes(':')) {
+            const parts = timeStr.split(':');
+            h = parseInt(parts[0]);
+            m = parseInt(parts[1]) || 0;
+        } else {
+            h = parseInt(timeStr) || 0;
+        }
+
+        document.getElementById('target-h').value = h;
+        document.getElementById('target-m').value = m;
+    }
+
+    function updateRangeLabel(type, val) {
+        if (type === 'fatigue') {
+            const labels = { '1.0': 'Constante', '1.05': 'Normale', '1.1': 'Fatigue', '1.2': 'Difficile', '1.3': 'Épuisement', '1.5': 'Explosion' };
+            // Find closest key
+            document.getElementById('fatigue-val').innerText = labels[val] || val;
+        }
+        if (type === 'technicity') {
+            const labels = { '0.8': 'Roulant', '1.0': 'Moyenne', '1.2': 'Technique', '1.4': 'Difficile', '1.5': 'Extrême' };
+            document.getElementById('technicity-val').innerText = labels[val] || val;
         }
     }
 
@@ -991,12 +1075,17 @@
         const startM = parseInt(document.getElementById('start-m').value) || 0;
         const startHourDecimal = startH + (startM / 60.0);
 
+        const fatigue = parseFloat(document.getElementById('fatigue-factor').value) || 1.0;
+        const tech = parseFloat(document.getElementById('technicity-score').value) || 1.0;
+
         // Prep Payload
         const payload = {
             track_id: TRACK_ID,
             target_time_minutes: totalMin,
             start_time_hour: startHourDecimal,
-            waypoints: waypoints
+            waypoints: waypoints,
+            fatigue_factor: fatigue,
+            technicity_score: tech
         };
 
         // Loader
@@ -1014,10 +1103,69 @@
             const data = await res.json();
             renderResults(data);
 
+            // --- MAP MARKERS ---
+            updateMapMarkers(data.points);
+
         } catch (e) {
             console.error(e);
             alert("Erreur lors du calcul: " + e.message);
         }
+    }
+
+    // Maintain list of current markers
+    let currentRoadbookMarkers = [];
+
+    function updateMapMarkers(points) {
+        // Clear existing
+        currentRoadbookMarkers.forEach(m => m.remove());
+        currentRoadbookMarkers = [];
+
+        if (!window.map) return;
+
+        points.forEach(p => {
+            // Find coords based on km? 
+            // We don't have lat/lon in the response directly unless we add it. 
+            // Strategy response 'points' usually just has KM.
+
+            // Workaround: We need the coords for the KM.
+            // We can interpolate from trackGeoJSON (available in scope).
+            const coord = getCoordAtKm(p.km);
+            if (coord) {
+                const el = document.createElement('div');
+                el.className = 'flex flex-col items-center';
+                el.innerHTML = `
+                    <div class="px-2 py-0.5 bg-white rounded-md shadow text-[10px] font-bold text-slate-700 whitespace-nowrap mb-1">${p.name}</div>
+                    <div class="w-3 h-3 bg-brand-500 rounded-full border-2 border-white shadow-sm"></div>
+                `;
+
+                const marker = new maplibregl.Marker({ element: el })
+                    .setLngLat(coord)
+                    .addTo(window.map);
+
+                currentRoadbookMarkers.push(marker);
+            }
+        });
+    }
+
+    function getCoordAtKm(km) {
+        // Need to iterate track coords and find cum dist
+        if (!window.trackDataGeoJSON) return null; // We need to expose this globally
+
+        // This is expensive to do every time, but okay for handful of points.
+        const coords = window.trackDataGeoJSON.geometry.coordinates;
+        let d = 0;
+        for (let i = 1; i < coords.length; i++) {
+            const p1 = coords[i - 1];
+            const p2 = coords[i];
+            const seg = window.getDistKm(p1[1], p1[0], p2[1], p2[0]);
+
+            if (d + seg >= km) {
+                // Return p2 (approx)
+                return p2;
+            }
+            d += seg;
+        }
+        return coords[coords.length - 1];
     }
 
     function renderResults(data) {
@@ -1037,43 +1185,96 @@
         document.getElementById('result-meta').textContent = "Calcul effectué (Scientific Method)";
     }
 
-    async function exportRoadbook() {
+    async function saveStrategy() {
+        // Same payload collection
         const h = parseInt(document.getElementById('target-h').value) || 0;
         const m = parseInt(document.getElementById('target-m').value) || 0;
         const totalMin = (h * 60) + m;
-
         const startH = parseInt(document.getElementById('start-h').value) || 6;
         const startM = parseInt(document.getElementById('start-m').value) || 0;
         const startHourDecimal = startH + (startM / 60.0);
+        const fatigue = parseFloat(document.getElementById('fatigue-factor').value) || 1.0;
+        const tech = parseFloat(document.getElementById('technicity-score').value) || 1.0;
+        const nutrition = document.getElementById('nutrition-strategy').value;
 
         const payload = {
             track_id: TRACK_ID,
+            title: "Roadbook " + new Date().toLocaleDateString(),
             target_time_minutes: totalMin,
             start_time_hour: startHourDecimal,
-            waypoints: waypoints
+            waypoints: waypoints,
+            fatigue_factor: fatigue,
+            technicity_score: tech,
+            nutrition_strategy: nutrition
         };
 
         try {
-            const res = await fetch('/api/strategy/export', {
+            const res = await fetch('/api/strategy/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
-            if (!res.ok) throw new Error("Erreur export");
+            if (!res.ok) throw new Error("Erreur sauvegarde");
 
-            // Download Blob
+            // Show Success Feedback (Simple alert or toast)
+            const btn = event.target.closest('button'); // Hacky access
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="ph-bold ph-check"></i> Sauvegardé';
+            btn.classList.add('bg-green-100', 'text-green-700');
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.remove('bg-green-100', 'text-green-700');
+            }, 2000);
+
+        } catch (e) {
+            alert("Erreur sauvegarde: " + e.message);
+        }
+    }
+
+    async function exportPdf() {
+        // Same payload
+        const h = parseInt(document.getElementById('target-h').value) || 0;
+        const m = parseInt(document.getElementById('target-m').value) || 0;
+        const totalMin = (h * 60) + m;
+        const startH = parseInt(document.getElementById('start-h').value) || 6;
+        const startM = parseInt(document.getElementById('start-m').value) || 0;
+        const startHourDecimal = startH + (startM / 60.0);
+        const fatigue = parseFloat(document.getElementById('fatigue-factor').value) || 1.0;
+        const tech = parseFloat(document.getElementById('technicity-score').value) || 1.0;
+        const nutrition = document.getElementById('nutrition-strategy').value;
+
+        const payload = {
+            track_id: TRACK_ID,
+            target_time_minutes: totalMin,
+            start_time_hour: startHourDecimal,
+            waypoints: waypoints,
+            fatigue_factor: fatigue,
+            technicity_score: tech,
+            nutrition_strategy: nutrition
+        };
+
+        try {
+            const res = await fetch('/api/strategy/export_pdf', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) throw new Error("Erreur export PDF");
+
             const blob = await res.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = "roadbook_{{track.slug}}.png";
+            a.download = "roadbook_{{track.slug}}.pdf";
             document.body.appendChild(a);
             a.click();
             a.remove();
 
         } catch (e) {
-            alert("Erreur export: " + e.message);
+            console.error(e);
+            alert("Erreur export PDF: " + e.message);
         }
     }
 

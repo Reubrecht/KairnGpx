@@ -458,6 +458,9 @@ class RaceStrategy(Base):
     # e.g. { "start_time": "06:00", "fatigue_factor": 1.05 }
     global_params = Column(JSON, default={})
     
+    nutrition_strategy = Column(Text, nullable=True)
+
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
