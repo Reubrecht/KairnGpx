@@ -519,7 +519,7 @@
                              <div class="p-3 text-center min-w-[140px]">
                                  <h3 class="font-bold text-slate-800 text-sm mb-1 line-clamp-2">${ev.name}</h3>
                                  <p class="text-[10px] text-slate-500 uppercase font-bold tracking-wide mb-2">${ev.location_city || 'Location Unknown'}</p>
-                                 <a href="/search?q=${encodeURIComponent(ev.name)}" class="inline-block px-3 py-1.5 bg-orange-50 text-orange-600 text-xs font-bold rounded-lg hover:bg-orange-100 transition-colors">See Event</a>
+                                 <a href="/event/${ev.id}" class="inline-block px-3 py-1.5 bg-orange-50 text-orange-600 text-xs font-bold rounded-lg hover:bg-orange-100 transition-colors">Voir l'événement</a>
                              </div>
                          `);
 
