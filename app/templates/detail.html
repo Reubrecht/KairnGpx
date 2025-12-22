@@ -1641,7 +1641,7 @@
                 },
                 paint: {
                     'line-color': ['get', 'color'],
-                    'line-width': 5,
+                    'line-width': 3,
                     'line-opacity': 0.9
                 }
             });
@@ -1786,7 +1786,7 @@
             for (let i = 0; i < coords.length - 1; i++) {
                 const p1 = coords[i];
                 const p2 = coords[i + 1];
-                let color = '#10b981'; // Default
+                let color = '#059669'; // Brand-600 Default
 
                 if (style === 'elevation') {
                     const avgElev = ((p1[2] || 0) + (p2[2] || 0)) / 2;
@@ -1802,7 +1802,7 @@
                         color = window.getSlopeColor(grade);
                     }
                 } else if (style === 'solid') {
-                    color = '#10b981'; // Brand Emerald
+                    color = '#059669'; // Brand-600 Emerald
                 }
 
                 segments.push({

@@ -46,8 +46,9 @@
             requires now_date variable passed to template or generic check -->
 
             <div
-                class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden {% if edition.status == 'COMPLETED' %}opacity-75 grayscale{% endif %}">
-                <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                class="bg-white rounded-xl shadow-sm border border-slate-100 {% if edition.status == 'COMPLETED' %}opacity-75 grayscale{% endif %}">
+                <div
+                    class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center justify-between rounded-t-xl">
                     <div>
                         <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
                             <span class="text-brand-600">{{ edition.year }}</span>
@@ -85,7 +86,8 @@
 
                 <div class="divide-y divide-slate-50">
                     {% for route in edition.routes %}
-                    <div class="px-6 py-4 hover:bg-slate-50 transition-colors flex items-center justify-between">
+                    <div
+                        class="px-6 py-4 hover:bg-slate-50 transition-colors flex items-center justify-between {% if loop.last %}rounded-b-xl{% endif %}">
                         <div>
                             <div class="flex items-center gap-3">
                                 <h4 class="font-bold text-slate-900">{{ route.name }}</h4>
@@ -108,7 +110,7 @@
                             {% if not route.official_track_id %}
                             <div class="relative" x-data="{ open: false }">
                                 <button @click="open = !open"
-                                    class="px-3 py-1.5 text-xs font-bold text-brand-600 border border-brand-200 rounded hover:bg-brand-50 transition-colors flex items-center gap-1">
+                                    class="px-3 py-1.5 text-xs font-bold text-brand-600 border border-brand-200 rounded hover:bg-brand-50 transition-colors flex items-center gap-1 whitespace-nowrap">
                                     <i class="ph-bold ph-plus"></i> Lier Trace
                                 </button>
                                 <div x-show="open" @click.away="open = false"
@@ -139,7 +141,7 @@
                         </div>
                     </div>
                     {% else %}
-                    <div class="px-6 py-8 text-center text-slate-400 italic text-sm">
+                    <div class="px-6 py-8 text-center text-slate-400 italic text-sm rounded-b-xl">
                         Aucune course pour cette édition.
                     </div>
                     {% endfor %}
