@@ -170,7 +170,9 @@ async def export_strategy_image(
         result = calculator.calculate_splits(
             target_time_minutes=request.target_time_minutes,
             waypoints=waypoints_data,
-            start_time_hour=request.start_time_hour
+            start_time_hour=request.start_time_hour,
+            fatigue_factor=request.fatigue_factor,
+            technicity_score=request.technicity_score
         )
         
         # 2. Generate Image
@@ -178,6 +180,61 @@ async def export_strategy_image(
         image_path = generator.generate_roadbook(result, track.title)
         
         return FileResponse(image_path, media_type="image/png", filename=f"roadbook_{track.slug}.png")
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+from ..services.pdf_generator import StrategyPdfGenerator
+
+@router.post("/export_pdf")
+async def export_strategy_pdf(
+    request: CalculationRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Generate and return a PDF roadbook based on the calculation request.
+    """
+    track = db.query(models.Track).filter(models.Track.id == request.track_id).first()
+    if not track:
+        raise HTTPException(status_code=404, detail="Track not found")
+
+    if not track.file_path or not os.path.exists(track.file_path):
+        raise HTTPException(status_code=400, detail="GPX file not available")
+
+    try:
+        # 1. Calculate Data
+        with open(track.file_path, 'r', encoding='utf-8') as f:
+            content = f.read().encode('utf-8')
+            
+        analytics = GpxAnalytics(content)
+        calculator = StrategyCalculator(analytics)
+        
+        waypoints_data = [w.dict() for w in request.waypoints]
+        
+        result = calculator.calculate_splits(
+            target_time_minutes=request.target_time_minutes,
+            waypoints=waypoints_data,
+            start_time_hour=request.start_time_hour,
+            fatigue_factor=request.fatigue_factor,
+            technicity_score=request.technicity_score
+        )
+        
+        # 2. Generate PDF
+        generator = StrategyPdfGenerator()
+        
+        # Determine username/fullname for header
+        user_name = track.user_obj.username if track.user_obj else "Athlète"
+        
+        pdf_path = generator.generate_pdf(
+            track_title=track.title,
+            strategy_data=result,
+            nutrition=request.nutrition_strategy,
+            user_name=user_name
+        )
+        
+        return FileResponse(pdf_path, media_type="application/pdf", filename=f"roadbook_{track.slug}.pdf")
         
     except Exception as e:
         import traceback
