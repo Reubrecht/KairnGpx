@@ -88,7 +88,22 @@ class StrategyPdfGenerator:
 
         elements = []
 
-        # 1. Header
+        # 1. Header with Logo
+        # Logo path: We assume app/static/img/logo.png relative to this service file or app root
+        # Services is in app/services, so up one level to app, then static/img/logo.png
+        # Using abspath to be safe
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        logo_path = os.path.join(base_dir, "static/img/logo.png")
+        
+        if os.path.exists(logo_path):
+            # Scale logo to reasonable size (e.g. 5cm wide, preserve aspect ratio if possible, 
+            # but Image flowable needs width/height)
+            # We'll just set a fixed width of 4cm
+            logo = Image(logo_path, width=4*cm, height=1.2*cm)
+            logo.hAlign = 'CENTER'
+            elements.append(logo)
+            elements.append(Spacer(1, 0.5*cm))
+
         elements.append(Paragraph(f"ROADBOOK: {track_title}", self.styles['TitleKV']))
         
         date_str = datetime.now().strftime("%d/%m/%Y")
@@ -101,15 +116,15 @@ class StrategyPdfGenerator:
         
         points = strategy_data['points']
         
-        # 3. Splits Table - UTMB Columns
-        # Point | Altitude (M) | Dist (km) | Dist. inter (km) | Déniv + (M) | Déniv - (M) | Plus rapide | Plus lent | Services
+        # 3. Splits Table
+        # Columns: Point | Altitude | Dist (km) | Dist. inter | D+ | D- | H. Passage | Services
         
         headers = [
             'Point', 
             'Altitude (M)', 
             'Dist (km)', 'Dist. inter', 
             'Déniv +', 'Déniv -', 
-            'Plus rapide', 'Plus lent', 
+            'Heure de passage', 
             'Services'
         ]
         
@@ -130,15 +145,12 @@ class StrategyPdfGenerator:
             seg_dplus_str = f"{seg_dplus}" if seg_dplus > 0 else "-"
             seg_dminus_str = f"{seg_dminus}" if seg_dminus > 0 else "-"
             
-            fast_time = p.get('time_fast_tod', '-')
-            slow_time = p.get('time_slow_tod', '-')
+            # Use scientifically most probable time (time_day)
+            time_passage = p.get('time_day', '-')
             
             # Style Name (Bold)
             name_para = Paragraph(f"<b>{p['name']}</b>", self.styles['CellText'])
             
-            # Nutrition placeholder
-            # If nutrition strategy contains keywords related to this point, we could maybe add?
-            # For now, just a placeholder icon or empty space for writing
             # Services / Type mapping
             wp_type = p.get('type', 'ravito')
             type_map = {
@@ -157,25 +169,25 @@ class StrategyPdfGenerator:
                 alt_str,
                 dist_str, seg_dist_str,
                 seg_dplus_str, seg_dminus_str,
-                fast_time, slow_time,
+                time_passage,
                 note
             ]
             table_data.append(row)
 
         # Widths: A4 Landscape width approx 29.7cm - margins (1.6cm) = 28.1cm
-        # 9 Columns
+        # 8 Columns (removed fast/slow, added single time)
         # Point: 5cm
         # Alt: 2cm
         # Dist/Int/D+/D-: 4 * 2cm = 8cm
-        # Fast/Slow: 2 * 2.5cm = 5cm
-        # Services: Remaining (approx 8cm)
+        # Time: 3cm
+        # Services: Remaining (approx 10cm)
         
         col_widths = [
             5*cm, 
             2.0*cm, 
             2.0*cm, 2.0*cm, 
             2.0*cm, 2.0*cm,
-            2.5*cm, 2.5*cm,
+            3.0*cm, # Heure de passage
             None # Auto fill rest
         ]
         
@@ -184,19 +196,19 @@ class StrategyPdfGenerator:
         # Styles
         table_style = [
             # Header
-            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F1F5F9')), 
-            ('TEXTCOLOR', (0,0), (-1,0), colors.HexColor('#0F172A')),
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#059669')), # Kairn Green
+            ('TEXTCOLOR', (0,0), (-1,0), colors.HexColor('#FFFFFF')), # White Text
             ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
             ('FONTSIZE', (0,0), (-1,0), 9),
             ('ALIGN', (0,0), (-1,0), 'CENTER'),
             ('BOTTOMPADDING', (0,0), (-1,0), 10),
             ('TOPPADDING', (0,0), (-1,0), 10),
-            ('LINEBELOW', (0,0), (-1,0), 1, colors.HexColor('#CBD5E1')),
+            ('LINEBELOW', (0,0), (-1,0), 1, colors.HexColor('#047857')),
             
             # Data Alignment
-            ('ALIGN', (1,0), (7,-1), 'CENTER'), # Numbers Center Aligned
+            ('ALIGN', (1,0), (6,-1), 'CENTER'), # Numbers Center Aligned (Cols 1-6)
             ('ALIGN', (0,0), (0,-1), 'LEFT'),  # Name Left
-            ('ALIGN', (8,0), (-1,-1), 'LEFT'), # Services Left
+            ('ALIGN', (7,0), (-1,-1), 'LEFT'), # Services Left
             
             # General Rows
             ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
@@ -207,12 +219,9 @@ class StrategyPdfGenerator:
             ('LINEBELOW', (0,1), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
             
-            # Highlight Chrono Columns (Fast/Slow)
-            # ('TEXTCOLOR', (6,1), (7,-1), colors.HexColor('#64748B')), 
+            # Highlight Chrono Column (Heure de passage)
+            ('FONTNAME', (6,1), (6,-1), 'Helvetica-Bold'), 
         ]
-        
-        # Zebra striping (optional, UTMB is usually plain white with lines)
-        # We will stick to lines as per UTMB screenshot usually being clean.
         
         t.setStyle(TableStyle(table_style))
         elements.append(t)
