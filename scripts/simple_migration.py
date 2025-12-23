@@ -35,6 +35,15 @@ def run_migration():
             print("Adding column 'contact_link' to 'race_events'...")
             conn.execute(text("ALTER TABLE race_events ADD COLUMN contact_link VARCHAR"))
             conn.commit()
+
+    # 3. Add columns to tracks
+    track_columns = [c['name'] for c in inspector.get_columns("tracks")]
+    with engine.connect() as conn:
+        if "thumbnail_url" not in track_columns:
+            print("Adding column 'thumbnail_url' to 'tracks'...")
+            conn.execute(text("ALTER TABLE tracks ADD COLUMN thumbnail_url VARCHAR"))
+            conn.commit()
+
             
     print("Migration check complete.")
 
