@@ -10,7 +10,13 @@ RUN useradd -m kairnuser
 # Set work directory
 WORKDIR /app
 
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    libexpat1 \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install dependencies
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
