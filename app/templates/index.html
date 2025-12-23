@@ -357,7 +357,12 @@
                 <!-- Map Thumbnail with Overlay -->
                 <div
                     class="h-48 bg-slate-100 relative overflow-hidden flex items-center justify-center isolate pointer-events-none">
+                    {% if track.thumbnail_url %}
+                    <img src="{{ track.thumbnail_url }}" alt="Map of {{ track.title }}"
+                        class="absolute inset-0 w-full h-full object-cover z-0">
+                    {% else %}
                     <div id="map-{{ track.id }}" class="absolute inset-0 z-0 settings-map"></div>
+                    {% endif %}
                     <!-- Gradient Overlay -->
                     <div
                         class="absolute inset-0 pointer-events-none bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent z-10 opacity-90">
@@ -833,9 +838,11 @@
         const tracks = tracksDataElement ? JSON.parse(tracksDataElement.textContent) : [];
 
         tracks.forEach(track => {
+            // Fallback for old tracks without thumbnails
+            if (!track.id) return;
             const mapId = 'map-' + track.id;
             const container = document.getElementById(mapId);
-            if (!container) return;
+            if (!container) return; // If image exists, container won't exist
 
             const map = L.map(mapId, {
                 zoomControl: false,
@@ -856,12 +863,12 @@
                     shadowUrl: null
                 },
                 polyline_options: {
-                    color: 'transparent',
-                    opacity: 0,
-                    weight: 0
+                    color: '#ea580c',
+                    opacity: 1,
+                    weight: 3
                 }
             }).on('loaded', function (e) {
-                drawGradientTrack(map, e.target);
+                // drawGradientTrack(map, e.target); // Removed gradient for simplicity in fallback
                 map.fitBounds(e.target.getBounds(), { padding: [10, 10] });
             }).addTo(map);
         });

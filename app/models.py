@@ -210,6 +210,7 @@ class Track(Base):
     
     visibility = Column(Enum(Visibility), default=Visibility.PUBLIC)
     verification_status = Column(Enum(VerificationStatus), default=VerificationStatus.PENDING)
+    thumbnail_url = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # 2. Activity Type & Specifics

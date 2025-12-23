@@ -14,6 +14,7 @@ from ..dependencies import get_db, get_current_user, get_current_user_optional, 
 from ..utils import slugify, calculate_file_hash, get_location_info
 from ..services.analytics import GpxAnalytics
 from ..services.ai_analyzer import AiAnalyzer
+from ..services.thumbnail_generator import ThumbnailGenerator
 # from ..services.prediction import RaceTimePredictor # Lazy imported in detail
 from ..services.prediction_config_manager import PredictionConfigManager
 
@@ -742,6 +743,16 @@ async def upload_track(
     db.add(new_track)
     db.commit()
     db.refresh(new_track)
+
+    try:
+        generator = ThumbnailGenerator()
+        thumb_url = generator.generate_thumbnail(file_path, new_track.id)
+        if thumb_url:
+            new_track.thumbnail_url = thumb_url
+            db.commit()
+    except Exception as e:
+        print(f"Thumbnail generation failed: {e}")
+
     
     if is_official and 'edition' in locals():
         try:

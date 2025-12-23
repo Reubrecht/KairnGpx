@@ -19,3 +19,6 @@ httpx
 Pillow
 alembic
 reportlab
+matplotlib
+contextily
+xyzservices
