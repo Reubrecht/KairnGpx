@@ -250,13 +250,22 @@
                         </div>
                     </div>
 
-                    <div class="flex gap-2 shrink-0">
-                        <a href="/manage/events/quick-create"
-                            class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-brand-500/30 transition-all">
-                            <i class="ph-bold ph-lightning mr-2"></i> Ajout Rapide
-                        </a>
-                    </div>
+                    <label for="import-json"
+                        class="bg-white border border-slate-200 text-slate-700 hover:border-brand-500 hover:text-brand-600 px-4 py-2 rounded-xl font-bold text-sm flex items-center cursor-pointer transition-all shadow-sm">
+                        <i class="ph-bold ph-upload-simple mr-2"></i> Import JSON
+                    </label>
+                    <form id="import-form" action="/manage/events/import" method="post" enctype="multipart/form-data"
+                        class="hidden">
+                        <input type="file" name="file" id="import-json" accept=".json"
+                            onchange="document.getElementById('import-form').submit()">
+                    </form>
+
+                    <a href="/manage/events/quick-create"
+                        class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-brand-500/30 transition-all">
+                        <i class="ph-bold ph-lightning mr-2"></i> Ajout Rapide
+                    </a>
                 </div>
+
 
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     <div class="overflow-x-auto desktop-table w-full">
@@ -351,7 +360,8 @@
                                             <span class="font-bold text-slate-900">{{ u.username }}</span>
                                             <span class="text-xs text-slate-400">&lt;{{ u.email }}&gt;</span>
                                             {% if u.is_premium %}<i
-                                                class="ph-fill ph-crown text-amber-500 text-xs"></i>{% endif %}
+                                                class="ph-fill ph-crown text-amber-500 text-xs"></i>{%
+                                            endif %}
                                         </div>
                                     </td>
                                     <td>
@@ -410,7 +420,8 @@
                                         <div class="font-bold text-slate-900 flex items-center gap-1">
                                             {{ u.username }}
                                             {% if u.is_premium %}<i
-                                                class="ph-fill ph-crown text-amber-500 text-xs"></i>{% endif %}
+                                                class="ph-fill ph-crown text-amber-500 text-xs"></i>{%
+                                            endif %}
                                         </div>
                                         <div class="text-xs text-slate-500 break-all">{{ u.email }}</div>
                                     </div>
@@ -505,7 +516,8 @@
                                     <tr class="hover:bg-slate-50 transition-colors group">
                                         <td>
                                             <div class="font-bold text-slate-900 truncate max-w-[250px]"
-                                                x-text="t.title"></div>
+                                                x-text="t.title">
+                                            </div>
                                             <div class="text-[10px] text-slate-500 flex items-center gap-1">
                                                 <i class="ph-bold ph-map-pin"></i> <span
                                                     x-text="t.location || 'N/A'"></span>
@@ -892,7 +904,8 @@
                             <div
                                 class="modal-action pt-4 flex justify-between items-center border-t border-slate-100 mt-4">
                                 <span class="text-xs font-bold text-slate-500"><span
-                                        x-text="selectedUsers.length"></span> sélectionnés</span>
+                                        x-text="selectedUsers.length"></span>
+                                    sélectionnés</span>
                                 <div class="flex gap-2">
                                     <button type="button"
                                         onclick="document.getElementById('modal-select-users').close()"

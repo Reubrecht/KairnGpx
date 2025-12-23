@@ -32,6 +32,9 @@ async def list_events(
     db: Session = Depends(get_db),
     user: models.User = Depends(get_manager_user)
 ):
+    if user.role == models.Role.SUPER_ADMIN:
+        return RedirectResponse(url="/superadmin#events", status_code=303)
+
     query = db.query(models.RaceEvent)
     
     if q:
@@ -235,6 +238,8 @@ async def import_events_json(
         # Ideally flash error
         print(f"Import error: {e}")
         
+    if user.role == models.Role.SUPER_ADMIN:
+        return RedirectResponse(url="/superadmin#events", status_code=303)
     return RedirectResponse(url="/manage/events", status_code=303)
 
 # --- Sub-resources ---
@@ -395,6 +400,8 @@ async def delete_events_batch(
         print(f"Batch Delete Error: {e}")
         db.rollback()
         
+    if user.role == models.Role.SUPER_ADMIN:
+        return RedirectResponse(url="/superadmin#events", status_code=303)
     return RedirectResponse(url="/manage/events", status_code=303)
 
 @router.post("/manage/editions/{edition_id}/duplicate")

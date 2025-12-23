@@ -226,6 +226,74 @@
 
         <!-- Right Column: Tracks -->
         <div class="lg:col-span-2 space-y-6">
+
+            <!-- Roadbooks Section -->
+            <div class="flex items-center justify-between">
+                <h3 class="text-xl font-bold text-slate-900">Mes Roadbooks ({{ strategies|length }})</h3>
+            </div>
+
+            {% if strategies %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for strat in strategies %}
+                <div
+                    class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full">
+                    <div class="p-4 flex-grow">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex gap-2">
+                                <span
+                                    class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-600 uppercase tracking-wider">
+                                    Roadbook
+                                </span>
+                            </div>
+                            <span class="text-xs text-slate-400 font-medium">
+                                {{ strat.created_at.strftime('%d/%m/%Y') }}
+                            </span>
+                        </div>
+
+                        <h4 class="text-lg font-bold text-slate-900 mb-1 truncate">{{ strat.title }}</h4>
+                        <p class="text-xs text-slate-500 mb-3">
+                            Sur la trace <a href="/track/{{ strat.track.id }}"
+                                class="font-bold text-brand-600 hover:underline">{{ strat.track.title }}</a>
+                        </p>
+
+                        <div
+                            class="flex items-center gap-3 text-xs text-slate-500 font-medium bg-slate-50 p-2 rounded-lg">
+                            <span class="flex items-center gap-1">
+                                <i class="ph-bold ph-timer"></i>
+                                {% set h = strat.target_time_minutes // 60 %}
+                                {% set m = strat.target_time_minutes % 60 %}
+                                {{ h }}h{{ "%02d"|format(m) }}
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <i class="ph-bold ph-flag"></i> {{ strat.points|length }} points
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="px-4 py-3 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+                        <button onclick="downloadPdf('{{ strat.id }}')"
+                            class="text-slate-600 hover:text-brand-600 font-bold text-xs uppercase tracking-wide flex items-center gap-1">
+                            <i class="ph-bold ph-download-simple"></i> PDF
+                        </button>
+                        <button onclick="deleteStrategy('{{ strat.id }}')"
+                            class="text-red-400 hover:text-red-600 font-bold text-xs uppercase tracking-wide">
+                            Supprimer
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="bg-white rounded-2xl border border-dashed border-slate-300 p-6 text-center mb-8">
+                <div class="mx-auto h-10 w-10 text-slate-300 mb-2">
+                    <i class="ph-duotone ph-book-open-text text-2xl"></i>
+                </div>
+                <p class="text-sm text-slate-500">Aucun roadbook sauvegardé.</p>
+            </div>
+            {% endif %}
+
+            <div class="h-px bg-slate-100 my-6"></div>
+
             <div class="flex items-center justify-between">
                 <h3 class="text-xl font-bold text-slate-900">Mes Traces ({{ tracks|length }})</h3>
                 <a href="/upload" class="text-sm font-bold text-brand-600 hover:text-brand-700">+ Nouvelle Trace</a>
@@ -401,5 +469,26 @@
             });
         }
     });
+    function downloadPdf(strategyId) {
+        window.location.href = `/api/strategy/${strategyId}/pdf`;
+    }
+
+    async function deleteStrategy(strategyId) {
+        if (!confirm("Supprimer ce roadbook ?")) return;
+
+        try {
+            const res = await fetch(`/api/strategy/${strategyId}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                window.location.reload();
+            } else {
+                alert("Erreur lors de la suppression");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Erreur");
+        }
+    }
 </script>
 {% endblock %}

@@ -18,11 +18,13 @@ router = APIRouter()
 async def profile_page(request: Request, db: Session = Depends(get_db)):
     user = await get_current_user(request, db)
     tracks = db.query(models.Track).filter(models.Track.user_id == user.id).order_by(models.Track.created_at.desc()).all()
+    strategies = db.query(models.RaceStrategy).filter(models.RaceStrategy.user_id == user.id).order_by(models.RaceStrategy.created_at.desc()).all()
     
     return templates.TemplateResponse("profile.html", {
         "request": request,
         "user": user,
-        "tracks": tracks
+        "tracks": tracks,
+        "strategies": strategies
     })
 
 @router.post("/profile")

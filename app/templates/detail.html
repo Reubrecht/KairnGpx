@@ -716,10 +716,19 @@
                                 </button>
 
                                 <div class="grid grid-cols-2 gap-3">
+                                    {% if user %}
                                     <button onclick="saveStrategy(event)"
                                         class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
                                         <i class="ph-bold ph-floppy-disk"></i> Sauver
                                     </button>
+                                    {% else %}
+                                    <button
+                                        onclick="if(confirm('Vous devez être connecté pour sauvegarder.\nOuvrir la connexion dans un nouvel onglet ?')) window.open('/login', '_blank');"
+                                        class="w-full bg-slate-50 text-slate-400 font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 border border-dashed border-slate-200 hover:bg-slate-100 hover:text-slate-600"
+                                        title="Connectez-vous pour sauvegarder">
+                                        <i class="ph-bold ph-lock-key"></i> Sauver
+                                    </button>
+                                    {% endif %}
                                     <button onclick="exportPdf()"
                                         class="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
                                         <i class="ph-bold ph-file-pdf"></i> PDF Pro
@@ -1215,7 +1224,17 @@
                 body: JSON.stringify(payload)
             });
 
-            if (!res.ok) throw new Error("Erreur sauvegarde");
+            if (res.status === 401) {
+                if (confirm("Vous devez être connecté pour sauvegarder votre roadbook.\n\nVoulez-vous ouvrir la page de connexion dans un nouvel onglet ?\n(Une fois connecté, revenez ici et cliquez à nouveau sur Sauver)")) {
+                    window.open('/login', '_blank');
+                }
+                return;
+            }
+
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({ detail: res.statusText }));
+                throw new Error(errData.detail || "Erreur inconnue");
+            }
 
             // Show Success Feedback (Simple alert or toast)
             const btn = event.target.closest('button'); // Hacky access
@@ -1225,9 +1244,14 @@
             setTimeout(() => {
                 btn.innerHTML = originalText;
                 btn.classList.remove('bg-green-100', 'text-green-700');
-            }, 2000);
+
+                if (confirm("Roadbook sauvegardé ! Voir dans mon profil ?")) {
+                    window.location.href = "/profile";
+                }
+            }, 500);
 
         } catch (e) {
+            console.error(e);
             alert("Erreur sauvegarde: " + e.message);
         }
     }

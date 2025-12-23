@@ -240,3 +240,84 @@ async def export_strategy_pdf(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{strategy_id}/pdf")
+async def get_strategy_pdf(
+    strategy_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    Generate PDF from a saved strategy.
+    """
+    strategy = db.query(models.RaceStrategy).filter(
+        models.RaceStrategy.id == strategy_id, 
+        models.RaceStrategy.user_id == current_user.id
+    ).first()
+    
+    if not strategy:
+        raise HTTPException(status_code=404, detail="Strategy not found")
+        
+    track = strategy.track 
+    if not track:
+        raise HTTPException(status_code=404, detail="Track not found")
+
+    if not track.file_path or not os.path.exists(track.file_path):
+        raise HTTPException(status_code=400, detail="GPX file not available")
+
+    try:
+        # Re-calculate
+        with open(track.file_path, 'r', encoding='utf-8') as f:
+            content = f.read().encode('utf-8')
+            
+        analytics = GpxAnalytics(content)
+        calculator = StrategyCalculator(analytics)
+        
+        # Extract params
+        start_time = strategy.global_params.get("start_time", 6.0)
+        fatigue = strategy.global_params.get("fatigue_factor", 1.0)
+        tech = strategy.global_params.get("technicity_score", 1.0)
+        
+        result = calculator.calculate_splits(
+            target_time_minutes=strategy.target_time_minutes,
+            waypoints=strategy.points,
+            start_time_hour=start_time,
+            fatigue_factor=fatigue,
+            technicity_score=tech
+        )
+        
+        # Generate PDF
+        generator = StrategyPdfGenerator()
+        user_name = current_user.username or "Athlète"
+        
+        pdf_path = generator.generate_pdf(
+            track_title=strategy.title,
+            strategy_data=result,
+            nutrition=strategy.nutrition_strategy,
+            user_name=user_name
+        )
+        
+        return FileResponse(pdf_path, media_type="application/pdf", filename=f"roadbook_{strategy.id}.pdf")
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/{strategy_id}")
+async def delete_strategy(
+    strategy_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    strategy = db.query(models.RaceStrategy).filter(
+        models.RaceStrategy.id == strategy_id, 
+        models.RaceStrategy.user_id == current_user.id
+    ).first()
+    
+    if not strategy:
+        raise HTTPException(status_code=404, detail="Strategy not found")
+        
+    db.delete(strategy)
+    db.commit()
+    return {"status": "deleted"}
