@@ -1,5 +1,5 @@
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4
+from reportlab.lib.pagesizes import A4, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import cm
@@ -10,7 +10,8 @@ from datetime import datetime
 
 class StrategyPdfGenerator:
     def __init__(self):
-        self.width, self.height = A4
+        # Landscape Mode
+        self.width, self.height = landscape(A4)
         self.styles = getSampleStyleSheet()
         self._create_custom_styles()
 
@@ -18,26 +19,26 @@ class StrategyPdfGenerator:
         self.styles.add(ParagraphStyle(
             name='TitleKV',
             parent=self.styles['Heading1'],
-            fontSize=24,
+            fontSize=22,
             textColor=colors.HexColor('#0F172A'),
             alignment=TA_CENTER,
-            spaceAfter=20
+            spaceAfter=10
         ))
         self.styles.add(ParagraphStyle(
             name='SubtitleKV',
             parent=self.styles['Heading2'],
-            fontSize=14,
+            fontSize=12,
             textColor=colors.HexColor('#64748B'),
             alignment=TA_CENTER,
-            spaceAfter=30
+            spaceAfter=20
         ))
         self.styles.add(ParagraphStyle(
             name='SectionHeader',
             parent=self.styles['Heading3'],
-            fontSize=12,
+            fontSize=11,
             textColor=colors.HexColor('#0F172A'),
-            spaceBefore=15,
-            spaceAfter=10,
+            spaceBefore=10,
+            spaceAfter=5,
             borderPadding=(0, 0, 5, 0),
             borderWidth=1,
             borderColor=colors.HexColor('#E2E8F0'),
@@ -46,29 +47,43 @@ class StrategyPdfGenerator:
         self.styles.add(ParagraphStyle(
             name='NutritionText',
             parent=self.styles['Normal'],
-            fontSize=10,
+            fontSize=9,
             textColor=colors.HexColor('#334155'),
-            leading=14
+            leading=12
+        ))
+        self.styles.add(ParagraphStyle(
+            name='CellText',
+            parent=self.styles['Normal'],
+            fontSize=8,
+            textColor=colors.HexColor('#1E293B'),
+        ))
+        self.styles.add(ParagraphStyle(
+            name='CellTextBold',
+            parent=self.styles['Normal'],
+            fontSize=8,
+            textColor=colors.HexColor('#0F172A'),
+            fontName='Helvetica-Bold'
         ))
 
     def generate_pdf(self, track_title, strategy_data, nutrition, user_name="Athlète"):
         """
-        Generate a PDF Roadbook.
-        strategy_data: Result from StrategyCalculator.calculate_splits
-                       Contains 'points' (list) and 'strategy' (dict)
+        Generate a PDF Roadbook (Landscape - UTMB Style).
         """
         
         # Create temp file
         fd, path = tempfile.mkstemp(suffix=".pdf")
         os.close(fd)
         
+        # Margins: 1cm for max space
+        margin = 0.8 * cm
+        
         doc = SimpleDocTemplate(
             path,
-            pagesize=A4,
-            rightMargin=2*cm,
-            leftMargin=2*cm,
-            topMargin=2*cm,
-            bottomMargin=2*cm
+            pagesize=landscape(A4),
+            rightMargin=margin,
+            leftMargin=margin,
+            topMargin=margin,
+            bottomMargin=margin
         )
 
         elements = []
@@ -80,93 +95,134 @@ class StrategyPdfGenerator:
         target_time = self._format_duration(strategy_data['strategy']['target_time'])
         
         elements.append(Paragraph(
-            f"Généré pour {user_name} • le {date_str} • Objectif {target_time}",
+            f"Athlète: {user_name} • Date: {date_str} • Objectif: {target_time}",
             self.styles['SubtitleKV']
         ))
         
-        # 2. Key Stats (Table)
-        # We need total dist and D+ which are in the last point usually
         points = strategy_data['points']
-        total_km = points[-1]['km'] if points else 0
-        total_dplus = points[-1]['d_plus_cumul'] if points else 0
         
-        stats_data = [
-            [f"{total_km} km", f"+{total_dplus} m", f"{target_time}"]
+        # 3. Splits Table - UTMB Columns
+        # Point | Altitude (M) | Dist (km) | Dist. inter (km) | Déniv + (M) | Déniv - (M) | Plus rapide | Plus lent | Services
+        
+        headers = [
+            'Point', 
+            'Altitude (M)', 
+            'Dist (km)', 'Dist. inter', 
+            'Déniv +', 'Déniv -', 
+            'Plus rapide', 'Plus lent', 
+            'Services'
         ]
         
-        stats_table = Table(stats_data, colWidths=[6*cm, 6*cm, 5*cm])
-        stats_table.setStyle(TableStyle([
-            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-            ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
-            ('FONTSIZE', (0,0), (-1,-1), 16),
-            ('TEXTCOLOR', (0,0), (-1,-1), colors.HexColor('#0F172A')),
-            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F1F5F9')),
-            ('ROUNDEDCORNERS', [10, 10, 10, 10]),
-            ('TOPPADDING', (0,0), (-1,-1), 12),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 12),
-        ]))
-        elements.append(stats_table)
-        elements.append(Spacer(1, 1*cm))
-
-        # 3. Splits Table
-        elements.append(Paragraph("Détails & Passages", self.styles['SectionHeader']))
-        
-        # Table Header
-        table_data = [['Lieu', 'Km', 'D+ Cumul', 'Temps Course', 'Heure']]
+        table_data = [headers]
         
         # Rows
         for p in points:
-            # Highlight heavy rows?
+            # Safely get segment stats (start point has 0/None)
+            seg_dist = p.get('segment_dist', 0)
+            seg_dplus = p.get('segment_d_plus', 0)
+            seg_dminus = p.get('segment_d_minus', 0)
+            
+            # Format numbers
+            alt_str = f"{p.get('altitude', 0)}"
+            dist_str = f"{p['km']}"
+            seg_dist_str = f"{seg_dist}" if seg_dist > 0 else "-"
+            
+            seg_dplus_str = f"{seg_dplus}" if seg_dplus > 0 else "-"
+            seg_dminus_str = f"{seg_dminus}" if seg_dminus > 0 else "-"
+            
+            fast_time = p.get('time_fast_tod', '-')
+            slow_time = p.get('time_slow_tod', '-')
+            
+            # Style Name (Bold)
+            name_para = Paragraph(f"<b>{p['name']}</b>", self.styles['CellText'])
+            
+            # Nutrition placeholder
+            # If nutrition strategy contains keywords related to this point, we could maybe add?
+            # For now, just a placeholder icon or empty space for writing
+            note = ""
+            
             row = [
-                Paragraph(f"<b>{p['name']}</b>", self.styles['Normal']),
-                f"{p['km']} km",
-                f"+{p['d_plus_cumul']} m",
-                p['time_race'],
-                p['time_day']
+                name_para,
+                alt_str,
+                dist_str, seg_dist_str,
+                seg_dplus_str, seg_dminus_str,
+                fast_time, slow_time,
+                note
             ]
             table_data.append(row)
 
-        col_widths = [7*cm, 2.5*cm, 2.5*cm, 2.5*cm, 2.5*cm]
-        t = Table(table_data, colWidths=col_widths)
+        # Widths: A4 Landscape width approx 29.7cm - margins (1.6cm) = 28.1cm
+        # 9 Columns
+        # Point: 5cm
+        # Alt: 2cm
+        # Dist/Int/D+/D-: 4 * 2cm = 8cm
+        # Fast/Slow: 2 * 2.5cm = 5cm
+        # Services: Remaining (approx 8cm)
         
-        # Striped style
-        table_style = [
-            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0F172A')), # Header bg
-            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
-            ('ALIGN', (1,0), (-1,-1), 'RIGHT'), # Numbers right aligned
-            ('ALIGN', (0,0), (0,-1), 'LEFT'),
-            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0,0), (-1,0), 10),
-            ('BOTTOMPADDING', (0,0), (-1,0), 8),
-            ('TOPPADDING', (0,0), (-1,0), 8),
-            # Rows
-            ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
-            ('FONTSIZE', (0,1), (-1,-1), 10),
-            ('BOTTOMPADDING', (0,1), (-1,-1), 6),
-            ('TOPPADDING', (0,1), (-1,-1), 6),
-            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
+        col_widths = [
+            5*cm, 
+            2.0*cm, 
+            2.0*cm, 2.0*cm, 
+            2.0*cm, 2.0*cm,
+            2.5*cm, 2.5*cm,
+            None # Auto fill rest
         ]
         
-        # Zebra striping
-        for i in range(1, len(table_data)):
-            if i % 2 == 0:
-                table_style.append(('BACKGROUND', (0,i), (-1,i), colors.HexColor('#F8FAFC')))
-            else:
-                table_style.append(('BACKGROUND', (0,i), (-1,i), colors.white))
-                
+        t = Table(table_data, colWidths=col_widths, repeatRows=1)
+        
+        # Styles
+        table_style = [
+            # Header
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F1F5F9')), 
+            ('TEXTCOLOR', (0,0), (-1,0), colors.HexColor('#0F172A')),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0,0), (-1,0), 9),
+            ('ALIGN', (0,0), (-1,0), 'CENTER'),
+            ('BOTTOMPADDING', (0,0), (-1,0), 10),
+            ('TOPPADDING', (0,0), (-1,0), 10),
+            ('LINEBELOW', (0,0), (-1,0), 1, colors.HexColor('#CBD5E1')),
+            
+            # Data Alignment
+            ('ALIGN', (1,0), (7,-1), 'CENTER'), # Numbers Center Aligned
+            ('ALIGN', (0,0), (0,-1), 'LEFT'),  # Name Left
+            ('ALIGN', (8,0), (-1,-1), 'LEFT'), # Services Left
+            
+            # General Rows
+            ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
+            ('FONTSIZE', (0,1), (-1,-1), 9),
+            ('BOTTOMPADDING', (0,1), (-1,-1), 8),
+            ('TOPPADDING', (0,1), (-1,-1), 8),
+            # ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
+            ('LINEBELOW', (0,1), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            
+            # Highlight Chrono Columns (Fast/Slow)
+            # ('TEXTCOLOR', (6,1), (7,-1), colors.HexColor('#64748B')), 
+        ]
+        
+        # Zebra striping (optional, UTMB is usually plain white with lines)
+        # We will stick to lines as per UTMB screenshot usually being clean.
+        
         t.setStyle(TableStyle(table_style))
         elements.append(t)
-        elements.append(Spacer(1, 1*cm))
-
-        # 4. Nutrition Strategy
+        
+        # 4. Global Nutrition Strategy (Footer area)
         if nutrition:
-            elements.append(Paragraph("Stratégie Nutrition", self.styles['SectionHeader']))
-            elements.append(Paragraph(nutrition.replace('\n', '<br/>'), self.styles['NutritionText']))
             elements.append(Spacer(1, 1*cm))
-
-        # 5. Footer / Branding
-        # elements.append(Spacer(1, 2*cm))
-        # elements.append(Paragraph("Kairn - Planifiez votre prochaine aventure", self.styles['SubtitleKV']))
+            elements.append(Paragraph("Stratégie Nutrition Globale & Notes", self.styles['SectionHeader']))
+            
+            # Create a bordered box for nutrition
+            nutri_data = [[Paragraph(nutrition.replace('\n', '<br/>'), self.styles['NutritionText'])]]
+            nutri_table = Table(nutri_data, colWidths=['100%'])
+            nutri_table.setStyle(TableStyle([
+                ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#E2E8F0')),
+                ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F8FAFC')),
+                ('TOPPADDING', (0,0), (-1,-1), 10),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 10),
+                ('LEFTPADDING', (0,0), (-1,-1), 10),
+                ('RIGHTPADDING', (0,0), (-1,-1), 10),
+            ]))
+            elements.append(nutri_table)
 
         doc.build(elements)
         return path

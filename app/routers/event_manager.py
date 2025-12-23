@@ -505,45 +505,106 @@ async def search_tracks_api(
 
 @router.post("/manage/unified/create")
 async def create_unified_event(
-    event_name: str = Form(...),
-    year: int = Form(...),
-    route_name: str = Form(...),
-    distance_category: str = Form(None),
-    file: UploadFile = File(...),
+    request: Request,
     db: Session = Depends(get_db),
     user: models.User = Depends(get_manager_user)
 ):
     """
-    Unified endpoint to create Event + Edition + Route + Track in one go.
+    Unified endpoint to create Event + Edition + Multiple Routes + Tracks in one go.
+    Supports optional GPX files and Event images.
     """
     from ..services.unified_event_service import UnifiedEventService
+    from ..services.image_service import ImageService
+    from ..utils import slugify
     
-    # Validation
-    if not file or not file.filename:
-        raise HTTPException(status_code=400, detail="Fichier GPX requis")
-        
+    form = await request.form()
+    
+    event_name = form.get("event_name")
     try:
-        content = await file.read()
-        service = UnifiedEventService(db, user)
-        
-        result = await service.create_event_hierarchy(
-            event_name=event_name,
-            year=year,
-            route_name=route_name,
-            gpx_content=content,
-            distance_category=distance_category
-        )
-        
-        # Verify success by checking result (optional, since it raises if fails)
-        event = result["event"]
-        
+        year = int(form.get("year"))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="Année invalide")
+
+    banner_file = form.get("banner_file")
+    profile_file = form.get("profile_file")
+
+    if not event_name:
+        raise HTTPException(status_code=400, detail="Nom de l'événement requis")
+
+    service = UnifiedEventService(db, user)
+    created_event = None
+
+    # Iterate over potential routes (index 0 to N)
+    i = 0
+    routes_processed = 0
+    
+    try:
+        while True:
+            r_name_key = f"route_name_{i}"
+            if r_name_key not in form:
+                break
+                
+            r_name = form.get(r_name_key)
+            if r_name: 
+                dist_cat = form.get(f"distance_category_{i}")
+                gpx_item = form.get(f"route_file_{i}")
+                
+                gpx_content = None
+                if isinstance(gpx_item, UploadFile) and gpx_item.filename:
+                    gpx_content = await gpx_item.read()
+                
+                result = await service.create_event_hierarchy(
+                    event_name=event_name,
+                    year=year,
+                    route_name=r_name,
+                    gpx_content=gpx_content,
+                    distance_category=dist_cat
+                )
+                created_event = result["event"]
+                routes_processed += 1
+            
+            i += 1
+            
+        # Support Event creation even without routes
+        if routes_processed == 0 and not created_event:
+             slug = slugify(event_name)
+             created_event = db.query(models.RaceEvent).filter(models.RaceEvent.slug == slug).first()
+             if not created_event:
+                created_event = models.RaceEvent(name=event_name, slug=slug)
+                created_event.owners.append(user)
+                db.add(created_event)
+                db.flush()
+             
+             # Create Edition
+             edition = db.query(models.RaceEdition).filter_by(event_id=created_event.id, year=year).first()
+             if not edition:
+                edition = models.RaceEdition(event_id=created_event.id, year=year, status=models.RaceStatus.UPCOMING)
+                db.add(edition)
+
+        # Handle Images
+        if created_event:
+            upload_dir = Path("app/media/events")
+            upload_dir.mkdir(parents=True, exist_ok=True)
+
+            # Banner (Header) -> mapped to profile_picture
+            if isinstance(banner_file, UploadFile) and banner_file.filename:
+                content = await banner_file.read()
+                new_filename = ImageService.process_image(
+                    content, upload_dir, 
+                    filename_prefix=f"banner_{created_event.slug}",
+                    max_width=1600, max_height=1200
+                )
+                created_event.profile_picture = f"/media/events/{new_filename}" 
+                db.add(created_event)
+            
+            # Profile Photo -> Ideally another field, skipping for now as per schema limits
+
+        db.commit()
         return RedirectResponse(
-            url=f"/manage/events/{event.id}", 
+            url=f"/manage/events/{created_event.id}", 
             status_code=status.HTTP_303_SEE_OTHER
         )
-        
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+
     except Exception as e:
         print(f"Unified Create Error: {e}")
-        raise HTTPException(status_code=500, detail="Une erreur est survenue lors de la création")
+        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")

@@ -716,7 +716,7 @@
                                 </button>
 
                                 <div class="grid grid-cols-2 gap-3">
-                                    <button onclick="saveStrategy()"
+                                    <button onclick="saveStrategy(event)"
                                         class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
                                         <i class="ph-bold ph-floppy-disk"></i> Sauver
                                     </button>
@@ -1185,7 +1185,7 @@
         document.getElementById('result-meta').textContent = "Calcul effectué (Scientific Method)";
     }
 
-    async function saveStrategy() {
+    async function saveStrategy(event) {
         // Same payload collection
         const h = parseInt(document.getElementById('target-h').value) || 0;
         const m = parseInt(document.getElementById('target-m').value) || 0;
@@ -2013,20 +2013,22 @@
                 datasets: [{
                     label: 'Altitude (m)',
                     data: data,
-                    borderWidth: 2,
+                    borderWidth: 3, // Premium: Thicker line
                     pointRadius: 0,
-                    pointHoverRadius: 4,
-                    pointBackgroundColor: '#10b981',
-                    borderColor: '#10b981',
+                    pointHoverRadius: 6, // Premium: Larger hover point
+                    pointHoverBackgroundColor: '#ffffff', // Premium: White center
+                    pointHoverBorderColor: '#059669', // Premium: Brand border
+                    pointHoverBorderWidth: 3,
+                    borderColor: '#059669', // Brand-600
                     backgroundColor: (context) => {
                         const ctx = context.chart.ctx;
                         const gradient = ctx.createLinearGradient(0, 0, 0, context.chart.height);
-                        gradient.addColorStop(0, 'rgba(16, 185, 129, 0.4)');
-                        gradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+                        gradient.addColorStop(0, 'rgba(5, 150, 105, 0.6)'); // Brand-600, deeper start
+                        gradient.addColorStop(1, 'rgba(5, 150, 105, 0.05)'); // Brand-600, subtle end
                         return gradient;
                     },
                     fill: 'start',
-                    tension: 0.4 // Smoother curve (was 0.2)
+                    tension: 0.4
                 }]
             },
             options: {
@@ -2038,12 +2040,16 @@
                         enabled: true,
                         mode: 'index',
                         intersect: false,
-                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                        titleColor: '#1e293b',
-                        bodyColor: '#10b981',
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)', // Premium: More opaque
+                        titleColor: '#0f172a', // Slate-900
+                        bodyColor: '#059669', // Brand-600
                         borderColor: '#e2e8f0',
                         borderWidth: 1,
+                        padding: 10, // Premium: More padding
+                        cornerRadius: 8, // Premium: Softer corners
                         displayColors: false,
+                        titleFont: { size: 13, family: "'Inter', sans-serif", weight: 'bold' },
+                        bodyFont: { size: 12, family: "'Inter', sans-serif', weight: 'bold'" },
                         callbacks: {
                             title: (items) => `${items[0].label} km`,
                             label: (item) => `${Math.round(item.raw)} m`
@@ -2057,25 +2063,33 @@
                 },
                 scales: {
                     x: {
-                        grid: { display: false },
+                        grid: {
+                            display: false,
+                            drawBorder: false
+                        },
                         ticks: {
                             maxTicksLimit: 6,
                             maxRotation: 0,
                             callback: function (val, index) {
                                 return this.getLabelForValue(val) + ' km';
                             },
-                            font: { size: 10, family: "'Inter', sans-serif" },
-                            color: '#94a3b8'
+                            font: { size: 11, family: "'Inter', sans-serif", weight: '500' }, // Premium: Slightly larger
+                            color: '#64748b' // Slate-500
                         }
                     },
                     y: {
-                        grid: { color: '#f1f5f9' },
+                        grid: {
+                            color: '#f1f5f9',
+                            borderDash: [5, 5], // Premium: Dashed grid
+                            drawBorder: false
+                        },
                         position: 'right',
                         ticks: {
                             maxTicksLimit: 5,
                             callback: (value) => value,
-                            font: { size: 10, family: "'Inter', sans-serif" },
-                            color: '#94a3b8'
+                            font: { size: 11, family: "'Inter', sans-serif", weight: '500' },
+                            color: '#64748b',
+                            padding: 8
                         }
                     }
                 },

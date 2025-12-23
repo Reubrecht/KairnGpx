@@ -11,8 +11,8 @@ echo "📥 Pulling latest changes..."
 git pull
 
 echo "♻️  Recreating Docker containers..."
-docker compose down
-docker compose up -d --build
+docker compose -f docker-compose.freebox.yml down
+docker compose -f docker-compose.freebox.yml up -d --build
 
 echo "✅ Update and Restart Complete!"
 echo "Press Enter to close this window..."

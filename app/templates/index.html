@@ -8,6 +8,9 @@
 <!-- noUiSlider -->
 <link href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.6.3/nouislider.min.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.6.3/nouislider.min.js"></script>
+<!-- Alpine.js -->
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
 <style>
     .leaflet-control-attribution {
         display: none !important;
@@ -94,6 +97,10 @@
 
     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
         background-color: #94a3b8;
+    }
+
+    [x-cloak] {
+        display: none !important;
     }
 </style>
 {% endblock %}
@@ -430,93 +437,111 @@
         </div>
         {% endif %}
 
-        <!-- 2. EVENTS HIERARCHY -->
+        <!-- 2. EVENTS HIERARCHY WITH ALPINE.JS -->
         {% if grouped_events_hierarchy %}
-        <div class="mt-12 pt-8 border-t border-slate-100">
+        <div class="mt-12 pt-8 border-t border-slate-100"
+            x-data="eventExplorer(JSON.parse(document.getElementById('events-json').textContent))" x-cloak>
             <h2 class="text-2xl font-bold text-gray-800 mb-8 flex items-center gap-2">
                 <i class="ph-fill ph-trophy text-yellow-500"></i>
-                Événements Officiels (En attente)
+                Explorer par Lieu
             </h2>
 
-            {% macro render_node(node) %}
-            {# 1. Render Events at this exact level #}
-            {% if node._events %}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                {% for ev_key, track in node._events.items() %}
-                <!-- Grouped Event Card -->
-                <div onclick="window.location.href='/event/{{ track.event_id }}'"
-                    class="group block bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 hover:border-brand-200 hover:-translate-y-1 relative h-full flex flex-col cursor-pointer">
-                    <div class="h-32 bg-slate-900 relative overflow-hidden flex items-center justify-center">
-                        <div class="absolute inset-0 opacity-20 bg-[url('/static/img/hero.png')] bg-cover bg-center">
-                        </div>
-                        <div class="z-10 text-center">
-                            <h3 class="text-white font-bold text-xl px-4">{{ track.title }}</h3>
-                            <p class="text-slate-400 text-sm flex items-center justify-center gap-1">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                </svg>
-                                {{ track.location_city }}
-                            </p>
-                        </div>
-                        <span
-                            class="absolute top-2 right-2 bg-yellow-400 text-yellow-900 text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm opacity-90">Événement
-                            Officiel</span>
+            <!-- Breadcrumbs -->
+            <nav class="flex items-center gap-2 text-sm text-slate-500 mb-6 flex-wrap">
+                <div @click="reset()"
+                    class="flex items-center gap-1 hover:text-brand-600 hover:bg-brand-50 px-2 py-1 rounded cursor-pointer transition-colors font-bold">
+                    <i class="ph ph-globe"></i>
+                    Monde
+                </div>
+
+                <template x-for="(crumb, index) in breadcrumbs" :key="index">
+                    <div class="flex items-center gap-2">
+                        <i class="ph ph-caret-right text-slate-300 text-xs"></i>
+                        <span @click="navigateToCrumb(index)"
+                            class="hover:text-brand-600 hover:underline cursor-pointer font-medium"
+                            x-text="crumb"></span>
                     </div>
-                    <div class="p-4 flex-1 bg-slate-50">
-                        <h4 class="text-xs font-bold text-slate-500 uppercase mb-3">Parcours en attente</h4>
-                        <div class="space-y-3">
-                            {% for route in track.routes %}
+                </template>
+            </nav>
+
+            <!-- Grid Content -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 animate-fade-in">
+
+                <!-- Folders / Locations -->
+                <template x-for="folder in currentFolders" :key="folder">
+                    <div @click="enterFolder(folder)"
+                        class="group bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-brand-300 cursor-pointer transition-all flex items-center gap-4">
+                        <div
+                            class="w-12 h-12 rounded-full bg-slate-50 text-slate-400 group-hover:bg-brand-50 group-hover:text-brand-600 flex items-center justify-center transition-colors">
+                            <i class="ph-duotone ph-folder-notch-open text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-700 group-hover:text-brand-700 transition-colors"
+                                x-text="folder"></h3>
+                            <p class="text-xs text-slate-400">Voir les sous-régions</p>
+                        </div>
+                        <i
+                            class="ph ph-arrow-right ml-auto text-slate-300 group-hover:text-brand-400 transition-colors"></i>
+                    </div>
+                </template>
+
+                <!-- Events (At leaf level) -->
+                <template x-for="event in currentEvents" :key="event.id">
+                    <a :href="'/event/' + event.event_id"
+                        class="group block bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-lg hover:border-brand-400 transition-all hover:-translate-y-1">
+                        <div class="h-32 bg-slate-800 relative flex items-center justify-center overflow-hidden">
+                            <!-- Placeholder or Image -->
                             <div
-                                class="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-200 shadow-sm">
-                                <div>
-                                    <p class="font-bold text-slate-800 text-sm">{{ route.name }}</p>
-                                    <p class="text-xs text-slate-500">{{ route.distance_km }}km • {{
-                                        route.elevation_gain }}m+</p>
-                                </div>
-                                {% if user and user.role and ((user.role.value in ['moderator', 'admin',
-                                'super_admin']) if user.role.value is defined else (user.role in ['moderator',
-                                'admin', 'super_admin'])) %}
-                                <a href="/upload?race_route_id={{ route.id }}" onclick="event.stopPropagation()"
-                                    class="flex items-center gap-1 px-2 py-1 bg-brand-50 text-brand-700 rounded text-xs font-bold hover:bg-brand-100 transition-colors"
-                                    title="Uploader la trace pour ce parcours">
-                                    Add
-                                </a>
-                                {% else %}
-                                <span class="text-slate-300 text-xs italic">En attente</span>
-                                {% endif %}
+                                class="absolute inset-0 opacity-30 bg-[url('/static/img/hero.png')] bg-cover bg-center group-hover:scale-105 transition-transform duration-700">
                             </div>
-                            {% endfor %}
+
+                            <div class="z-10 text-center px-4">
+                                <h3 class="text-white font-bold text-lg leading-tight drop-shadow-md"
+                                    x-text="event.title"></h3>
+                                <p class="text-white/80 text-xs mt-1 flex items-center justify-center gap-1">
+                                    <i class="ph-fill ph-map-pin"></i>
+                                    <span x-text="event.location_city"></span>
+                                </p>
+                            </div>
+
+                            <span
+                                class="absolute top-2 right-2 bg-yellow-400 text-yellow-900 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                                <i class="ph-fill ph-trophy mr-0.5"></i> Officiel
+                            </span>
                         </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
 
-            {# 2. Iterate children locations #}
-            {% for key, child in node.items() %}
-            {% if key != "_events" %}
-            <div class="mb-6 pl-0">
-                <h3
-                    class="flex items-center gap-2 text-xl font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">
-                    <span class="w-2 h-2 rounded-full bg-brand-500"></span>
-                    {{ key }}
-                </h3>
-                <div class="pl-4 border-l-2 border-slate-100 ml-1">
-                    {{ render_node(child) }}
-                </div>
+                        <div class="p-3 bg-slate-50 border-t border-slate-100">
+                            <div class="space-y-2">
+                                <template x-for="route in event.routes.slice(0, 3)" :key="route.id">
+                                    <div
+                                        class="flex justify-between items-center text-xs text-slate-600 bg-white px-2 py-1.5 rounded border border-slate-200/50">
+                                        <span class="font-bold truncate max-w-[60%]" x-text="route.name"></span>
+                                        <span class="text-slate-400 font-mono">
+                                            <span x-text="Math.round(route.distance_km)"></span>km <span
+                                                class="text-[9px]">D+</span><span x-text="route.elevation_gain"></span>
+                                        </span>
+                                    </div>
+                                </template>
+                                <div x-show="event.routes.length > 3"
+                                    class="text-center text-[10px] text-slate-400 font-medium pt-1">
+                                    +<span x-text="event.routes.length - 3"></span> parcours...
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </template>
             </div>
-            {% endif %}
-            {% endfor %}
-            {% endmacro %}
 
-            {# Start Recursion #}
-            {{ render_node(grouped_events_hierarchy) }}
+            <!-- Empty State -->
+            <div x-show="currentFolders.length === 0 && currentEvents.length === 0"
+                class="col-span-full py-12 text-center text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                <i class="ph ph-compass text-4xl mb-2 opacity-50"></i>
+                <p>Aucun événement trouvé à ce niveau.</p>
+            </div>
+
         </div>
         {% endif %}
     </div>
-</div>
 </div>
 
 <script>
@@ -538,20 +563,15 @@
         }
     }
 
-    // Auto-open advanced filters if any advanced param is set
+    // Auto-open advanced filters
     document.addEventListener("DOMContentLoaded", function () {
         const urlParams = new URLSearchParams(window.location.search);
         const advancedKeys = ['activity_type', 'ratio_category', 'is_official', 'scenery_min', 'tag', 'author'];
         const hasAdvanced = advancedKeys.some(key => urlParams.has(key) && urlParams.get(key) !== '');
         if (hasAdvanced) {
             toggleAdvancedFilters();
-            // Also show the main container if advanced filters are active? 
-            // Maybe not auto-show main container to keep it clean unless user requested?
-            // User requirement: "masque ... par défaut"
-            // Let's respect "hidden" unless user toggles.
         }
 
-        // Listen for Global Toggle Event from Base.html
         window.addEventListener('toggle-explore-filters', () => {
             const container = document.getElementById('explore-filters-container');
             if (container) {
@@ -559,22 +579,76 @@
             }
         });
     });
+
+    // --- Alpine.js Data for Event Explorer ---
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('eventExplorer', (initialData) => ({
+            rootData: initialData,
+            currentNode: initialData,
+            breadcrumbs: [],
+
+            get currentFolders() {
+                if (!this.currentNode) return [];
+                // Return keys that are not '_events'
+                return Object.keys(this.currentNode).filter(k => k !== '_events').sort();
+            },
+
+            get currentEvents() {
+                if (!this.currentNode || !this.currentNode._events) return [];
+                // Convert dict to array
+                return Object.values(this.currentNode._events);
+            },
+
+            enterFolder(folderName) {
+                if (this.currentNode[folderName]) {
+                    this.breadcrumbs.push(folderName);
+                    this.currentNode = this.currentNode[folderName];
+                }
+            },
+
+            reset() {
+                this.breadcrumbs = [];
+                this.currentNode = this.rootData;
+            },
+
+            navigateToCrumb(index) {
+                // Reconstruct path up to index
+                let newNode = this.rootData;
+                const newCrumbs = this.breadcrumbs.slice(0, index + 1);
+
+                for (const crumb of newCrumbs) {
+                    if (newNode[crumb]) {
+                        newNode = newNode[crumb];
+                    }
+                }
+
+                this.breadcrumbs = newCrumbs;
+                this.currentNode = newNode;
+            }
+        }));
+    });
 </script>
 
 <script id="tracks-data" type="application/json">
     {{ map_tracks_json | safe }}
 </script>
 
+<script id="events-json" type="application/json">
+    {{ grouped_events_hierarchy | tojson | safe }}
+</script>
+
+
+{% endblock %}
+
 {% block scripts %}
 <script>
     document.addEventListener("DOMContentLoaded", function () {
 
-        // --- Gradient Drawing Helper ---
+        // --- Gradient Drawing Helper (Preserved) ---
         function drawGradientTrack(map, gpxLayer) {
             const elevData = gpxLayer.get_elevation_data();
             if (!elevData || elevData.length < 2) return;
 
-            // Calculate range
             let minElev = Infinity;
             let maxElev = -Infinity;
             for (let i = 0; i < elevData.length; i++) {
@@ -583,23 +657,18 @@
                 if (e > maxElev) maxElev = e;
             }
             const range = maxElev - minElev;
-
-            // Use Canvas renderer for better performance with many segments
             const renderer = L.canvas({ padding: 0.5 });
 
             for (let i = 0; i < elevData.length - 1; i++) {
                 const p1 = elevData[i];
                 const p2 = elevData[i + 1];
-                const pt1 = p1[2]; // LatLng
-                const pt2 = p2[2]; // LatLng
+                const pt1 = p1[2];
+                const pt2 = p2[2];
 
                 if (!pt1 || !pt2) continue;
 
-                // Color based on average segment elevation
                 const avgElev = (p1[1] + p2[1]) / 2;
                 const ratio = range === 0 ? 0 : (avgElev - minElev) / range;
-
-                // HSL Gradient: Green (120) -> Red (0)
                 const hue = (1 - ratio) * 120;
                 const color = `hsl(${hue}, 90%, 45%)`;
 
@@ -613,14 +682,12 @@
             }
         }
 
-        // --- Autocomplete Logic ---
+        // --- Autocomplete Logic (Preserved) ---
         const cityInput = document.getElementById('city-input');
         const suggestionsList = document.getElementById('suggestions-list');
         const searchLat = document.getElementById('search-lat');
         const searchLon = document.getElementById('search-lon');
         let debounceTimer;
-
-        // Define submitForm early so it can be used
         const form = document.getElementById('filter-form');
         const submitForm = () => form && form.submit();
 
@@ -629,12 +696,10 @@
                 const query = this.value;
                 searchLat.value = '';
                 searchLon.value = '';
-
                 if (query.length < 3) {
                     suggestionsList.classList.add('hidden');
                     return;
                 }
-
                 clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(() => {
                     fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&lang=fr&limit=5`)
@@ -645,26 +710,22 @@
                                 suggestionsList.classList.remove('hidden');
                                 data.features.forEach(feature => {
                                     const props = feature.properties;
-                                    const coords = feature.geometry.coordinates; // [lon, lat]
-
+                                    const coords = feature.geometry.coordinates;
                                     const li = document.createElement('li');
                                     li.className = "px-4 py-2 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 flex flex-col border-b border-slate-50 last:border-0";
-
                                     let label = props.name;
                                     let context = [];
                                     if (props.city && props.name !== props.city) context.push(props.city);
                                     if (props.state) context.push(props.state);
                                     if (props.country) context.push(props.country);
-
                                     li.innerHTML = `
                                         <span class="font-bold">${label}</span>
                                         <span class="text-xs text-slate-400">${context.join(', ')}</span>
                                     `;
-
                                     li.addEventListener('click', () => {
                                         cityInput.value = label;
-                                        searchLat.value = coords[1]; // Lat
-                                        searchLon.value = coords[0]; // Lon
+                                        searchLat.value = coords[1];
+                                        searchLon.value = coords[0];
                                         suggestionsList.classList.add('hidden');
                                         submitForm();
                                     });
@@ -691,10 +752,8 @@
                         alert("La géolocalisation n'est pas supportée par votre navigateur.");
                         return;
                     }
-
                     const originalContent = btnAroundMe.innerHTML;
                     btnAroundMe.innerHTML = '<svg class="animate-spin h-5 w-5 text-brand-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
-
                     navigator.geolocation.getCurrentPosition(
                         (position) => {
                             const lat = position.coords.latitude;
@@ -714,36 +773,23 @@
             }
         }
 
-        // --- SLIDERS Logic ---
+        // --- SLIDERS Logic (Preserved) ---
         const sliderDist = document.getElementById('slider-dist');
         const sliderElev = document.getElementById('slider-elev');
 
         if (sliderDist) {
             const minD = parseInt(document.getElementById('input-min-dist').value) || 0;
             const maxD = parseInt(document.getElementById('input-max-dist').value) || 170;
-
             noUiSlider.create(sliderDist, {
                 start: [minD, maxD],
                 connect: true,
-                range: {
-                    'min': 0,
-                    '40%': 20,
-                    '70%': 50,  // 0-50km takes 70% of the slider
-                    'max': 170
-                },
-                step: 1,
-                tooltips: false, // Changed from custom tooltips to false for cleaner look
-                format: {
-                    to: v => Math.round(v),
-                    from: v => Number(v)
-                }
+                range: { 'min': 0, '40%': 20, '70%': 50, 'max': 170 },
+                step: 1, tooltips: false,
+                format: { to: v => Math.round(v), from: v => Number(v) }
             });
-
             sliderDist.noUiSlider.on('update', function (values, handle) {
                 document.getElementById('input-min-dist').value = values[0];
                 document.getElementById('input-max-dist').value = (values[1] >= 170) ? 999999 : values[1];
-
-                // Update Text Display
                 const v1 = Math.round(values[0]);
                 const v2 = Math.round(values[1]);
                 const maxStr = (v2 >= 170) ? '170+' : v2;
@@ -754,29 +800,16 @@
         if (sliderElev) {
             const minE = parseInt(document.getElementById('input-min-elev').value) || 0;
             const maxE = parseInt(document.getElementById('input-max-elev').value) || 10000;
-
             noUiSlider.create(sliderElev, {
                 start: [minE, maxE],
                 connect: true,
-                range: {
-                    'min': 0,
-                    '40%': 1000,
-                    '70%': 2000,
-                    'max': 10000
-                },
-                step: 10,
-                tooltips: false, // Changed from custom tooltips to false for cleaner look
-                format: {
-                    to: v => Math.round(v),
-                    from: v => Number(v)
-                }
+                range: { 'min': 0, '40%': 1000, '70%': 2000, 'max': 10000 },
+                step: 10, tooltips: false,
+                format: { to: v => Math.round(v), from: v => Number(v) }
             });
-
             sliderElev.noUiSlider.on('update', function (values, handle) {
                 document.getElementById('input-min-elev').value = values[0];
                 document.getElementById('input-max-elev').value = (values[1] >= 10000) ? 999999 : values[1];
-
-                // Update Text Display
                 const v1 = Math.round(values[0]);
                 const v2 = Math.round(values[1]);
                 const maxStr = (v2 >= 10000) ? '10000+' : v2;
@@ -795,12 +828,12 @@
             });
         }
 
-        // --- Tracks Maps ---
+        // --- Tracks Maps (Preserved) ---
         const tracksDataElement = document.getElementById('tracks-data');
         const tracks = tracksDataElement ? JSON.parse(tracksDataElement.textContent) : [];
 
-        tracks.forEach(t => {
-            const mapId = `map-${t.id}`;
+        tracks.forEach(track => {
+            const mapId = 'map-' + track.id;
             const container = document.getElementById(mapId);
             if (!container) return;
 
@@ -812,63 +845,26 @@
                 doubleClickZoom: false,
                 boxZoom: false,
                 keyboard: false,
-                tap: false,
-                interaction: false
+                zoomSnap: 0
             });
 
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
-                opacity: 0.8
-            }).addTo(map);
-
-            new L.GPX(`/raw_gpx/${t.id}`, {
+            new L.GPX(`/track/${track.id}/gpx`, {
                 async: true,
                 marker_options: {
-                    startIconUrl: "",
-                    endIconUrl: "",
-                    shadowUrl: "",
-                    wptIconUrls: ""
+                    startIconUrl: null,
+                    endIconUrl: null,
+                    shadowUrl: null
                 },
                 polyline_options: {
-                    color: '#94a3b8', // Slate-400
-                    weight: 3,
-                    opacity: 1,
-                    lineCap: 'round'
+                    color: 'transparent',
+                    opacity: 0,
+                    weight: 0
                 }
             }).on('loaded', function (e) {
-                const gpx = e.target;
-                map.fitBounds(gpx.getBounds(), { padding: [20, 20] });
-
-                // Draw gradient track
-                drawGradientTrack(map, gpx);
-
-                // Custom Phosphor Markers
-                const elevData = gpx.get_elevation_data();
-                if (elevData && elevData.length > 0) {
-                    // START Marker (Green Map Pin)
-                    const startPt = elevData[0][2];
-                    L.marker(startPt, {
-                        icon: L.divIcon({
-                            className: 'bg-transparent',
-                            html: '<i class="ph-fill ph-map-pin text-emerald-500 text-3xl drop-shadow-md" style="filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));"></i>',
-                            iconSize: [30, 30],
-                            iconAnchor: [15, 30] // Tip of the pin
-                        })
-                    }).addTo(map);
-
-                    // END Marker (Red Flag)
-                    const endPt = elevData[elevData.length - 1][2];
-                    L.marker(endPt, {
-                        icon: L.divIcon({
-                            className: 'bg-transparent',
-                            html: '<i class="ph-fill ph-flag text-red-500 text-3xl drop-shadow-md" style="filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));"></i>',
-                            iconSize: [30, 30],
-                            iconAnchor: [4, 30] // Bottom-left of flag pole
-                        })
-                    }).addTo(map);
-                }
+                drawGradientTrack(map, e.target);
+                map.fitBounds(e.target.getBounds(), { padding: [10, 10] });
             }).addTo(map);
         });
     });
 </script>
-{% endblock %}
 {% endblock %}

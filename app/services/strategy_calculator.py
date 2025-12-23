@@ -21,16 +21,7 @@ class StrategyCalculator:
     ) -> Dict[str, Any]:
         """
         Calculate splits based on Target Time and Topography Cost.
-        
-        Args:
-            target_time_minutes: Total goal time in minutes.
-            waypoints: List of dicts [{'km': 10, 'name': 'Point A'}, ...] (Must be sorted by KM)
-            start_time_hour: Start time in decimal hours (e.g. 6.5 for 06:30)
-            fatigue_factor: 1.0 = Constant pace, 1.5 = Significant slowdown at end.
-            technicity_score: Global multiplier for difficulty (not used in simple distribution, but could affect nutrition).
-            
-        Returns:
-            Dict containing 'segments' (splits between waypoints) and 'total_stats'.
+        Includes Aggressive and Conservative pacing strategies.
         """
         sorted_waypoints = sorted(waypoints, key=lambda x: float(x['km']))
         
@@ -47,39 +38,21 @@ class StrategyCalculator:
              active_waypoints.append({'km': self.total_dist, 'name': 'Arrivée', 'type': 'finish'})
 
         # Map KM to waypoints for checking
-        wp_indices = {i: wp for i, wp in enumerate(active_waypoints)}
         next_wp_idx = 1 # Start looking for the first stop (idx 0 is start)
         
-        current_segment_stats = {
-            "dist": 0.0,
-            "d_plus": 0,
-            "cost": 0.0
-        }
-        
-        # Global stats storage
-        segments_result = []
-        
-        total_track_cost = 0.0
-        
-        # Iteration state
         segment_costs = [] # To store cost of each inter-waypoint segment
         
-        # We need to compute the COST of each segment first to distribute time.
-        # But we also need detailed D+ stats for each segment.
-        
         # Method: Single Pass - Accumulate stats until we hit a waypoint KM.
-        
         seg_dist = 0
         seg_dplus = 0
+        seg_dminus = 0
         seg_cost = 0
         
-        last_km_accum = 0
-        
-        # Iterate points
-        # NOTE: self.points may be huge.
-        
         current_wp_target = active_waypoints[next_wp_idx]
+        cumulative_dist = 0.0
         
+        total_track_cost = 0.0
+
         for i in range(1, len(self.points)):
             p1 = self.points[i-1]
             p2 = self.points[i]
@@ -102,27 +75,21 @@ class StrategyCalculator:
             # Descent: Small cost or negative?
             # Technical descent is slow (cost positive). Runnable smooth is fast (cost negative/reduction).
             # Safety: Assume descent is neutral or slightly costly if steep.
-            # Simplified: 400m D- ~= 1km flat in terms of TIME roughly for average trail runner (technical)
-            # Actually, let's keep it simple: Equivalent Flat Distance.
+            # Simplified: Equivalent Flat Distance.
             # Standard Effort km: Dist + D+/100.
-            # We add a small factor for descent to avoid underestimating technical downhill time.
-            # Let's say D- is 0 cost (free speed) creates too fast est.
-            # Let's add D-/400 approx.
-            # cost += (d_minus_m / 400.0) 
             
             # Slope Penalty (Steepness factor)
-            # If slope > 20%, efficiency drops.
             slope = (ele_diff / dist_m * 100) if dist_m > 0 else 0
             if abs(slope) > 20:
                 cost *= 1.2 # 20% penalty for very steep
                 
             seg_dist += dist_km
             seg_dplus += d_plus_m
+            seg_dminus += d_minus_m # Accumulate D-
             seg_cost += cost
             total_track_cost += cost
             
             # CHECK WAYPOINT
-            # If we passed the target waypoint KM
             if cumulative_dist >= float(current_wp_target['km']):
                 # Close segment
                 segment_costs.append({
@@ -130,12 +97,15 @@ class StrategyCalculator:
                     "wp_end": current_wp_target,
                     "dist": seg_dist,
                     "d_plus": seg_dplus,
-                    "cost": seg_cost
+                    "d_minus": seg_dminus,
+                    "cost": seg_cost,
+                    "end_altitude": p2.elevation or 0 # Capture altitude
                 })
                 
                 # Reset
                 seg_dist = 0
                 seg_dplus = 0
+                seg_dminus = 0
                 seg_cost = 0
                 
                 next_wp_idx += 1
@@ -144,104 +114,131 @@ class StrategyCalculator:
                 else:
                     break # All waypoints done
         
-        # Handle cleanup if incomplete (due to GPX short or rounding)
+        # Handle cleanup if incomplete
         if next_wp_idx < len(active_waypoints):
-             # Force close last segment
              segment_costs.append({
                 "wp_start": active_waypoints[next_wp_idx-1],
                 "wp_end": active_waypoints[next_wp_idx],
                 "dist": seg_dist,
                 "d_plus": seg_dplus,
-                "cost": seg_cost
+                "d_minus": seg_dminus,
+                "cost": seg_cost,
+                "end_altitude": self.points[-1].elevation or 0
             })
 
         # --- TIME DISTRIBUTION ---
-        # Total Cost * Factor = Target Time
-        # Factor = Target / TotalCost
-        if total_track_cost == 0: total_track_cost = 1 # Avoid div zero
+        # 1. Main Strategy (User Input)
+        main_times = self._distribute_time(segment_costs, target_time_minutes, fatigue_factor)
         
-        pace_factor = target_time_minutes / total_track_cost
+        # 2. Aggressive Strategy (Fast Start, Slow End) -> High Fatigue Factor
+        # Simulates going out too hard (e.g., +25% drift)
+        agg_times = self._distribute_time(segment_costs, target_time_minutes, 1.25)
         
-        # --- FATIGUE SIMULATION ---
-        # With fatigue, the "cost" of the final km is higher than the first.
-        # Cost_i_weighted = Cost_i * (1 + (CumulativeCost_i / TotalCost) * (FatigueFactor - 1))
-        
-        weighted_total_cost = 0
-        
-        # Prepare for iteration
-        for seg in segment_costs:
-            # Approx relative position
-            progress = (weighted_total_cost / total_track_cost) if total_track_cost > 0 else 0
-            
-            # Drift: 1.0 -> fatigue_factor
-            # If factor is 1.2 (+20%), drift goes from 1.0 to 1.2
-            drift = 1.0 + (progress * (fatigue_factor - 1.0))
-            
-            seg['weighted_cost'] = seg['cost'] * drift
-            # weighted_total_cost += seg['cost'] # Keep using raw cost for linear progression? 
-            # Actually, fatigue builds up based on effort.
-            
-            # Simple approx: use the previous cumulative raw cost for progress
-        
-        # Re-sum
-        total_weighted_cost = sum(s['weighted_cost'] for s in segment_costs)
-        
-        # New Pace Factor
-        real_pace_factor = target_time_minutes / total_weighted_cost
+        # 3. Conservative Strategy (Even Splits) -> Zero Fatigue drift
+        cons_times = self._distribute_time(segment_costs, target_time_minutes, 1.0)
         
         # --- GENERATE OUTPUT ---
         
-        current_time_min = 0
-        start_hour_decimal = start_time_hour
-        
-        final_segments = []
-        
-        # Add Start Row
-        current_tod = self._min_to_tod(start_hour_decimal * 60)
-        
-        # We need a list of Points, not segments, for the table usually.
-        # But report requested "Roadbook" usually has intervals.
-        # Let's provide a list of Points with "Arrive Time" and "Segment Previous Stats".
+        current_tod = self._min_to_tod(start_time_hour * 60)
         
         # Point 0: Start
         final_points = [{
             "name": active_waypoints[0]['name'],
             "km": 0,
+            "altitude": int(self.points[0].elevation or 0),
             "d_plus_cumul": 0,
             "time_race": "00:00",
             "time_day": current_tod,
+            "time_fast_tod": current_tod,
+            "time_slow_tod": current_tod,
             "segment_dist": 0,
             "segment_d_plus": 0,
-            "segment_time": "-"
+            "segment_d_minus": 0,
+             "segment_time": "-"
         }]
         
         cumul_d_plus = 0
+        cumul_time = 0
+        cumul_time_agg = 0
+        cumul_time_cons = 0
         
-        for seg in segment_costs:
-            time_min = seg['weighted_cost'] * real_pace_factor
-            current_time_min += time_min
+        for i, seg in enumerate(segment_costs):
+            # Main
+            time_seg = main_times[i]
+            cumul_time += time_seg
+            
+            # Strategies
+            time_seg_agg = agg_times[i]
+            cumul_time_agg += time_seg_agg
+            
+            time_seg_cons = cons_times[i]
+            cumul_time_cons += time_seg_cons
+            
             cumul_d_plus += seg['d_plus']
             
-            tod_minutes = (start_hour_decimal * 60) + current_time_min
-            
+            # Format TODs
+            tod_minutes = (start_time_hour * 60) + cumul_time
+            tod_agg = (start_time_hour * 60) + cumul_time_agg
+            tod_cons = (start_time_hour * 60) + cumul_time_cons
+
             final_points.append({
                 "name": seg['wp_end']['name'],
                 "km": round(float(seg['wp_end']['km']), 1),
+                "altitude": int(seg.get('end_altitude', 0)),
                 "d_plus_cumul": int(cumul_d_plus),
-                "time_race": self._format_duration(current_time_min),
+                "time_race": self._format_duration(cumul_time),
                 "time_day": self._min_to_tod(tod_minutes),
                 "segment_dist": round(seg['dist'], 1),
                 "segment_d_plus": int(seg['d_plus']),
-                "segment_time": self._format_duration(time_min)
+                "segment_d_minus": int(seg['d_minus']),
+                "segment_time": self._format_duration(time_seg),
+                
+                # UTMB Columns: Fast (Aggressive) vs Slow (Conservative)
+                "time_fast_tod": self._min_to_tod(tod_agg),
+                "time_slow_tod": self._min_to_tod(tod_cons),
             })
             
         return {
             "strategy": {
                 "target_time": target_time_minutes,
-                "fatigue_factor": FATIGUE_FACTOR
+                "fatigue_factor": fatigue_factor
             },
             "points": final_points
         }
+
+    def _distribute_time(self, segment_costs, target_time, fatigue_factor):
+        """
+        Distribute target_time across segments based on cost and fatigue factor.
+        Returns a list of time_in_minutes for each segment.
+        """
+        if not segment_costs: return []
+        
+        total_track_cost = sum(s['cost'] for s in segment_costs)
+        if total_track_cost == 0: total_track_cost = 1
+        
+        weighted_costs = []
+        weighted_total = 0
+        
+        # Calculate Drifts
+        current_weighted_progress = 0 # Using raw cost for progress approximation
+        
+        for seg in segment_costs:
+            progress = (current_weighted_progress / total_track_cost)
+            
+            # Linear Drift: 1.0 -> fatigue_factor
+            drift = 1.0 + (progress * (fatigue_factor - 1.0))
+            
+            w_cost = seg['cost'] * drift
+            weighted_costs.append(w_cost)
+            weighted_total += w_cost
+            
+            current_weighted_progress += seg['cost']
+            
+        # Normalize to target time
+        pace_factor = target_time / weighted_total
+        
+        times = [w * pace_factor for w in weighted_costs]
+        return times
 
     def _format_duration(self, minutes):
         h = int(minutes // 60)
