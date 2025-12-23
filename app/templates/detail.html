@@ -1047,16 +1047,20 @@
         waypoints.sort((a, b) => a.km - b.km);
 
         list.innerHTML = waypoints.map((wp, idx) => `
-            <div class="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100 group">
+            <div class="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100 group hover:border-brand-200 transition-colors">
                 <div class="flex items-center gap-3">
-                    <span class="font-mono font-bold text-slate-500 text-xs w-12 text-right">${wp.km} km</span>
-                    <span class="font-bold text-slate-700 text-sm truncate max-w-[120px]" title="${wp.name}">${wp.name}</span>
+                    <span class="font-mono font-bold text-slate-500 text-xs w-12 text-right">${wp.km.toFixed(1)} km</span>
+                    <span class="font-bold text-slate-700 text-sm truncate max-w-[120px] cursor-help" title="${wp.name}">${wp.name}</span>
                 </div>
                 
-                    <button onclick="removeWaypoint(${idx})" class="text-slate-300 hover:text-red-500 px-2">
-                        <i class="ph-fill ph-trash"></i>
+                <div class="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                    <button onclick="openWaypointModal(${wp.km}, '${wp.name.replace(/'/g, "\\'")}', '${wp.type}', ${idx})" class="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-md transition-colors" title="Modifier">
+                        <i class="ph-bold ph-pencil-simple"></i>
                     </button>
-                
+                    <button onclick="removeWaypoint(${idx})" class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors" title="Supprimer">
+                        <i class="ph-bold ph-trash"></i>
+                    </button>
+                </div>
             </div>
         `).join('');
     }
@@ -1094,11 +1098,13 @@
 
         waypoints.push(wp);
         renderWaypointsList();
+        updateMapMarkers(waypoints);
     }
 
     function removeWaypoint(idx) {
         waypoints.splice(idx, 1);
         renderWaypointsList();
+        updateMapMarkers(waypoints);
     }
 
     async function calculateRoadbook() {
@@ -1173,10 +1179,14 @@
 
             if (coord) {
                 const el = document.createElement('div');
-                el.className = 'flex flex-col items-center';
+                el.className = 'flex flex-col items-center group relative';
+                // Discrete Marker: Dot with Label on Hover
                 el.innerHTML = `
-                    <div class="px-2 py-0.5 bg-white rounded-md shadow text-[10px] font-bold text-slate-700 whitespace-nowrap mb-1">${p.name}</div>
-                    <div class="w-3 h-3 bg-brand-500 rounded-full border-2 border-white shadow-sm"></div>
+                   <div class="opacity-0 group-hover:opacity-100 absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 text-white text-[10px] font-bold rounded shadow-lg whitespace-nowrap transition-opacity pointer-events-none z-10">
+                        ${p.name}
+                        <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
+                   </div>
+                   <div class="w-3 h-3 bg-brand-500 rounded-full border-2 border-white shadow-md cursor-pointer hover:scale-125 transition-transform hover:bg-brand-600"></div>
                 `;
 
                 const marker = new maplibregl.Marker({ element: el })
@@ -1196,13 +1206,21 @@
         const coords = window.trackDataGeoJSON.geometry.coordinates;
         let d = 0;
         for (let i = 1; i < coords.length; i++) {
-            const p1 = coords[i - 1];
+            const p1 = coords[i - 1]; // [lon, lat, ele]
             const p2 = coords[i];
             const seg = window.getDistKm(p1[1], p1[0], p2[1], p2[0]);
 
             if (d + seg >= km) {
-                // Return p2 (approx)
-                return p2;
+                // Interpolate
+                // Avoid divide by zero
+                if (seg <= 0.000001) return p2;
+
+                const ratio = Math.max(0, Math.min(1, (km - d) / seg));
+
+                const lon = p1[0] + (p2[0] - p1[0]) * ratio;
+                const lat = p1[1] + (p2[1] - p1[1]) * ratio;
+
+                return [lon, lat];
             }
             d += seg;
         }
@@ -1425,6 +1443,64 @@
         }
     }
 
+    // --- WAYPOINT MODAL LOGIC ---
+    let currentEditingIndex = -1;
+    let tempCoord = null;
+
+    function openWaypointModal(km, name, type, index = -1, lat = null, lon = null) {
+        currentEditingIndex = index;
+        tempCoord = (lat && lon) ? [lon, lat] : null;
+
+        document.getElementById('wp-modal-km').value = km.toFixed(1);
+        document.getElementById('wp-modal-name').value = name || `Ravito ${km.toFixed(1)}km`;
+
+        // Update Title
+        document.getElementById('wp-modal-title').innerText = index === -1 ? 'Ajouter un Point' : 'Modifier le Point';
+
+        document.getElementById('waypoint-modal').classList.remove('hidden');
+        document.getElementById('wp-modal-name').focus();
+    }
+
+    function closeWaypointModal() {
+        document.getElementById('waypoint-modal').classList.add('hidden');
+        tempCoord = null;
+        currentEditingIndex = -1;
+    }
+
+    function saveWaypointFromModal() {
+        const km = parseFloat(document.getElementById('wp-modal-km').value);
+        const name = document.getElementById('wp-modal-name').value;
+        const type = 'ravito'; // Default for now
+
+        if (isNaN(km) || km < 0 || km > TRACK_TOTAL_KM) {
+            alert("Kilométrage invalide");
+            return;
+        }
+        if (!name) {
+            alert("Nom requis");
+            return;
+        }
+
+        if (currentEditingIndex > -1) {
+            // Edit existing
+            waypoints[currentEditingIndex].km = km;
+            waypoints[currentEditingIndex].name = name;
+            // Keep existing type/coord if not updating those explicitly here
+        } else {
+            // New
+            const wp = { km: km, name: name, type: type };
+            if (tempCoord) {
+                wp.lat = tempCoord[1];
+                wp.lon = tempCoord[0];
+            }
+            waypoints.push(wp);
+        }
+
+        renderWaypointsList();
+        updateMapMarkers(waypoints); // Sync Markers
+        closeWaypointModal();
+    }
+
     function handleMapClick(lngLat) {
         // Find nearest point on track
         if (!window.trackDataGeoJSON) return;
@@ -1455,17 +1531,56 @@
 
         // Get Elevation if available
         const elev = coords[nearestIdx][2] ? Math.round(coords[nearestIdx][2]) + 'm' : '';
-        const defaultName = `Ravito ${totalKm.toFixed(1)}km`;
+        const snapped = coords[nearestIdx];
 
-        // Prompt
-        const name = prompt(`Ajouter un point au KM ${totalKm.toFixed(1)} (${elev}) ?\nNom du point :`, defaultName);
-        if (name) {
-            const snapped = coords[nearestIdx];
-            // Uses snapped coord
-            addWaypoint(totalKm, name, 'ravito', snapped[1], snapped[0]);
-        }
+        // Open Modal instead of prompt
+        openWaypointModal(totalKm, '', 'ravito', -1, snapped[1], snapped[0]);
     }
+
+    // Trigger on Enter key in modal
+    document.getElementById('wp-modal-name')?.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') saveWaypointFromModal();
+    });
+
 </script>
+
+<!-- WAYPOINT MODAL -->
+<div id="waypoint-modal"
+    class="fixed inset-0 z-[70] hidden flex items-center justify-center p-4 backdrop-blur-sm bg-slate-900/40">
+    <div
+        class="bg-white rounded-2xl shadow-xl w-full max-w-sm border border-slate-100 p-5 transform transition-all scale-100 animate-in fade-in zoom-in duration-200">
+        <h3 class="text-lg font-bold text-slate-900 mb-4" id="wp-modal-title">Ajouter un Point</h3>
+
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">Kilométrage</label>
+                <div class="relative">
+                    <input type="number" id="wp-modal-km" step="0.1"
+                        class="w-full rounded-xl border-slate-200 bg-slate-50 font-mono text-sm pl-3 pr-10 focus:border-brand-500 focus:ring-brand-500">
+                    <span class="absolute right-3 top-2.5 text-xs font-bold text-slate-400">km</span>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">Nom du Point</label>
+                <input type="text" id="wp-modal-name"
+                    class="w-full rounded-xl border-slate-200 text-sm focus:border-brand-500 focus:ring-brand-500"
+                    placeholder="Ex: Refuge de la Balme">
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <button onclick="closeWaypointModal()"
+                    class="flex-1 py-2.5 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-colors">
+                    Annuler
+                </button>
+                <button onclick="saveWaypointFromModal()"
+                    class="flex-1 py-2.5 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 shadow-lg shadow-brand-200 transition-colors">
+                    Enregistrer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- MORE FEATURES MODAL -->
 <div id="features-modal" class="fixed inset-0 z-[100] hidden" aria-labelledby="modal-title" role="dialog"
