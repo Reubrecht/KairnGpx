@@ -1,0 +1,53 @@
+[
+  {
+    "name": "Val d'Aran by UTMB",
+    "slug": "val-d-aran-by-utmb",
+    "website": "https://aranbyutmb.com/",
+    "description": "L'événement Major européen des UTMB World Series. Une aventure sauvage au cœur des Pyrénées espagnoles.",
+    "region": "Val d'Aran",
+    "city": "Vielha",
+    "country": "Spain",
+    "circuit": "UTMB World Series Major",
+    "profile_picture_url": "https://res.cloudinary.com/utmb-world/image/upload/v1/utmb-world/events/val-d-aran/logo_val_d_aran.png",
+    "editions": [
+      {
+        "year": 2025,
+        "start_date": "2025-07-03",
+        "end_date": "2025-07-06",
+        "status": "UPCOMING",
+        "routes": [
+          {
+            "name": "VDA - Torn dera Val d'Aran",
+            "distance_km": 163,
+            "elevation_gain": 10000,
+            "distance_category": "XL"
+          },
+          {
+            "name": "CDH - Camins d'Hèr",
+            "distance_km": 110,
+            "elevation_gain": 6400,
+            "distance_category": "L"
+          },
+          {
+            "name": "PDA - Peades d'Aigua",
+            "distance_km": 55,
+            "elevation_gain": 3300,
+            "distance_category": "M"
+          },
+          {
+            "name": "EXP - Experiència d'Aran",
+            "distance_km": 32,
+            "elevation_gain": 2100,
+            "distance_category": "S"
+          },
+          {
+            "name": "SKY - Sky Baqueira Beret",
+            "distance_km": 15,
+            "elevation_gain": 800,
+            "distance_category": "XS"
+          }
+        ]
+      }
+    ]
+  }
+]
