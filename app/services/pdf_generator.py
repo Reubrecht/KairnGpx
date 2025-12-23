@@ -139,7 +139,18 @@ class StrategyPdfGenerator:
             # Nutrition placeholder
             # If nutrition strategy contains keywords related to this point, we could maybe add?
             # For now, just a placeholder icon or empty space for writing
-            note = ""
+            # Services / Type mapping
+            wp_type = p.get('type', 'ravito')
+            type_map = {
+                'water': '💧 Eau',
+                'food': '🍕 Ravito',
+                'base_vie': '🏠 Base Vie',
+                'check_point': '🚩 Checkpoint',
+                'start': '🏁 Départ',
+                'finish': '🏁 Arrivée',
+                'ravito': '🍕 Ravito'
+            }
+            note = type_map.get(wp_type, wp_type)
             
             row = [
                 name_para,

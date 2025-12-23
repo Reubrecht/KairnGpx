@@ -742,6 +742,22 @@
                             <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
                                 <i class="ph-fill ph-flag"></i> Points de passage
                             </h3>
+                            <!-- Actions Toolbar -->
+                            <div class="flex gap-2 mb-3">
+                                <button onclick="document.getElementById('json-upload').click()"
+                                    class="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold py-1.5 rounded-lg text-xs flex items-center justify-center gap-1 border border-slate-200 transition-colors"
+                                    title="Charger un JSON">
+                                    <i class="ph-bold ph-upload-simple"></i> JSON
+                                </button>
+                                <input type="file" id="json-upload" class="hidden" accept=".json"
+                                    onchange="loadWaypointsFromJson(this)">
+
+                                <button onclick="toggleMapClickMode()" id="btn-map-click"
+                                    class="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold py-1.5 rounded-lg text-xs flex items-center justify-center gap-1 border border-slate-200 transition-colors"
+                                    title="Ajouter via Carte">
+                                    <i class="ph-bold ph-map-pin"></i> Carte
+                                </button>
+                            </div>
                             <div id="waypoints-list" class="space-y-3 mb-4">
                                 <!-- Dynamic List -->
                             </div>
@@ -1045,24 +1061,39 @@
         `).join('');
     }
 
-    function addWaypoint() {
-        const kmInput = document.getElementById('new-wp-km');
-        const nameInput = document.getElementById('new-wp-name');
+    function addWaypoint(optKm, optName, optType, optLat, optLon) {
+        let km, name, type = optType || 'ravito';
+        let lat = optLat, lon = optLon;
 
-        const km = parseFloat(kmInput.value);
-        const name = nameInput.value || `Point ${km}km`;
+        // Mode 1: Manual Input (from form)
+        if (optKm === undefined) {
+            const kmInput = document.getElementById('new-wp-km');
+            const nameInput = document.getElementById('new-wp-name');
+            km = parseFloat(kmInput.value);
+            name = nameInput.value || `Point ${km}km`;
+
+            // Clear inputs
+            kmInput.value = '';
+            nameInput.value = '';
+        } else {
+            // Mode 2: Programmatic (Click or JSON)
+            km = parseFloat(optKm);
+            name = optName || `Point ${km.toFixed(1)}km`;
+        }
 
         if (isNaN(km) || km < 0 || km > TRACK_TOTAL_KM) {
-            alert("Kilométrage invalide (Max: " + TRACK_TOTAL_KM + "km)");
+            alert("Kilométrage invalide (Max: " + TRACK_TOTAL_KM.toFixed(1) + "km)");
             return;
         }
 
-        waypoints.push({ km: km, name: name, type: 'ravito' });
-        renderWaypointsList();
+        const wp = { km: km, name: name, type: type };
+        if (lat !== undefined && lon !== undefined) {
+            wp.lat = lat;
+            wp.lon = lon;
+        }
 
-        // Reset inputs
-        kmInput.value = '';
-        nameInput.value = '';
+        waypoints.push(wp);
+        renderWaypointsList();
     }
 
     function removeWaypoint(idx) {
@@ -1132,13 +1163,14 @@
         if (!window.map) return;
 
         points.forEach(p => {
-            // Find coords based on km? 
-            // We don't have lat/lon in the response directly unless we add it. 
-            // Strategy response 'points' usually just has KM.
+            // Prefer explicit lat/lon
+            let coord = null;
+            if (p.lat !== undefined && p.lon !== undefined) {
+                coord = [p.lon, p.lat];
+            } else {
+                coord = getCoordAtKm(p.km);
+            }
 
-            // Workaround: We need the coords for the KM.
-            // We can interpolate from trackGeoJSON (available in scope).
-            const coord = getCoordAtKm(p.km);
             if (coord) {
                 const el = document.createElement('div');
                 el.className = 'flex flex-col items-center';
@@ -1328,6 +1360,110 @@
         }
 
         closeStravaExecModal();
+    }
+
+    // --- JSON & MAP INTERACTION ---
+    function loadWaypointsFromJson(input) {
+        if (!input.files || !input.files[0]) return;
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                // Expecting { points: [ ... ] } or simple array
+                const points = Array.isArray(data) ? data : (data.points || []);
+
+                if (!Array.isArray(points)) {
+                    alert("Format JSON invalide. Attendu: { points: [...] } ou [...]");
+                    return;
+                }
+
+                // Append points
+                let count = 0;
+                points.forEach(p => {
+                    // Normalize fields if needed
+                    const km = p.km !== undefined ? p.km : p.distance;
+                    if (km !== undefined) {
+                        addWaypoint(km, p.name, p.type, p.lat, p.lon);
+                        count++;
+                    }
+                });
+                alert(count + " points ajoutés !");
+            } catch (err) {
+                console.error(err);
+                alert("Erreur lecture JSON: " + err.message);
+            }
+        };
+        reader.readAsText(file);
+        input.value = ''; // Reset
+    }
+
+    let isMapClickMode = false;
+    let mapClickFn = null;
+
+    function toggleMapClickMode() {
+        isMapClickMode = !isMapClickMode;
+        const btn = document.getElementById('btn-map-click');
+
+        if (isMapClickMode) {
+            btn.classList.add('bg-brand-50', 'text-brand-600', 'border-brand-200');
+            btn.classList.remove('bg-slate-50', 'text-slate-600', 'border-slate-200');
+            if (window.map) window.map.getCanvas().style.cursor = 'crosshair';
+
+            // Add Listener logic here or ensure it is attached
+            if (!mapClickFn && window.map) {
+                mapClickFn = (e) => {
+                    if (!isMapClickMode) return;
+                    handleMapClick(e.lngLat);
+                };
+                window.map.on('click', mapClickFn);
+            }
+        } else {
+            btn.classList.remove('bg-brand-50', 'text-brand-600', 'border-brand-200');
+            btn.classList.add('bg-slate-50', 'text-slate-600', 'border-slate-200');
+            if (window.map) window.map.getCanvas().style.cursor = '';
+        }
+    }
+
+    function handleMapClick(lngLat) {
+        // Find nearest point on track
+        if (!window.trackDataGeoJSON) return;
+
+        const coords = window.trackDataGeoJSON.geometry.coordinates;
+        let minDist = Infinity;
+        let nearestIdx = -1;
+
+        // Simple scan
+        const clickLat = lngLat.lat;
+        const clickLng = lngLat.lng;
+
+        for (let i = 0; i < coords.length; i++) {
+            const d = getDistKm(clickLat, clickLng, coords[i][1], coords[i][0]);
+            if (d < minDist) {
+                minDist = d;
+                nearestIdx = i;
+            }
+        }
+
+        if (nearestIdx === -1) return;
+
+        // Calculate KM for this index
+        let totalKm = 0;
+        for (let i = 1; i <= nearestIdx; i++) {
+            totalKm += getDistKm(coords[i - 1][1], coords[i - 1][0], coords[i][1], coords[i][0]);
+        }
+
+        // Get Elevation if available
+        const elev = coords[nearestIdx][2] ? Math.round(coords[nearestIdx][2]) + 'm' : '';
+        const defaultName = `Ravito ${totalKm.toFixed(1)}km`;
+
+        // Prompt
+        const name = prompt(`Ajouter un point au KM ${totalKm.toFixed(1)} (${elev}) ?\nNom du point :`, defaultName);
+        if (name) {
+            const snapped = coords[nearestIdx];
+            // Uses snapped coord
+            addWaypoint(totalKm, name, 'ravito', snapped[1], snapped[0]);
+        }
     }
 </script>
 
@@ -1576,6 +1712,7 @@
 
         const trackData = JSON.parse(trackDataElement.textContent);
         const trackGeoJSON = trackData.geojson;
+        window.trackDataGeoJSON = trackGeoJSON; // Expose global for utils
 
         if (!trackGeoJSON) {
             console.error("No GeoJSON data available");

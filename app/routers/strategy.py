@@ -20,6 +20,9 @@ class Waypoint(BaseModel):
     km: float
     name: str
     type: str = "ravito"
+    lat: Optional[float] = None
+    lon: Optional[float] = None
+    altitude: Optional[int] = None
 
 class CalculationRequest(BaseModel):
     track_id: int

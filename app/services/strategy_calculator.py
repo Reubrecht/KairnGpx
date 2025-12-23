@@ -196,6 +196,11 @@ class StrategyCalculator:
                 # UTMB Columns: Fast (Aggressive) vs Slow (Conservative)
                 "time_fast_tod": self._min_to_tod(tod_agg),
                 "time_slow_tod": self._min_to_tod(tod_cons),
+                
+                # Pass through extras
+                "type": seg['wp_end'].get('type', 'ravito'),
+                "lat": seg['wp_end'].get('lat'),
+                "lon": seg['wp_end'].get('lon'),
             })
             
         return {
