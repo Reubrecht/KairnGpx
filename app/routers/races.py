@@ -9,22 +9,16 @@ router = APIRouter()
 
 @router.get("/event/{event_id}", response_class=HTMLResponse)
 async def event_detail(event_id: int, request: Request, db: Session = Depends(get_db)):
-    user = await get_current_user_optional(request, db)
-    
     event = db.query(models.RaceEvent).filter(models.RaceEvent.id == event_id).first()
     if not event:
-        # Fallback by slug?
         return RedirectResponse(url="/explore")
 
-    # Fetch editions ordered by year desc
-    editions = db.query(models.RaceEdition).filter(models.RaceEdition.event_id == event.id).order_by(models.RaceEdition.year.desc()).all()
+    # Redirect to the canonical slug URL
+    if event.slug:
+        return RedirectResponse(url=f"/race/{event.slug}", status_code=status.HTTP_301_MOVED_PERMANENTLY)
 
-    return templates.TemplateResponse("event.html", {
-        "request": request,
-        "event": event,
-        "editions": editions,
-        "user": user
-    })
+    # Fallback if no slug (should not happen for valid events)
+    return RedirectResponse(url="/explore")
 
 @router.get("/race/{race_slug}", response_class=HTMLResponse)
 async def race_detail(request: Request, race_slug: str, db: Session = Depends(get_db)):

@@ -889,6 +889,9 @@ async def track_detail(track_identifier: str, request: Request, db: Session = De
     track = None
     if track_identifier.isdigit():
         track = db.query(models.Track).filter(models.Track.id == int(track_identifier)).first()
+        # Redirect ID to Slug if available for SEO
+        if track and track.slug:
+            return RedirectResponse(url=f"/track/{track.slug}", status_code=status.HTTP_301_MOVED_PERMANENTLY)
     
     if not track:
         track = db.query(models.Track).filter(models.Track.slug == track_identifier).first()
