@@ -298,30 +298,64 @@ class GpxAnalytics:
             "end_coords": (end_p.latitude, end_p.longitude)
         }
 
+    def get_start_wkt(self) -> str:
+        """
+        Return WKT string for the start point (POINT(lon lat)).
+        """
+        if not self.points:
+            return None
+        p = self.points[0]
+        return f"POINT({p.longitude} {p.latitude})"
+
     def infer_attributes(self, metrics: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Infer tags and boolean flags based on metrics.
+        Infer tags, tech score, exposure, and other attributes based on metrics.
         """
         attributes = {
             "is_high_mountain": False,
-            "tags": []
+            "tags": [],
+            "technicity_score": 1, # Default
+            "exposure": "Mixte"
         }
         
-        # 1. High Mountain Detection (>2000m)
-        if metrics.get("max_altitude", 0) > 2000:
+        dist = metrics.get("distance_km", 1)
+        gain = metrics.get("elevation_gain", 0)
+        max_slope = metrics.get("max_slope", 0)
+        avg_slope_up = metrics.get("avg_slope_uphill", 0)
+        max_alt = metrics.get("max_altitude", 0)
+        ratio_d = gain / dist if dist > 0 else 0
+
+        # 1. Technicity Heuristic (1-5 scale)
+        # Based on average steepness and max slope
+        if max_slope > 35 or avg_slope_up > 12:
+            attributes["technicity_score"] = 4
+        elif max_slope > 25 or avg_slope_up > 8:
+            attributes["technicity_score"] = 3
+        elif max_slope > 15:
+            attributes["technicity_score"] = 2
+        
+        if max_alt > 2500:
+             attributes["technicity_score"] += 1 # Altitude penalty
+             
+        attributes["technicity_score"] = min(5, attributes["technicity_score"])
+
+        # 2. Exposure Heuristic
+        # Simple guess: High altitude (>2000m) is likely "Ensoleillé" (Open). 
+        # Lower + low slope might be Forest/Shady? 
+        if max_alt > 2000:
+            attributes["exposure"] = "Ensoleillé"
+        elif max_alt < 1000 and ratio_d < 30:
+             attributes["exposure"] = "Ombragé" # Likely forest/valley
+             
+        # 3. High Mountain Detection
+        if max_alt > 2000:
             attributes["is_high_mountain"] = True
             attributes["tags"].append("Haute Montagne")
 
-        # 2. steepness / Vertical
-        dist = metrics.get("distance_km", 1)
-        gain = metrics.get("elevation_gain", 0)
-        ratio = gain / dist if dist > 0 else 0
-        
-        if ratio > 150: # > 150m D+ per km
+        # 4. Vertical / Skyrunning
+        if ratio_d > 150: 
             attributes["tags"].append("Vertical")
-            
-        # 3. Skyrunning (Purely heuristic)
-        if metrics.get("max_altitude", 0) > 2000 and metrics.get("max_slope", 0) > 30:
+        if max_alt > 2000 and max_slope > 30 and dist > 15:
             attributes["tags"].append("Skyrunning")
 
         return attributes
@@ -343,7 +377,6 @@ class GpxAnalytics:
     def get_geojson(self) -> Dict[str, Any]:
         """
         Return the track as a GeoJSON Feature.
-        Properties include elevation for styling.
         """
         if not self.points:
             return None

@@ -1,9 +1,0 @@
-[Desktop Entry]
-Version=1.0
-Name=Update KairnGpx
-Comment=Update git and restart docker
-Exec=/projet_dev_ssd/KairnGpx/scripts/update_and_restart.sh
-Icon=utilities-terminal
-Terminal=true
-Type=Application
-Categories=Development;

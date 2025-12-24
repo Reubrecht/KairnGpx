@@ -21,14 +21,16 @@ class AiAnalyzer:
 
     def analyze_track(self, metrics: Dict[str, Any], metadata: Dict[str, Any] = None, user_title: str = None, user_description: str = None, is_race: bool = False, scenery_rating: int = None, water_count: int = None, user_tags: list = None) -> Dict[str, Any]:
         """
-        Generates a title, description, and tags based on GPX metrics, metadata, and user input.
-        Returns a dictionary with keys: 'ai_title', 'ai_description', 'ai_tags'.
+        Generates structured analysis including title, description, tags, technicity, and exposure.
+        Returns a dictionary with keys: 'ai_title', 'ai_description', 'ai_tags', 'ai_technicity', 'ai_exposure', 'ai_surface', 'ai_path_type'.
         """
         if not self.model:
             return {
                 "ai_title": None,
                 "ai_description": None,
-                "ai_tags": []
+                "ai_tags": [],
+                "ai_technicity": None,
+                "ai_exposure": None
             }
 
         # Build context from metrics
@@ -36,10 +38,13 @@ class AiAnalyzer:
         - Distance: {metrics.get('distance_km')} km
         - Dénivelé positif: {metrics.get('elevation_gain')} m
         - Altitude max: {metrics.get('max_altitude')} m
+        - Altitude min: {metrics.get('min_altitude')} m
         - Type de parcours: {metrics.get('route_type')}
         - Pente max: {metrics.get('max_slope')}%
+        - Pente moyenne montée: {metrics.get('avg_slope_uphill')}%
         - Effort (km-effort): {metrics.get('km_effort')}
         - Ville/Région (si dispo): {metrics.get('location_city', 'Inconnue')}
+        - Coordonnée Départ: {metrics.get('start_coords', 'Inconnu')}
         """
 
         # Add GPX metadata if available
@@ -59,10 +64,10 @@ class AiAnalyzer:
              context_str += f"\n        - Description fournie par l'utilisateur : {user_description}"
              
         if scenery_rating:
-             context_str += f"\n        - Note Paysage (donnée utilisateur) : {scenery_rating}/5"
+             context_str += f"\n        - Note Paysage (ISOLÉE - NE PAS répéter dans la description) : {scenery_rating}/5"
              
         if water_count is not None:
-             context_str += f"\n        - Points d'eau (donnée utilisateur) : {water_count}"
+             context_str += f"\n        - Points d'eau (ISOLÉ - NE PAS répéter dans la description) : {water_count}"
              
         if user_tags:
              tags_str = ", ".join(user_tags)
@@ -72,36 +77,33 @@ class AiAnalyzer:
              context_str += f"\n        - CONTEXTE : C'est une COURSE OFFICIELLE (Compétition)."
 
         prompt = f"""
-        Tu es un expert en référencement (SEO) et en analyse de données pour le trail running et les sports outdoor (Randonnée, VTT, Cyclisme, Alpinisme, Ski de Rando). 
-        Ton but est de maximiser la visibilité et l'attractivité de la trace GPX analysée pour une communauté de passionnés.
+        Tu es un expert en analyse de traces GPS pour les sports outdoor (Trail, Rando, VTT).
+        Analyse les données suivantes pour extraire des caractéristiques techniques précises et générer du contenu SEO.
         
         Données techniques :
         {context_str}
 
         Tes instructions :
-        1. **TITRE (SEO)** : Génère un titre optimisé pour la recherche (5-8 mots max).
-           - Format souhaité : "Massif/Lieu - Nom de l'itinéraire - Distance/D+ " ou "Activité - Lieu - Point fort".
-           - **IMPORTANT** : Base-toi prioritairement sur le "Titre fourni par l'utilisateur" ou le "Nom original du fichier GPX". Améliore-le pour le SEO (ajoute le lieu s'il manque), mais NE L'INVENTE PAS totalement si l'utilisateur a été précis.
-           - Si c'est une COURSE OFFICIELLE : Le titre DOIT inclure le nom de la course, l'année (si dispo) et la distance. Ex: "Marathon du Mont-Blanc 2025 - 42km".
-           - Mentionne obligatoirement le massif ou la ville principale.
+        1. **TITRE (SEO)** : Titre optimisé (Massif/Lieu - Nom - Distance/D+). Priorité au titre utilisateur s'il existe.
+        2. **DESCRIPTION** : 
+           - Résumé professionnel et inspirant (2-4 phrases). 
+           - **INTERDIT** : Ne mentionne PAS le nombre de points d'eau, la note de paysage (ex: "5/5"), ou le score de technicité chiffré dans le texte, car ces données sont affichées ailleurs.
+           - Parle du type de terrain, de l'ambiance, de la difficulté ressentie, et des points de vue notables (sommets, lacs, etc. déduits de la géolocalisation ou du contexte).
+        3. **TECHNICITÉ** : Estime une note de 1 à 5 (1=Facile/Piste, 5=Très Technique/Alpin/Grimpe).
+        4. **EXPOSITION** : Détermine l'exposition majoritaire : "Ensoleillé" (Adret/Sud/Découvert), "Ombragé" (Ubac/Nord/Forêt), ou "Mixte".
+        5. **TAGS** : Sélectionne 3-5 tags pertinents (ex: Sommet, Lac, Crête, Forêt, Roulant, Technique, Aérien...).
+        6. **SURFACE** : Estime la composition en % (ex: {{"trail": 80, "asphalt": 20}}) à partir du contexte (ville vs montagne).
+        7. **TYPE DE SENTIER** : Estime le type en % (ex: {{"single_track": 70, "road": 30}}).
 
-        2. **DESCRIPTION (Contenu)** : Rédige une description de 2 à 4 phrases.
-           - Ton ton doit être professionnel, technique mais inspirant.
-           - Si c'est une COURSE OFFICIELLE : Mentionne que c'est un parcours de compétition, parle de l'exigence et de l'ambiance typique de cette course.
-           - **IMPORTANT** : Si une "Description fournie par l'utilisateur" est présente, UTILISE-LA COMME SOURCE PRINCIPALE. Reformule-la pour qu'elle soit plus pro, corrige les fautes, mais conserve le sens et les détails donnés par l'utilisateur.
-           - Intègre les informations fournies (Note Paysage, Points d'eau, Tags utilisateur) dans le récit si pertinent (ex: "Très beau parcours panoramique avec 2 points d'eau...").
-           - Si pas de description utilisateur, base-toi sur la description originale GPX ou génère-en une standard.
-           - Mentionne le type de terrain (ex: technique, roulant) et les points d'intérêts.
-
-        3. **TAGS (Catégorisation)** : Sélectionne STRICTEMENT 3 à 5 tags parmi cette liste fermée :
-           ["Roulant", "Technique", "Vertical", "Aérien", "Boucle", "Aller-Retour", "Sommet", "Lac", "Forêt", "Crête", "Skyrunning", "Ultra", "Off-Road", "Sentier", "Piste"]
-           - **IMPORTANT** : Si l'utilisateur a déjà coché des tags ("Tags/Ambiance"), essaie de sélectionner les équivalents dans la liste fermée ci-dessus s'ils sont pertinents.
-
-        Réponds UNIQUEMENT au format JSON strict (sans markdown autour si possible, juste le json) :
+        Réponds UNIQUEMENT au format JSON strict :
         {{
             "title": "...",
             "description": "...",
-            "tags": ["...", "..."]
+            "tags": ["...", "..."],
+            "technicity_score": 3,
+            "exposure": "Mixte",
+            "surface_composition": {{ "trail": 80, "asphalt": 20 }},
+            "path_type": {{ "single_track": 70, "wide_path": 30 }}
         }}
         """
 
@@ -119,14 +121,20 @@ class AiAnalyzer:
             return {
                 "ai_title": data.get("title"),
                 "ai_description": data.get("description"),
-                "ai_tags": data.get("tags", [])
+                "ai_tags": data.get("tags", []),
+                "ai_technicity": data.get("technicity_score"),
+                "ai_exposure": data.get("exposure"),
+                "ai_surface": data.get("surface_composition"),
+                "ai_path_type": data.get("path_type")
             }
         except Exception as e:
             print(f"AI Analysis failed: {e}")
             return {
                 "ai_title": None,
                 "ai_description": None,
-                "ai_tags": []
+                "ai_tags": [],
+                "ai_technicity": None,
+                "ai_exposure": None
             }
 
     def normalize_event(self, name: str, region: str = None, website: str = None, description: str = None) -> Dict[str, Any]:

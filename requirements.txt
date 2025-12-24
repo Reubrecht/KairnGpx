@@ -21,4 +21,7 @@ alembic
 reportlab
 matplotlib
 contextily
+gpxpy
+geopy
+google-generativeai
 xyzservices

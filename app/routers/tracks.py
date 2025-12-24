@@ -567,6 +567,9 @@ async def upload_track(
     water_points_count: int = Form(0),
     scenery_rating: int = Form(None),
     
+    # New Ravitos JSON Field
+    ravitos: Optional[str] = Form(None),
+
     # Official Race Fields
     is_official_bot: bool = Form(False),
     linked_race_route_id: Optional[int] = Form(None),
@@ -611,6 +614,7 @@ async def upload_track(
     inferred = analytics.infer_attributes(metrics)
     gpx_meta = analytics.get_metadata()
     
+    # Auto-filling logic
     if gpx_meta.get("name") and (title.lower().endswith(".gpx") or title == "Trace"):
         title = gpx_meta["name"]
         
@@ -626,6 +630,12 @@ async def upload_track(
     
     if not metrics:
          raise HTTPException(status_code=400, detail="Could not parse or analyze GPX file.")
+    
+    # AI Analysis Fields
+    ai_technicity = inferred.get("technicity_score")
+    ai_exposure = inferred.get("exposure")
+    ai_surface = None
+    ai_path_type = None
 
     try:
         ai_analyzer = AiAnalyzer()
@@ -655,6 +665,18 @@ async def upload_track(
                 
             if ai_data.get("ai_tags"):
                 inferred["tags"].extend(ai_data["ai_tags"])
+            
+            if ai_data.get("ai_technicity"):
+                ai_technicity = ai_data["ai_technicity"]
+            
+            if ai_data.get("ai_exposure"):
+                ai_exposure = ai_data["ai_exposure"]
+
+            if ai_data.get("ai_surface"):
+                ai_surface = ai_data["ai_surface"]
+            
+            if ai_data.get("ai_path_type"):
+                ai_path_type = ai_data["ai_path_type"]
                 
     except Exception as e:
         print(f"AI Integration skipped: {e}")
@@ -701,6 +723,24 @@ async def upload_track(
         slug = f"{base_slug}-{counter}"
         counter += 1
 
+    # Prepare Points of Interest (Ravitos)
+    points_of_interest = []
+    if ravitos:
+        try:
+            points_of_interest = json.loads(ravitos)
+        except:
+             print("Failed to parse ravitos JSON")
+             
+    # Prepare Cities Crossed (Sampling)
+    # TODO: analytics.sample_cities() requires photon or similar. 
+    # For now we use the start/end cities + region
+    cities_crossed = []
+    if city and city != "Unknown":
+         cities_crossed.append(city)
+         
+    # Geometry WKT
+    start_wkt = analytics.get_start_wkt()
+
     new_track = models.Track(
         title=title,
         slug=slug,
@@ -724,21 +764,30 @@ async def upload_track(
         route_type=metrics["route_type"],
         start_lat=start_lat,
         start_lon=start_lon,
+        start_geom=start_wkt, # POPULATED
         end_lat=metrics["end_coords"][0],
         end_lon=metrics["end_coords"][1],
         location_city=city,
         location_region=region,
         location_country=country,
+        cities_crossed=cities_crossed, # POPULATED
         estimated_times=metrics["estimated_times"],
         file_path=file_path,
         file_hash=file_hash,
         visibility=models.Visibility(visibility),
         water_points_count=water_points_count,
+        points_of_interest=points_of_interest, # POPULATED
         scenery_rating=scenery_rating,
-        technicity_score=None, 
+        technicity_score=ai_technicity, # POPULATED
+        exposure=ai_exposure, # POPULATED
+        surface_composition=ai_surface, # POPULATED
+        path_type=ai_path_type, # POPULATED
         environment=environment,
-        tags=[t.strip() for t in tags.split(',')] if tags else []
+        tags=[t.strip() for t in tags.split(',')] if tags else [] + inferred.get("tags", [])
     )
+    # Deduplicate tags
+    if new_track.tags:
+        new_track.tags = list(set(new_track.tags))
     
     db.add(new_track)
     db.commit()

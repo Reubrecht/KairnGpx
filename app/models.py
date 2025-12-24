@@ -258,6 +258,8 @@ class Track(Base):
     
     technicity_score = Column(Float, nullable=True) # Global rating
     
+    points_of_interest = Column(JSON, default=[]) # Ravitos etc.
+    
     water_points_count = Column(Integer, default=0)
     estimated_times = Column(JSON, nullable=True)
     
