@@ -717,9 +717,22 @@
 
                                 <div class="grid grid-cols-2 gap-3">
                                     {% if user %}
-                                    <button onclick="saveStrategy(event)"
-                                        class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
-                                        <i class="ph-bold ph-floppy-disk"></i> Sauver
+                                    <button x-data="saveButton" @click="save()"
+                                        :class="{
+                                            'bg-slate-100 hover:bg-slate-200 text-slate-700': state === 'idle',
+                                            'bg-slate-200 text-slate-500 cursor-wait': state === 'loading',
+                                            'bg-green-100 text-green-700': state === 'success'
+                                        }"
+                                        class="w-full font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
+                                        <template x-if="state === 'idle'">
+                                            <span><i class="ph-bold ph-floppy-disk"></i> Sauver</span>
+                                        </template>
+                                        <template x-if="state === 'loading'">
+                                            <span><i class="ph-bold ph-spinner animate-spin"></i> Sauvegarde...</span>
+                                        </template>
+                                        <template x-if="state === 'success'">
+                                            <span><i class="ph-bold ph-check"></i> Sauvegardé</span>
+                                        </template>
                                     </button>
                                     {% else %}
                                     <button
@@ -1244,7 +1257,7 @@
         document.getElementById('result-meta').textContent = "Calcul effectué (Scientific Method)";
     }
 
-    async function saveStrategy(event) {
+    async function saveStrategy() {
         // Same payload collection
         const h = parseInt(document.getElementById('target-h').value) || 0;
         const m = parseInt(document.getElementById('target-m').value) || 0;
@@ -1278,7 +1291,7 @@
                 if (confirm("Vous devez être connecté pour sauvegarder votre roadbook.\n\nVoulez-vous ouvrir la page de connexion dans un nouvel onglet ?\n(Une fois connecté, revenez ici et cliquez à nouveau sur Sauver)")) {
                     window.open('/login', '_blank');
                 }
-                return;
+                return false;
             }
 
             if (!res.ok) {
@@ -1286,25 +1299,40 @@
                 throw new Error(errData.detail || "Erreur inconnue");
             }
 
-            // Show Success Feedback (Simple alert or toast)
-            const btn = event.target.closest('button'); // Hacky access
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="ph-bold ph-check"></i> Sauvegardé';
-            btn.classList.add('bg-green-100', 'text-green-700');
-            setTimeout(() => {
-                btn.innerHTML = originalText;
-                btn.classList.remove('bg-green-100', 'text-green-700');
-
-                if (confirm("Roadbook sauvegardé ! Voir dans mon profil ?")) {
-                    window.location.href = "/profile";
-                }
-            }, 500);
+            return true;
 
         } catch (e) {
             console.error(e);
             alert("Erreur sauvegarde: " + e.message);
+            throw e;
         }
     }
+
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('saveButton', () => ({
+            state: 'idle', // idle, loading, success
+            async save() {
+                if (this.state === 'loading') return;
+                this.state = 'loading';
+                try {
+                    const success = await saveStrategy();
+                    if (success) {
+                        this.state = 'success';
+                        setTimeout(() => {
+                            this.state = 'idle';
+                            if (confirm("Roadbook sauvegardé ! Voir dans mon profil ?")) {
+                                window.location.href = "/profile";
+                            }
+                        }, 500);
+                    } else {
+                        this.state = 'idle';
+                    }
+                } catch (e) {
+                    this.state = 'idle';
+                }
+            }
+        }));
+    });
 
     async function exportPdf() {
         // Same payload
