@@ -5,7 +5,8 @@ echo "🚀 Starting KairnGpx Update..."
 echo "=============================="
 
 # Navigate to the project directory
-cd /projet_dev_ssd/KairnGpx
+# Navigate to the project directory (parent of scripts dir)
+cd "$(dirname "$0")/.."
 
 echo "📥 Pulling latest changes..."
 git pull
