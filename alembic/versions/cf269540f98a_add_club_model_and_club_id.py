@@ -24,25 +24,26 @@ def upgrade() -> None:
     # Prevent dropping postgis table
     # op.drop_table('spatial_ref_sys')
     
-    op.create_table('clubs',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('name', sa.String(), nullable=True),
-        sa.Column('description', sa.Text(), nullable=True),
-        sa.Column('profile_picture', sa.String(), nullable=True),
-        sa.Column('cover_picture', sa.String(), nullable=True),
-        sa.Column('website_url', sa.String(), nullable=True),
-        sa.Column('instagram_url', sa.String(), nullable=True),
-        sa.Column('strava_club_url', sa.String(), nullable=True),
-        sa.Column('owner_id', sa.Integer(), nullable=True),
-        sa.Column('created_at', sa.DateTime(), nullable=True),
-        sa.ForeignKeyConstraint(['owner_id'], ['users.id'], ),
-        sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_clubs_id'), 'clubs', ['id'], unique=False)
-    op.create_index(op.f('ix_clubs_name'), 'clubs', ['name'], unique=True)
+    # op.create_table('clubs',
+    #     sa.Column('id', sa.Integer(), nullable=False),
+    #     sa.Column('name', sa.String(), nullable=True),
+    #     sa.Column('description', sa.Text(), nullable=True),
+    #     sa.Column('profile_picture', sa.String(), nullable=True),
+    #     sa.Column('cover_picture', sa.String(), nullable=True),
+    #     sa.Column('website_url', sa.String(), nullable=True),
+    #     sa.Column('instagram_url', sa.String(), nullable=True),
+    #     sa.Column('strava_club_url', sa.String(), nullable=True),
+    #     sa.Column('owner_id', sa.Integer(), nullable=True),
+    #     sa.Column('created_at', sa.DateTime(), nullable=True),
+    #     sa.ForeignKeyConstraint(['owner_id'], ['users.id'], ),
+    #     sa.PrimaryKeyConstraint('id')
+    # )
+    # op.create_index(op.f('ix_clubs_id'), 'clubs', ['id'], unique=False)
+    # op.create_index(op.f('ix_clubs_name'), 'clubs', ['name'], unique=True)
     
     op.add_column('users', sa.Column('club_id', sa.Integer(), nullable=True))
     op.create_foreign_key(None, 'users', 'clubs', ['club_id'], ['id'])
+    
     
     op.add_column('tracks', sa.Column('thumbnail_url', sa.String(), nullable=True))
     # ### end Alembic commands ###
