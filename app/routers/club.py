@@ -80,6 +80,10 @@ async def club_dashboard(request: Request, db: Session = Depends(get_db)):
         
         if start_date:
             query = query.filter(models.StravaActivity.start_date >= start_date)
+        
+        # Filter for Run, Trail, Hike, Walk
+        ALLOWED_TYPES = ["Run", "TrailRun", "Hike", "Walk"]
+        query = query.filter(models.StravaActivity.type.in_(ALLOWED_TYPES))
             
         stats = query.first()
         
