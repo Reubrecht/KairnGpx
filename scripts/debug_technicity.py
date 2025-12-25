@@ -1,3 +1,10 @@
+import sys
+print("Starting script...", flush=True)
+import os
+from dotenv import load_dotenv
+load_dotenv()
+sys.path.append(os.getcwd())
+
 from app.database import SessionLocal
 from app import models
 
