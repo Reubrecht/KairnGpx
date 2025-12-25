@@ -113,16 +113,17 @@
                                 class="text-sm font-bold text-slate-700 hover:text-brand-600 truncate max-w-[100px] md:max-w-none hidden md:inline">{{
                                 user.username }}</span>
                         </a>
-                        <a href="/logout"
-                            class="text-xs md:text-sm font-medium text-red-500 hover:text-red-600 transition-colors">
-                            <span class="hidden md:inline">Déconnexion</span>
-                            <span class="md:hidden">Sortir</span>
+                        <a href="/settings" class="text-slate-400 hover:text-slate-600 transition-colors"
+                            title="Paramètres">
+                            <i class="ph-bold ph-gear text-2xl"></i>
                         </a>
                         {% else %}
+                        {% block header_auth_buttons %}
                         <a href="/login"
                             class="text-sm font-bold text-slate-600 hover:text-brand-600 transition-colors">Connexion</a>
                         <a href="/register"
                             class="bg-brand-600 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-bold shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition-all">Inscription</a>
+                        {% endblock %}
                         {% endif %}
                     </div>
 
@@ -153,6 +154,7 @@
     </footer>
 
     <!-- Bottom Navigation Bar (Fixed) -->
+    {% block bottom_nav %}
     <nav class="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 z-50 pb-[env(safe-area-inset-bottom)]">
         <div class="max-w-7xl mx-auto px-4">
             <div class="flex justify-around items-center h-16">
@@ -160,7 +162,8 @@
                 <a href="/explore"
                     class="flex flex-col items-center justify-center w-full h-full text-slate-400 hover:text-brand-600 active:text-brand-600 transition-colors group"
                     title="Explorer">
-                    <i class="ph-light ph-compass text-3xl group-hover:scale-110 transition-transform"></i>
+                    <i class="ph-light ph-compass text-2xl mb-0.5 group-hover:scale-110 transition-transform"></i>
+                    <span class="text-[10px] font-medium">Explorer</span>
                 </a>
 
                 <!-- Carte -->
@@ -168,25 +171,29 @@
                     class="flex flex-col items-center justify-center w-full h-full text-slate-400 hover:text-brand-600 active:text-brand-600 transition-colors group"
                     title="Carte">
                     <i
-                        class="ph-light ph-globe-hemisphere-west text-3xl group-hover:scale-110 transition-transform"></i>
+                        class="ph-light ph-globe-hemisphere-west text-2xl mb-0.5 group-hover:scale-110 transition-transform"></i>
+                    <span class="text-[10px] font-medium">Carte</span>
                 </a>
 
                 <!-- Importer -->
                 <a href="/upload"
                     class="flex flex-col items-center justify-center w-full h-full text-slate-400 hover:text-brand-600 active:text-brand-600 transition-colors group"
                     title="Importer">
-                    <i class="ph-light ph-upload-simple text-3xl group-hover:scale-110 transition-transform"></i>
+                    <i class="ph-light ph-upload-simple text-2xl mb-0.5 group-hover:scale-110 transition-transform"></i>
+                    <span class="text-[10px] font-medium">Importer</span>
                 </a>
 
                 <!-- Créer -->
                 <a href="/import/suunto"
                     class="flex flex-col items-center justify-center w-full h-full text-slate-400 hover:text-brand-600 active:text-brand-600 transition-colors group"
                     title="Créer">
-                    <i class="ph-light ph-path text-3xl group-hover:scale-110 transition-transform"></i>
+                    <i class="ph-light ph-path text-2xl mb-0.5 group-hover:scale-110 transition-transform"></i>
+                    <span class="text-[10px] font-medium">Créer</span>
                 </a>
             </div>
         </div>
     </nav>
+    {% endblock %}
 
     <!-- Scripts -->
     <script>

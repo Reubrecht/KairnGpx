@@ -263,3 +263,8 @@ async def public_profile(
         "executions": executions,
         "execution_count": len(executions)
     })
+
+@router.get("/settings", response_class=HTMLResponse)
+async def settings_page(request: Request, db: Session = Depends(get_db)):
+    user = await get_current_user(request, db)
+    return templates.TemplateResponse("settings.html", {"request": request, "user": user})

@@ -1,220 +1,257 @@
 {% extends "base.html" %}
 
+{% block bottom_nav %}{% endblock %}
+
+{% block header_auth_buttons %}
+<a href="/login" class="text-sm font-bold text-slate-700 hover:text-brand-600 transition-colors">Connexion</a>
+{% endblock %}
+
 {% block content %}
-<div class="min-h-[calc(100vh-64px)] flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-lg w-full space-y-8 bg-white p-10 rounded-2xl shadow-sm border border-slate-100">
-        <div class="text-center">
-            <h2 class="mt-6 text-3xl font-extrabold text-slate-900">
-                Créer un compte
-            </h2>
-            <p class="mt-2 text-sm text-slate-600">
-                Rejoignez la communauté My Kairn
-            </p>
+<div class="min-h-[calc(100vh-64px)] flex bg-white">
+    <!-- Left Panel (Image) - Hidden on mobile -->
+    <div class="hidden lg:block lg:w-1/2 relative bg-slate-900 overflow-hidden">
+        <img src="{{ url_for('static', path='/img/hero.png') }}" alt="Trail Runner"
+            class="absolute inset-0 w-full h-full object-cover opacity-60">
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent"></div>
+        <div class="absolute bottom-0 left-0 p-12 text-white">
+            <h2 class="text-4xl font-extrabold tracking-tight mb-4">L'aventure commence ici.</h2>
+            <p class="text-lg text-slate-200 max-w-md">Rejoignez une communauté passionnée. Tracez, partagez et explorez
+                les plus beaux sentiers.</p>
         </div>
+    </div>
 
-        {% if error %}
-        <div
-            class="bg-red-50 border border-red-100 text-red-600 p-4 rounded-xl text-sm font-medium flex items-center gap-3">
-            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            {{ error }}
-        </div>
-        {% endif %}
-
-        <div class="mt-8">
-            <a href="/auth/strava/login"
-                class="w-full flex justify-center items-center gap-3 py-3 px-4 shadow-sm text-sm font-bold rounded-xl text-white bg-[#FC4C02] hover:bg-[#E34402] transition-all">
-                <img src="/static/img/strava_logo.svg" alt="Strava" class="h-5 brightness-0 invert">
-                <span>S'inscrire avec Strava</span>
-            </a>
-        </div>
-
-        <div class="relative mt-6 mb-6">
-            <div class="absolute inset-0 flex items-center">
-                <div class="w-full border-t border-slate-200"></div>
-            </div>
-            <div class="relative flex justify-center text-sm">
-                <span class="px-2 bg-white text-slate-500">Ou avec votre email</span>
-            </div>
-        </div>
-
-        <form class="space-y-6" action="/register" method="post" enctype="multipart/form-data">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Nom d'utilisateur</label>
-                    <input type="text" name="username" required placeholder="User123"
-                        class="appearance-none block w-full px-4 py-3 border border-slate-300 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm transition-colors">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Nom Complet</label>
-                    <input type="text" name="full_name" placeholder="Jean Dupont"
-                        class="appearance-none block w-full px-4 py-3 border border-slate-300 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm transition-colors">
-                </div>
+    <!-- Right Panel (Form) -->
+    <div class="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 lg:p-24 overflow-y-auto">
+        <div class="w-full max-w-md space-y-8">
+            <div class="text-center lg:text-left">
+                <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Créer un compte</h1>
+                <p class="mt-2 text-sm text-slate-600">
+                    Déjà membre ? <a href="/login"
+                        class="font-bold text-brand-600 hover:text-brand-500 hover:underline">Connectez-vous</a>
+                </p>
             </div>
 
-            <!-- Profile Picture -->
+            {% if error %}
+            <div
+                class="bg-red-50 border border-red-100 text-red-600 p-4 rounded-xl text-sm font-medium flex items-center gap-3 animate-fade-in">
+                <i class="ph-bold ph-warning-circle text-xl"></i>
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <!-- Social Login -->
             <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">Photo de profil</label>
-                <div class="flex items-center justify-center w-full">
-                    <label for="dropzone-file"
-                        class="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
-                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                            <i class="ph ph-cloud-arrow-up text-2xl text-slate-400 mb-2"></i>
-                            <p class="text-sm text-slate-500"><span class="font-bold">Cliquez pour uploader</span> ou
-                                glissez-déposez</p>
-                            <p class="text-xs text-slate-500">SVG, PNG, JPG or GIF</p>
-                        </div>
-                        <input id="dropzone-file" name="profile_picture" type="file" class="hidden" accept="image/*" />
-                    </label>
-                </div>
-            </div>
-
-            <!-- Location Autocomplete -->
-            <div class="relative">
-                <label class="block text-sm font-bold text-slate-700 mb-1">Localisation</label>
-                <div class="relative">
-                    <input type="text" id="city-input" name="city_search" placeholder="Ville, Région..."
-                        autocomplete="off"
-                        class="appearance-none block w-full px-4 py-3 border border-slate-300 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm transition-colors pl-10">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="ph ph-map-pin text-slate-400"></i>
-                    </div>
-
-                    <!-- Hidden Fields -->
-                    <input type="hidden" name="location_lat" id="search-lat">
-                    <input type="hidden" name="location_lon" id="search-lon">
-                    <input type="hidden" name="location_city" id="search-city">
-                    <input type="hidden" name="location_region" id="search-region">
-                    <input type="hidden" name="location_country" id="search-country">
-
-                    <!-- Suggestions List -->
-                    <ul id="suggestions-list"
-                        class="hidden absolute z-50 w-full bg-white border border-slate-100 rounded-xl shadow-lg mt-1 max-h-60 overflow-y-auto">
-                    </ul>
-                </div>
-            </div>
-
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">Email</label>
-                <input type="email" name="email" required placeholder="jean@example.com"
-                    class="appearance-none block w-full px-4 py-3 border border-slate-300 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm transition-colors">
-            </div>
-
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">Mot de passe</label>
-                <input type="password" name="password" required placeholder="••••••••"
-                    class="appearance-none block w-full px-4 py-3 border border-slate-300 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm transition-colors">
-            </div>
-
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">Confirmer le mot de passe</label>
-                <input type="password" name="password_confirm" required placeholder="••••••••"
-                    class="appearance-none block w-full px-4 py-3 border border-slate-300 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm transition-colors">
-            </div>
-
-            <div class="pt-4 border-t border-slate-100">
-                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 text-center">Code
-                    d'invitation (Beta)</label>
-                <input type="text" name="invitation_code" placeholder="CODE-123"
-                    class="appearance-none block w-full px-4 py-3 border border-slate-300 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm text-center font-mono tracking-widest transition-colors">
-            </div>
-
-            <div>
-                <button type="submit"
-                    class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-all shadow-lg shadow-brand-500/30">
-                    Créer mon compte
-                </button>
-            </div>
-        </form>
-
-        <script>
-            document.addEventListener("DOMContentLoaded", function () {
-                const cityInput = document.getElementById('city-input');
-                const suggestionsList = document.getElementById('suggestions-list');
-                const searchLat = document.getElementById('search-lat');
-                const searchLon = document.getElementById('search-lon');
-                const searchCity = document.getElementById('search-city');
-                const searchRegion = document.getElementById('search-region');
-                const searchCountry = document.getElementById('search-country');
-
-                let debounceTimer;
-
-                if (cityInput) {
-                    cityInput.addEventListener('input', function () {
-                        const query = this.value;
-
-                        if (query.length < 3) {
-                            suggestionsList.classList.add('hidden');
-                            return;
-                        }
-
-                        clearTimeout(debounceTimer);
-                        debounceTimer = setTimeout(() => {
-                            fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&lang=fr&limit=5`)
-                                .then(res => res.json())
-                                .then(data => {
-                                    suggestionsList.innerHTML = '';
-                                    if (data.features && data.features.length > 0) {
-                                        suggestionsList.classList.remove('hidden');
-                                        data.features.forEach(feature => {
-                                            const props = feature.properties;
-                                            const coords = feature.geometry.coordinates;
-
-                                            const li = document.createElement('li');
-                                            li.className = "px-4 py-2 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 flex flex-col border-b border-slate-50 last:border-0";
-
-                                            let label = props.name;
-                                            let context = [];
-                                            if (props.city && props.name !== props.city) context.push(props.city);
-                                            if (props.state) context.push(props.state);
-                                            if (props.country) context.push(props.country);
-
-                                            li.innerHTML = `
-                                                <span class="font-bold">${label}</span>
-                                                <span class="text-xs text-slate-400">${context.join(', ')}</span>
-                                            `;
-
-                                            li.addEventListener('click', () => {
-                                                cityInput.value = label;
-                                                searchLat.value = coords[1];
-                                                searchLon.value = coords[0];
-
-                                                // Intelligent mapping
-                                                searchCity.value = props.city || props.name;
-                                                searchRegion.value = props.state || props.county || '';
-                                                searchCountry.value = props.country || '';
-
-                                                suggestionsList.classList.add('hidden');
-                                            });
-                                            suggestionsList.appendChild(li);
-                                        });
-                                    } else {
-                                        suggestionsList.classList.add('hidden');
-                                    }
-                                })
-                                .catch(err => console.error(err));
-                        }, 300);
-                    });
-
-                    document.addEventListener('click', function (e) {
-                        if (cityInput && !cityInput.contains(e.target) && suggestionsList && !suggestionsList.contains(e.target)) {
-                            suggestionsList.classList.add('hidden');
-                        }
-                    });
-                }
-            });
-        </script>
-
-        <div class="text-center mt-6">
-            <p class="text-sm text-slate-600">
-                Déjà un compte ?
-                <a href="/login" class="font-bold text-brand-600 hover:text-brand-500 transition-colors">
-                    Se connecter
+                <a href="/auth/strava/login"
+                    class="w-full flex justify-center items-center gap-3 py-3.5 px-4 shadow-sm text-sm font-bold rounded-xl text-white bg-[#FC4C02] hover:bg-[#E34402] hover:shadow-md transition-all transform hover:-translate-y-0.5">
+                    <img src="/static/img/strava_logo.svg" alt="Strava" class="h-5 brightness-0 invert">
+                    <span>S'inscrire avec Strava</span>
                 </a>
-            </p>
+            </div>
+
+            <div class="relative">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-slate-200"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="px-4 bg-white text-slate-500 font-medium">Ou par email</span>
+                </div>
+            </div>
+
+            <form class="space-y-5" action="/register" method="post" enctype="multipart/form-data">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Nom
+                            d'utilisateur</label>
+                        <input type="text" name="username" required placeholder="User123"
+                            class="appearance-none block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:bg-white transition-all text-sm font-medium">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Nom
+                            Complet</label>
+                        <input type="text" name="full_name" placeholder="Jean Dupont"
+                            class="appearance-none block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:bg-white transition-all text-sm font-medium">
+                    </div>
+                </div>
+
+                <!-- Profile Picture -->
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Photo de
+                        profil</label>
+                    <div class="flex items-center gap-4">
+                        <div class="relative group cursor-pointer w-full">
+                            <input id="dropzone-file" name="profile_picture" type="file" class="hidden" accept="image/*"
+                                onchange="previewImage(this)" />
+                            <label for="dropzone-file"
+                                class="flex flex-col items-center justify-center w-full h-24 border-2 border-slate-200 border-dashed rounded-xl cursor-pointer bg-slate-50 group-hover:bg-slate-100 group-hover:border-brand-400 transition-all">
+                                <div class="flex flex-col items-center justify-center pt-2 pb-3"
+                                    id="upload-placeholder">
+                                    <i
+                                        class="ph ph-camera text-2xl text-slate-400 group-hover:text-brand-500 transition-colors mb-1"></i>
+                                    <p class="text-xs text-slate-500 group-hover:text-slate-600">Choisir une photo</p>
+                                </div>
+                                <img id="image-preview" class="hidden h-full w-full object-contain rounded-lg p-1" />
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location -->
+                <div class="space-y-1 relative">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Localisation</label>
+                    <div class="relative">
+                        <input type="text" id="city-input" name="city_search" placeholder="Rechercher votre ville..."
+                            autocomplete="off"
+                            class="appearance-none block w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:bg-white transition-all text-sm font-medium">
+                        <i class="ph ph-map-pin absolute left-3.5 top-3.5 text-lg text-slate-400"></i>
+
+                        <!-- Hidden Fields -->
+                        <input type="hidden" name="location_lat" id="search-lat">
+                        <input type="hidden" name="location_lon" id="search-lon">
+                        <input type="hidden" name="location_city" id="search-city">
+                        <input type="hidden" name="location_region" id="search-region">
+                        <input type="hidden" name="location_country" id="search-country">
+
+                        <ul id="suggestions-list"
+                            class="hidden absolute z-50 w-full bg-white border border-slate-100 rounded-xl shadow-xl mt-1 max-h-60 overflow-y-auto divide-y divide-slate-50">
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Email</label>
+                    <input type="email" name="email" required placeholder="jean@example.com"
+                        class="appearance-none block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:bg-white transition-all text-sm font-medium">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Mot de
+                            passe</label>
+                        <input type="password" name="password" required placeholder="••••••••"
+                            class="appearance-none block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:bg-white transition-all text-sm font-medium">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Confirmer</label>
+                        <input type="password" name="password_confirm" required placeholder="••••••••"
+                            class="appearance-none block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:bg-white transition-all text-sm font-medium">
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-slate-100">
+                    <label
+                        class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 text-center">Code
+                        d'invitation (Beta)</label>
+                    <input type="text" name="invitation_code" placeholder="CODE-123"
+                        class="appearance-none block w-full px-4 py-3 border border-slate-200 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-brand-500 focus:border-brand-500 text-sm text-center font-mono tracking-widest transition-colors">
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit"
+                        class="group w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-all shadow-lg shadow-brand-500/30 hover:shadow-brand-500/40">
+                        Créer mon compte
+                        <i class="ph-bold ph-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                    </button>
+                    <p class="mt-4 text-xs text-center text-slate-500">
+                        En créant un compte, vous accepte nos <a href="#"
+                            class="underline hover:text-brand-600">Conditions d'utilisation</a>.
+                    </p>
+                </div>
+            </form>
         </div>
     </div>
 </div>
+
+<script>
+    function previewImage(input) {
+        const preview = document.getElementById('image-preview');
+        const placeholder = document.getElementById('upload-placeholder');
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                preview.src = e.target.result;
+                preview.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const cityInput = document.getElementById('city-input');
+        const suggestionsList = document.getElementById('suggestions-list');
+        const searchLat = document.getElementById('search-lat');
+        const searchLon = document.getElementById('search-lon');
+        const searchCity = document.getElementById('search-city');
+        const searchRegion = document.getElementById('search-region');
+        const searchCountry = document.getElementById('search-country');
+
+        let debounceTimer;
+
+        if (cityInput) {
+            cityInput.addEventListener('input', function () {
+                const query = this.value;
+
+                if (query.length < 3) {
+                    suggestionsList.classList.add('hidden');
+                    return;
+                }
+
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&lang=fr&limit=5`)
+                        .then(res => res.json())
+                        .then(data => {
+                            suggestionsList.innerHTML = '';
+                            if (data.features && data.features.length > 0) {
+                                suggestionsList.classList.remove('hidden');
+                                data.features.forEach(feature => {
+                                    const props = feature.properties;
+                                    const coords = feature.geometry.coordinates;
+
+                                    const li = document.createElement('li');
+                                    li.className = "px-4 py-3 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 flex flex-col transition-colors";
+
+                                    let label = props.name;
+                                    let context = [];
+                                    if (props.city && props.name !== props.city) context.push(props.city);
+                                    if (props.state) context.push(props.state);
+                                    if (props.country) context.push(props.country);
+
+                                    li.innerHTML = `
+                                        <div class="flex items-center gap-3">
+                                            <i class="ph-duotone ph-map-pin text-brand-500 text-lg"></i>
+                                            <div class="flex flex-col">
+                                                <span class="font-bold text-slate-800">${label}</span>
+                                                <span class="text-xs text-slate-500">${context.join(', ')}</span>
+                                            </div>
+                                        </div>
+                                    `;
+
+                                    li.addEventListener('click', () => {
+                                        cityInput.value = label;
+                                        searchLat.value = coords[1];
+                                        searchLon.value = coords[0];
+                                        searchCity.value = props.city || props.name;
+                                        searchRegion.value = props.state || props.county || '';
+                                        searchCountry.value = props.country || '';
+                                        suggestionsList.classList.add('hidden');
+                                    });
+                                    suggestionsList.appendChild(li);
+                                });
+                            } else {
+                                suggestionsList.classList.add('hidden');
+                            }
+                        })
+                        .catch(err => console.error(err));
+                }, 300);
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!cityInput.contains(e.target) && !suggestionsList.contains(e.target)) {
+                    suggestionsList.classList.add('hidden');
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}

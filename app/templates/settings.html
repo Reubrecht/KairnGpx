@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="bg-white shadow rounded-2xl p-6 border border-slate-100">
+        <h3 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+            <i class="ph-duotone ph-gear text-brand-600"></i> Paramètres
+        </h3>
+
+        <div class="space-y-2">
+            <!-- Profile Link -->
+            <a href="/profile"
+                class="flex items-center justify-between p-4 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors group">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-slate-500 shadow-sm group-hover:text-brand-600 transition-colors">
+                        <i class="ph-bold ph-user text-xl"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-900">Mon Profil</h4>
+                        <p class="text-xs text-slate-500">Modifier mes informations personnelles</p>
+                    </div>
+                </div>
+                <i class="ph-bold ph-caret-right text-slate-400 group-hover:text-brand-600"></i>
+            </a>
+
+            <!-- Prediction Settings Link (Premium) -->
+            <a href="/profile/prediction"
+                class="flex items-center justify-between p-4 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors group">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-slate-500 shadow-sm group-hover:text-amber-500 transition-colors">
+                        <i class="ph-bold ph-faders text-xl"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-900">Calibration Prédiction</h4>
+                        <p class="text-xs text-slate-500">Ajuster mes allures (Premium)</p>
+                    </div>
+                </div>
+                <i class="ph-bold ph-caret-right text-slate-400 group-hover:text-brand-600"></i>
+            </a>
+
+            <div class="h-px bg-slate-100 my-4"></div>
+
+            <!-- Logout Link -->
+            <a href="/logout"
+                class="flex items-center justify-between p-4 rounded-xl bg-red-50 hover:bg-red-100 transition-colors group">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-red-500 shadow-sm group-hover:bg-red-500 group-hover:text-white transition-colors">
+                        <i class="ph-bold ph-sign-out text-xl"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-red-600">Déconnexion</h4>
+                        <p class="text-xs text-red-400">Se déconnecter de l'application</p>
+                    </div>
+                </div>
+                <i class="ph-bold ph-caret-right text-red-300 group-hover:text-red-500"></i>
+            </a>
+        </div>
+
+        <div class="mt-8 text-center">
+            <p class="text-xs text-slate-400">My Kairn Version {{ version or 'Beta' }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
