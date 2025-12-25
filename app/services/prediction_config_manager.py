@@ -26,6 +26,44 @@ DEFAULT_CONFIG = {
     "push_multiplier": 1.15
 }
 
+PRESETS = {
+    "ultra": {
+        "name": "L'Ultra-Traileur",
+        "desc": "Profil endurance & gestion (Diesel)",
+        "config": {
+            **DEFAULT_CONFIG,
+            "decay_start_km": 60,
+            "decay_max_total": 0.25,
+            "endurance_multiplier": 0.88,
+            "push_multiplier": 1.05,
+            "base_speed_intercept": 4.2
+        }
+    },
+    "puncheur": {
+        "name": "Le Puncheur",
+        "desc": "Explosif sur court, limité en endurance",
+        "config": {
+            **DEFAULT_CONFIG,
+            "decay_start_km": 25,
+            "decay_max_total": 0.50,
+            "decay_rate_per_step": 0.08,
+            "base_speed_intercept": 3.5,
+            "push_multiplier": 1.20
+        }
+    },
+    "montagnard": {
+        "name": "Le Montagnard",
+        "desc": "Agile en technique & fort en d+",
+        "config": {
+            **DEFAULT_CONFIG,
+            "tech_factor_3_alpine": 0.85,
+            "tech_factor_2_mountain": 0.92,
+            "base_speed_slope": 0.026,
+            "decay_start_km": 40
+        }
+    }
+}
+
 class PredictionConfigManager:
     @staticmethod
     def get_config() -> dict:

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from .. import models
 from ..dependencies import get_db, get_current_user, templates
-from ..services.prediction_config_manager import PredictionConfigManager, DEFAULT_CONFIG
+from ..services.prediction_config_manager import PredictionConfigManager, DEFAULT_CONFIG, PRESETS
 
 router = APIRouter()
 
@@ -168,7 +168,10 @@ async def prediction_settings(request: Request, db: Session = Depends(get_db)):
         "request": request,
         "user": user,
         "config": config,
-        "defaults": DEFAULT_CONFIG
+        "user": user,
+        "config": config,
+        "defaults": DEFAULT_CONFIG,
+        "presets": PRESETS
     })
 
 @router.post("/profile/prediction")
@@ -216,6 +219,32 @@ async def reset_prediction_settings(
     user.prediction_config = None
     db.commit()
     return RedirectResponse(url="/profile/prediction?success=Reset", status_code=303)
+
+@router.post("/profile/prediction/apply_preset")
+async def apply_prediction_preset(
+    request: Request,
+    preset: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    user = await get_current_user(request, db)
+    if not user.is_premium:
+        raise HTTPException(status_code=403, detail="Premium only")
+        
+    if preset not in PRESETS:
+        return RedirectResponse(url="/profile/prediction?error=Unknown Preset", status_code=303)
+
+    # Apply the preset config
+    # We copy it to ensure we don't modify the global constant if we were mutable (dicts are reference)
+    import copy
+    new_conf = copy.deepcopy(PRESETS[preset]["config"])
+    
+    user.prediction_config = new_conf
+    from sqlalchemy.orm.attributes import flag_modified
+    flag_modified(user, "prediction_config")
+    
+    db.commit()
+    
+    return RedirectResponse(url=f"/profile/prediction?success=Preset {PRESETS[preset]['name']} Applied", status_code=303)
 
 
 @router.get("/user/{username}", response_class=HTMLResponse)
