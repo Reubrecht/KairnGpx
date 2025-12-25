@@ -3,6 +3,8 @@
   "short_name": "My Kairn",
   "description": "La communauté des passionnés de trail qui veulent plus que des segments.",
   "start_url": "/",
+  "id": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#10b981",
@@ -24,7 +26,9 @@
     {
       "action": "/upload",
       "accept": {
-        "application/gpx+xml": [".gpx"]
+        "application/gpx+xml": [
+          ".gpx"
+        ]
       }
     }
   ]

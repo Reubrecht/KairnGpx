@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Request, Form, status, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from datetime import datetime, timedelta
 
 from .. import models
 from ..dependencies import get_db, get_current_user, get_current_user_optional, templates
@@ -29,42 +30,81 @@ async def club_dashboard(request: Request, db: Session = Depends(get_db)):
     # Get Members
     members = db.query(models.User).filter(models.User.club_affiliation == club_name).all()
     
-    # Get Stats
-    total_km = 0
-    total_elev = 0
-    member_count = len(members)
+    # --- FILTERS ---
+    period = request.query_params.get("period", "month") # week, month, year, all
+    metric = request.query_params.get("metric", "distance") # distance, elevation, time
+
+    now = datetime.utcnow()
+    start_date = None
     
-    # Get Recent Tracks from Club Members
-    # We join Track -> User and filter by User.club_affiliation
-    recent_tracks = db.query(models.Track).join(models.User).filter(
-        models.User.club_affiliation == club_name,
-        models.Track.visibility == models.Visibility.PUBLIC # Only public tracks in club feed? Or all? Usually Club = Trusted, but let's stick to Public for safety unless specific Club logic exists.
-    ).order_by(models.Track.created_at.desc()).limit(20).all()
+    if period == "week":
+        start_date = now - timedelta(days=now.weekday()) # Start of week (Monday)
+    elif period == "month":
+        start_date = now.replace(day=1) # Start of month
+    elif period == "year":
+        start_date = now.replace(month=1, day=1) # Start of year
+    # else "all" -> None
     
-    # Calc totals from members (approximate or explicit query)
-    # Simple query for totals
-    # Aggregate all tracks from these users
-    # This might be heavy if many users, but fine for MVP
-    member_ids = [m.id for m in members]
+    # --- AGGREGATION ---
+    # We want a list of members with their aggregated stats for the period
+    # Query StravaActivity
     
-    stats_query = db.query(
-        func.sum(models.Track.distance_km).label("total_dist"),
-        func.sum(models.Track.elevation_gain).label("total_elev")
-    ).filter(models.Track.user_id.in_(member_ids)).first()
+    leaderboard = []
     
-    if stats_query.total_dist:
-        total_km = stats_query.total_dist
-    if stats_query.total_elev:
-        total_elev = stats_query.total_elev
+    for member in members:
+        query = db.query(
+            func.sum(models.StravaActivity.distance).label("total_dist"),
+            func.sum(models.StravaActivity.total_elevation_gain).label("total_elev"),
+            func.sum(models.StravaActivity.moving_time).label("total_time")
+        ).filter(models.StravaActivity.user_id == member.id)
         
+        if start_date:
+            query = query.filter(models.StravaActivity.start_date >= start_date)
+            
+        stats = query.first()
+        
+        dist = stats.total_dist if stats.total_dist else 0
+        elev = stats.total_elev if stats.total_elev else 0
+        time_sec = stats.total_time if stats.total_time else 0
+        
+        # Calculate Rank Value based on metric
+        rank_val = 0
+        if metric == "distance":
+            rank_val = dist
+        elif metric == "elevation":
+            rank_val = elev
+        elif metric == "time":
+            rank_val = time_sec
+            
+        leaderboard.append({
+            "user": member,
+            "dist_km": round(dist / 1000, 1),
+            "elev_m": round(elev, 0),
+            "time_h": round(time_sec / 3600, 1),
+            "rank_val": rank_val
+        })
+        
+    # Sort Leaderboard
+    leaderboard.sort(key=lambda x: x["rank_val"], reverse=True)
+    
+    # Assign Ranks
+    for i, entry in enumerate(leaderboard):
+        entry["rank"] = i + 1
+    
+    # Club Totals (Sum of topstats or all? Let's sum all members in period)
+    total_km = sum(e["dist_km"] for e in leaderboard)
+    total_elev = sum(e["elev_m"] for e in leaderboard)
+
     return templates.TemplateResponse("club.html", {
         "request": request,
         "user": user,
         "has_club": True,
         "club_name": club_name,
         "members": members,
-        "member_count": member_count,
-        "recent_tracks": recent_tracks,
+        "member_count": len(members),
+        "leaderboard": leaderboard,
+        "current_period": period,
+        "current_metric": metric,
         "total_km": total_km,
         "total_elev": total_elev
     })

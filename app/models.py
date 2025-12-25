@@ -471,3 +471,27 @@ class RaceStrategy(Base):
     track = relationship("Track", backref="strategies")
 
 
+class StravaActivity(Base):
+    """
+    Lightweight storage for Strava activities (Club/Leaderboard).
+    Does NOT store GPX or detailed track points.
+    """
+    __tablename__ = "strava_activities"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    strava_id = Column(String, unique=True, index=True) # Strava IDs are large ints, safe as string
+    
+    name = Column(String)
+    distance = Column(Float) # Meters
+    moving_time = Column(Integer) # Seconds
+    elapsed_time = Column(Integer) # Seconds
+    total_elevation_gain = Column(Float) # Meters
+    type = Column(String) # Run, Ride, etc.
+    start_date = Column(DateTime) # UTC
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", backref="strava_activities")
+
+

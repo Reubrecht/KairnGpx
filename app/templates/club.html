@@ -131,87 +131,137 @@
 
             </div>
 
-            <!-- Right Column: Activity Feed -->
+            <!-- Right Column: Leaderboard -->
             <div class="lg:col-span-2 space-y-6">
-                <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <i class="ph-bold ph-activity text-brand-600"></i>
-                    Activité Récente
-                </h3>
 
-                {% if recent_tracks %}
-                <div class="space-y-4">
-                    {% for track in recent_tracks %}
-                    <!-- reusing a simplified track card style -->
+                <!-- Filters -->
+                <div
+                    class="bg-white rounded-2xl shadow-sm p-4 border border-slate-100 flex flex-col md:flex-row gap-4 justify-between items-center">
+                    <div class="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0">
+                        <span class="text-xs font-bold text-slate-400 uppercase mr-2">Période:</span>
+                        <a href="?period=week&metric={{ current_metric }}"
+                            class="px-3 py-1.5 rounded-lg text-sm font-bold transition-colors {{ 'bg-brand-100 text-brand-700' if current_period == 'week' else 'bg-slate-50 text-slate-600 hover:bg-slate-100' }}">Semaine</a>
+                        <a href="?period=month&metric={{ current_metric }}"
+                            class="px-3 py-1.5 rounded-lg text-sm font-bold transition-colors {{ 'bg-brand-100 text-brand-700' if current_period == 'month' else 'bg-slate-50 text-slate-600 hover:bg-slate-100' }}">Mois</a>
+                        <a href="?period=year&metric={{ current_metric }}"
+                            class="px-3 py-1.5 rounded-lg text-sm font-bold transition-colors {{ 'bg-brand-100 text-brand-700' if current_period == 'year' else 'bg-slate-50 text-slate-600 hover:bg-slate-100' }}">Année</a>
+                        <a href="?period=all&metric={{ current_metric }}"
+                            class="px-3 py-1.5 rounded-lg text-sm font-bold transition-colors {{ 'bg-brand-100 text-brand-700' if current_period == 'all' or not current_period else 'bg-slate-50 text-slate-600 hover:bg-slate-100' }}">Tout</a>
+                    </div>
+
                     <div
-                        class="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-slate-100 overflow-hidden group">
-                        <div class="p-6">
-                            <div class="flex items-start justify-between">
-                                <div class="flex items-center gap-3 mb-4">
-                                    <a href="/user/{{ track.user_obj.username }}" class="relative">
-                                        {% if track.user_obj.profile_picture %}
-                                        <img src="{{ track.user_obj.profile_picture }}"
-                                            class="w-10 h-10 rounded-full object-cover">
+                        class="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 border-t md:border-t-0 md:border-l border-slate-100 pt-2 md:pt-0 md:pl-4">
+                        <span class="text-xs font-bold text-slate-400 uppercase mr-2">Classement:</span>
+                        <a href="?period={{ current_period }}&metric=distance"
+                            class="px-3 py-1.5 rounded-lg text-sm font-bold transition-colors {{ 'bg-slate-800 text-white' if current_metric == 'distance' else 'bg-slate-50 text-slate-600 hover:bg-slate-100' }}">Distance</a>
+                        <a href="?period={{ current_period }}&metric=elevation"
+                            class="px-3 py-1.5 rounded-lg text-sm font-bold transition-colors {{ 'bg-slate-800 text-white' if current_metric == 'elevation' else 'bg-slate-50 text-slate-600 hover:bg-slate-100' }}">Dénivelé</a>
+                        <a href="?period={{ current_period }}&metric=time"
+                            class="px-3 py-1.5 rounded-lg text-sm font-bold transition-colors {{ 'bg-slate-800 text-white' if current_metric == 'time' else 'bg-slate-50 text-slate-600 hover:bg-slate-100' }}">Temps</a>
+                    </div>
+                </div>
+
+                <!-- Leaderboard Table -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-50 flex items-center justify-between">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <i class="ph-duotone ph-trophy text-brand-500"></i>
+                            Classement
+                        </h3>
+                        <p class="text-xs font-bold text-brand-600 bg-brand-50 px-2 py-1 rounded-md">
+                            {% if current_metric == 'distance' %}Distance Totale
+                            {% elif current_metric == 'elevation' %}Dénivelé Totale
+                            {% elif current_metric == 'time' %}Temps Total
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    {% if leaderboard %}
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50 text-xs uppercase text-slate-400 font-bold border-b border-slate-100">
+                            <tr>
+                                <th class="px-6 py-3 w-16 text-center">#</th>
+                                <th class="px-6 py-3">Athlète</th>
+                                <th class="px-6 py-3 text-right">Distance</th>
+                                <th class="px-6 py-3 text-right">Dénivelé</th>
+                                <th class="px-6 py-3 text-right">Temps</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-50">
+                            {% for entry in leaderboard %}
+                            <tr
+                                class="hover:bg-slate-50/50 transition-colors {{ 'bg-brand-50/10' if entry.user.id == user.id else '' }}">
+                                <td class="px-6 py-4 text-center">
+                                    {% if entry.rank == 1 %}
+                                    <span
+                                        class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-yellow-100 text-yellow-700 font-black">1</span>
+                                    {% elif entry.rank == 2 %}
+                                    <span
+                                        class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-600 font-black">2</span>
+                                    {% elif entry.rank == 3 %}
+                                    <span
+                                        class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-700 font-black">3</span>
+                                    {% else %}
+                                    <span class="text-slate-400 font-bold">{{ entry.rank }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        {% if entry.user.profile_picture %}
+                                        <img src="{{ entry.user.profile_picture }}"
+                                            class="w-10 h-10 rounded-full object-cover border border-slate-100">
                                         {% else %}
                                         <div
-                                            class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500">
-                                            {{ track.user_obj.username[:1].upper() }}
+                                            class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-sm">
+                                            {{ entry.user.username[:1].upper() }}
                                         </div>
                                         {% endif %}
-                                    </a>
-                                    <div>
-                                        <p class="text-sm font-bold text-slate-900">
-                                            <a href="/user/{{ track.user_obj.username }}" class="hover:underline">{{
-                                                track.user_obj.full_name or track.user_obj.username }}</a>
-                                        </p>
-                                        <p class="text-xs text-slate-400">{{ track.created_at.strftime('%d %b %Y') }}
-                                        </p>
+                                        <div>
+                                            <p
+                                                class="text-sm font-bold text-slate-900 {{ 'text-brand-600' if entry.user.id == user.id else '' }}">
+                                                {{ entry.user.full_name or entry.user.username }}
+                                            </p>
+                                            <p class="text-xs text-slate-400">{{ entry.user.location or '' }}</p>
+                                        </div>
                                     </div>
-                                </div>
-
-                                <div class="flex gap-2">
-                                    {% if track.activity_type %}
-                                    <span class="px-2 py-1 rounded-lg bg-slate-50 text-slate-600 text-xs font-bold">{{
-                                        track.activity_type.value }}</span>
-                                    {% endif %}
-                                </div>
-                            </div>
-
-                            <a href="/track/{{ track.id }}" class="block group-hover:text-brand-600 transition-colors">
-                                <h4 class="text-xl font-black text-slate-900 mb-2 truncate">{{ track.title }}</h4>
-                            </a>
-
-                            <div class="grid grid-cols-3 gap-4 py-4 border-t border-slate-50 mt-2">
-                                <div>
-                                    <p class="text-xs text-slate-400 font-bold uppercase">Distance</p>
-                                    <p class="text-lg font-black text-slate-700">{{ track.distance_km }}<span
-                                            class="text-sm text-slate-400 font-medium">km</span></p>
-                                </div>
-                                <div>
-                                    <p class="text-xs text-slate-400 font-bold uppercase">Dénivelé</p>
-                                    <p class="text-lg font-black text-slate-700">{{ track.elevation_gain }}<span
-                                            class="text-sm text-slate-400 font-medium">m+</span></p>
-                                </div>
-                                <div>
-                                    <p class="text-xs text-slate-400 font-bold uppercase">Temps</p>
-                                    <!-- Placeholder for time if available, simplified -->
-                                    <p class="text-lg font-black text-slate-700">--:--</p>
-                                </div>
-                            </div>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <span
+                                        class="font-bold {{ 'text-slate-900 text-lg' if current_metric == 'distance' else 'text-slate-500' }}">
+                                        {{ entry.dist_km }}
+                                    </span>
+                                    <span class="text-xs text-slate-400 mb-1 ml-0.5">km</span>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <span
+                                        class="font-bold {{ 'text-slate-900 text-lg' if current_metric == 'elevation' else 'text-slate-500' }}">
+                                        {{ entry.elev_m }}
+                                    </span>
+                                    <span class="text-xs text-slate-400 mb-1 ml-0.5">m</span>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <span
+                                        class="font-bold {{ 'text-slate-900 text-lg' if current_metric == 'time' else 'text-slate-500' }}">
+                                        {{ entry.time_h }}
+                                    </span>
+                                    <span class="text-xs text-slate-400 mb-1 ml-0.5">h</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <div class="text-center py-16">
+                        <div
+                            class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-50 text-slate-300 mb-4">
+                            <i class="ph-duotone ph-chart-bar text-3xl"></i>
                         </div>
+                        <h3 class="text-lg font-bold text-slate-900">Aucune statistique</h3>
+                        <p class="text-slate-500 mt-2">Aucune activité trouvée pour cette période.</p>
                     </div>
-                    {% endfor %}
+                    {% endif %}
                 </div>
-                {% else %}
-                <div class="text-center py-12 bg-white rounded-2xl border-2 border-dashed border-slate-200">
-                    <div
-                        class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-50 text-slate-300 mb-4">
-                        <i class="ph-bold ph-person-simple-run text-3xl"></i>
-                    </div>
-                    <h3 class="text-lg font-bold text-slate-900">Aucune activité récente</h3>
-                    <p class="text-slate-500 max-w-sm mx-auto mt-2">Les membres du club n'ont pas encore partagé
-                        d'activités. Soyez le premier !</p>
-                </div>
-                {% endif %}
+
             </div>
 
         </div>
