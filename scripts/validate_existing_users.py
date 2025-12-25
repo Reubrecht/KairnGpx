@@ -1,17 +1,43 @@
 import sys
 import os
-from dotenv import load_dotenv
-
 # Add the project root to the python path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
+def manual_load_env(path):
+    """Fallback to manually parse .env file if python-dotenv is missing"""
+    print(f"Manually loading environment from {path}")
+    try:
+        with open(path, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#') or '=' not in line:
+                    continue
+                key, value = line.split('=', 1)
+                # Remove quotes if present
+                if value.startswith('"') and value.endswith('"'):
+                    value = value[1:-1]
+                elif value.startswith("'") and value.endswith("'"):
+                    value = value[1:-1]
+                os.environ[key] = value
+    except Exception as e:
+        print(f"Failed to manually load .env: {e}")
+
 # Load environment using the same priority as the app (local.env first)
 env_path = os.path.join(os.path.dirname(__file__), '../local.env')
-if os.path.exists(env_path):
-    print(f"Loading environment from {env_path}")
-    load_dotenv(env_path)
-else:
-    print("No local.env found, relying on system environment variables")
+
+try:
+    from dotenv import load_dotenv
+    if os.path.exists(env_path):
+        print(f"Loading environment from {env_path} using python-dotenv")
+        load_dotenv(env_path)
+    else:
+        print("No local.env found, relying on system environment variables")
+except ImportError:
+    print("python-dotenv not found. Attempting manual load.")
+    if os.path.exists(env_path):
+        manual_load_env(env_path)
+    else:
+        print("No local.env found, relying on system environment variables")
 
 from app.database import SessionLocal, engine
 from app.models import User
