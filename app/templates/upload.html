@@ -1073,5 +1073,16 @@
                 loadingOverlay.classList.remove('flex');
             });
     }
+
+    // PWA File Handling (launchQueue)
+    if ('launchQueue' in window) {
+        launchQueue.setConsumer(async (launchParams) => {
+            if (launchParams.files.length > 0) {
+                const fileHandle = launchParams.files[0];
+                const file = await fileHandle.getFile();
+                handleFile(file);
+            }
+        });
+    }
 </script>
 {% endblock %}
