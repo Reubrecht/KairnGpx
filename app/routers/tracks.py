@@ -44,6 +44,11 @@ async def explore(
     q: Optional[str] = None,
     # Scenery
     scenery_min: Optional[str] = None,
+    # Advanced Filters (New)
+    min_technicity: Optional[int] = None,
+    exposure: Optional[str] = None,
+    min_trail_percent: Optional[int] = None,
+    min_single_track_percent: Optional[int] = None,
     # Pagination
     limit: int = 10
 ):
@@ -152,22 +157,55 @@ async def explore(
                     text_filtered.append(t)
             tracks = text_filtered
         
-        # 8. Post-Processing for Ratio D+
-        if ratio_category:
-            filtered_tracks = []
-            for t in tracks:
+        # 8. Post-Processing for Ratio D+ and Advanced Fields
+        filtered_tracks = []
+        for t in tracks:
+            # Ratio Check
+            if ratio_category:
                 if not t.distance_km or t.distance_km == 0:
                     continue
                 ratio = t.elevation_gain / t.distance_km
-                if ratio_category == "FLAT" and ratio < 15:
-                    filtered_tracks.append(t)
-                elif ratio_category == "ROLLING" and 15 <= ratio < 40:
-                    filtered_tracks.append(t)
-                elif ratio_category == "HILLY" and 40 <= ratio < 80:
-                    filtered_tracks.append(t)
-                elif ratio_category == "MOUNTAIN" and ratio >= 80:
-                    filtered_tracks.append(t)
-            tracks = filtered_tracks
+                if ratio_category == "FLAT" and ratio >= 15:
+                    continue
+                elif ratio_category == "ROLLING" and (ratio < 15 or ratio >= 40):
+                    continue
+                elif ratio_category == "HILLY" and (ratio < 40 or ratio >= 80):
+                    continue
+                elif ratio_category == "MOUNTAIN" and ratio < 80:
+                    continue
+
+            # Technicity Check (min score 1-5)
+            if min_technicity is not None:
+                if t.technicity_score is None or t.technicity_score < min_technicity:
+                    continue
+            
+            # Exposure Check (Simple string match)
+            if exposure:
+                if not t.exposure or exposure.lower() not in t.exposure.lower():
+                    continue
+
+            # Surface Check (% Trail)
+            if min_trail_percent is not None:
+                current_trail = 0
+                if t.surface_composition and isinstance(t.surface_composition, dict):
+                    current_trail = float(t.surface_composition.get('trail', 0)) + float(t.surface_composition.get('path', 0)) # Aggregating trail-like
+                elif t.surface_composition and isinstance(t.surface_composition, list):
+                     # Fallback if list
+                     pass
+                if current_trail < min_trail_percent:
+                    continue
+
+            # Path Type Check (% Single Track)
+            if min_single_track_percent is not None:
+                current_single = 0
+                if t.path_type and isinstance(t.path_type, dict):
+                    current_single = float(t.path_type.get('single_track', 0))
+                if current_single < min_single_track_percent:
+                    continue
+
+            filtered_tracks.append(t)
+        
+        tracks = filtered_tracks
 
         # --- SORTING BY DISTANCE ---
         if ref_lat is not None and ref_lon is not None:
@@ -1195,6 +1233,7 @@ async def edit_track_action(
     activity_type: str = Form(...),
     environment: List[str] = Form([]),
     tags: str = Form(None),
+    ravitos: Optional[str] = Form(None), # JSON String of POIs
     # Admin Fields
     action: Optional[str] = Form(None),
     owner_name: Optional[str] = Form(None),
@@ -1241,6 +1280,25 @@ async def edit_track_action(
     track.scenery_rating = scenery_rating
     track.water_points_count = water_points_count
     track.technicity_score = technicity_score
+
+    # Update Ravitos / POIs
+    if ravitos:
+        try:
+            poi_data = json.loads(ravitos)
+            track.points_of_interest = poi_data
+            
+            # Auto-calculate water count based on type if not explicitly set? 
+            # Logic: If user uses the UI, the UI updates the hidden water count field. 
+            # So we trust the form value of water_points_count. 
+            # However, we ensure points_of_interest is saved as a list of dicts.
+            
+        except json.JSONDecodeError:
+            pass # Keep existing or empty logic? For now ignore invalid JSON.
+    else:
+        # If explicitly sent as empty string (cleared), we might want to clear it?
+        # But allow None to mean "no change" if field missing? 
+        # In HTML form, empty field sends empty string.
+        pass
 
     if race_route_id:
         route = db.query(models.RaceRoute).filter(models.RaceRoute.id == race_route_id).first()

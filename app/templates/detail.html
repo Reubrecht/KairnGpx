@@ -152,41 +152,39 @@
                         </div>
 
                         <!-- Actions Toolbar -->
-                        <div class="flex flex-wrap items-center gap-2 w-full md:w-auto mt-4 md:mt-0">
-                            {% if track.race_route and track.race_route.edition and track.race_route.edition.event %}
-                            <a href="/race/{{ track.race_route.edition.event.slug }}"
-                                class="flex-1 md:flex-none justify-center inline-flex items-center px-4 py-2 bg-yellow-50 border border-yellow-200 rounded-xl text-sm font-bold text-yellow-800 hover:bg-yellow-100 transition-colors shadow-sm whitespace-nowrap">
-                                <i class="ph ph-trophy mr-2 text-lg"></i>
-                                Voir l'événement
-                            </a>
-                            {% endif %}
-
+                        <!-- Actions Toolbar -->
+                        <div
+                            class="grid grid-cols-2 sm:grid-cols-4 md:flex md:items-center gap-2 w-full md:w-auto mt-4 md:mt-0">
+                            <!-- Share -->
                             <button onclick="copyLink()"
-                                class="flex-1 md:flex-none justify-center inline-flex items-center px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm whitespace-nowrap">
-                                <i class="ph ph-share-network mr-2 text-slate-400 text-lg"></i>
+                                class="justify-center inline-flex items-center px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm whitespace-nowrap active:scale-95">
+                                <i class="ph-bold ph-share-network mr-2 text-slate-400 text-lg"></i>
                                 <span id="shareBtnText">Partager</span>
                             </button>
 
+                            <!-- GPX -->
                             <a href="/raw_gpx/{{ track.id }}"
-                                class="flex-1 md:flex-none justify-center inline-flex items-center px-4 py-2 bg-brand-600 border border-transparent rounded-xl text-sm font-bold text-white hover:bg-brand-700 transition-colors shadow-sm shadow-brand-200 whitespace-nowrap">
-                                <i class="ph ph-download-simple mr-2 text-lg"></i>
+                                class="justify-center inline-flex items-center px-3 py-2.5 bg-brand-600 border border-transparent rounded-xl text-xs sm:text-sm font-bold text-white hover:bg-brand-700 transition-colors shadow-sm shadow-brand-200 whitespace-nowrap active:scale-95">
+                                <i class="ph-bold ph-download-simple mr-2 text-lg"></i>
                                 GPX
                             </a>
 
-                            {% if user and (user.id == track.user_id or user.is_admin) %}
-                            <a href="/track/{{ track.id }}/edit"
-                                class="p-2 text-slate-400 hover:text-brand-600 hover:bg-slate-50 rounded-lg transition-colors">
-                                <i class="ph ph-pencil-simple text-lg"></i>
-                            </a>
-                            {% endif %}
-
-                            <!-- More Features Button -->
+                            <!-- Details (Features) -->
                             <button onclick="toggleFeaturesModal()"
-                                class="flex-1 md:flex-none justify-center inline-flex items-center px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm whitespace-nowrap"
+                                class="justify-center inline-flex items-center px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm whitespace-nowrap active:scale-95"
                                 title="Plus de caractéristiques">
-                                <i class="ph ph-list-plus mr-2 text-slate-400 text-lg"></i>
+                                <i class="ph-bold ph-list-plus mr-2 text-slate-400 text-lg"></i>
                                 Détails
                             </button>
+
+                            <!-- Edit (Owner/Admin) -->
+                            {% if user and (user.id == track.user_id or user.is_admin) %}
+                            <a href="/track/{{ track.id }}/edit"
+                                class="justify-center inline-flex items-center px-3 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-200 hover:text-slate-900 transition-colors shadow-sm whitespace-nowrap active:scale-95">
+                                <i class="ph-bold ph-pencil-simple mr-2 text-lg"></i>
+                                Modifier
+                            </a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -989,25 +987,36 @@
     }
 
     // --- ROADBOOK LOGIC ---
-    let waypoints = [
-        // { km: 0, name: "Départ", userDefined: false }
-        // { km: TRACK_TOTAL_KM, name: "Arrivée", userDefined: false }
-    ]; // We will init this on load
+    let waypoints = [];
     const TRACK_ID = {{ track.id }};
     const TRACK_TOTAL_KM = {{ track.distance_km }};
+    const PRELOADED_POIS = {{ track.points_of_interest | tojson | safe }} || [];
 
     function initRoadbook() {
-        // Init default waypoints if empty
+        // Init default waypoints from POIs if empty
         if (waypoints.length === 0) {
-            // waypoints.push({ km: 0, name: "Départ", userDefined: false });
-            // waypoints.push({ km: TRACK_TOTAL_KM, name: "Arrivée", userDefined: false });
-            renderWaypointsList();
+            if (PRELOADED_POIS && PRELOADED_POIS.length > 0) {
+                PRELOADED_POIS.forEach(p => {
+                    waypoints.push({
+                        km: parseFloat(p.km),
+                        name: p.name,
+                        type: p.type,
+                        userDefined: false
+                    });
+                });
+            } else {
+                // Optional defaut defaults?
+                // waypoints.push({ km: 0, name: "Départ", userDefined: false });
+            }
         }
 
-        // Auto-fill target time if available
-        {% if user_prediction and user_prediction.prediction_available %}
-        prefillTargetTime('{{ user_prediction.times.push }}');
-        {% endif %}
+        renderWaypointsList();
+    }
+
+    // Auto-fill target time if available
+    {% if user_prediction and user_prediction.prediction_available %}
+    prefillTargetTime('{{ user_prediction.times.push }}');
+    {% endif %}
     }
 
     function prefillTargetTime(timeStr) {
@@ -1786,7 +1795,8 @@
         "geojson": {{ track_geojson | safe }},
         "startLon": {{ track.start_lon }},
         "startLat": {{ track.start_lat }},
-        "city": "{{ track.location_city or '' }}"
+        "city": "{{ track.location_city or '' }}",
+        "points_of_interest": {{ track.points_of_interest | tojson | safe }}
     }
 </script>
 
@@ -2006,6 +2016,66 @@
                 .setLngLat(coords[0])
                 .addTo(map);
             window.markerEl = markerEl;
+
+
+            // --- NEW: POI Markers (Ravitos) ---
+            const pois = trackData.points_of_interest || [];
+            if (pois.length > 0) {
+                // Pre-calculate cumulative distances for lookup
+                const cumulativeDist = [0];
+                let totalD = 0;
+                for (let i = 1; i < coords.length; i++) {
+                    totalD += window.getDistKm(coords[i - 1][1], coords[i - 1][0], coords[i][1], coords[i][0]);
+                    cumulativeDist.push(totalD);
+                }
+
+                pois.forEach(poi => {
+                    const targetKm = parseFloat(poi.km);
+                    if (isNaN(targetKm)) return;
+
+                    // Find coord
+                    // Binary search or simple find (simple find is fast enough for <10k points usually)
+                    let foundIndex = -1;
+                    for (let i = 0; i < cumulativeDist.length; i++) {
+                        if (cumulativeDist[i] >= targetKm) {
+                            foundIndex = i;
+                            break;
+                        }
+                    }
+                    if (foundIndex === -1 && targetKm <= totalD) foundIndex = cumulativeDist.length - 1;
+
+                    if (foundIndex !== -1) {
+                        const coord = coords[foundIndex];
+                        const typeIcons = {
+                            'water': '💧',
+                            'food': '🍎',
+                            'base_life': '⛺',
+                            'checkpoint': '🚩',
+                            'summit': '🏔️'
+                        };
+                        const icon = typeIcons[poi.type] || '📍';
+
+                        const el = document.createElement('div');
+                        // Use a nice bubble styling
+                        el.className = 'flex items-center justify-center w-8 h-8 text-xl bg-white rounded-full shadow-lg border border-slate-100 transform hover:scale-110 transition-transform cursor-pointer z-[50]';
+                        el.innerText = icon;
+                        el.title = `${poi.name} (${targetKm}km)`;
+
+                        // Create Popup
+                        const popup = new maplibregl.Popup({ offset: 25 }).setHTML(`
+                            <div class="px-2 py-1">
+                                <h3 class="font-bold text-slate-800">${poi.name}</h3>
+                                <p class="text-xs text-slate-500 capitalize">${poi.type} • ${targetKm} km</p>
+                            </div>
+                        `);
+
+                        new maplibregl.Marker({ element: el })
+                            .setLngLat(coord)
+                            .setPopup(popup)
+                            .addTo(map);
+                    }
+                });
+            }
 
 
             // RESTORE USER PREFERENCES

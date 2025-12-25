@@ -262,6 +262,72 @@
                                 </select>
                             </div>
 
+                            <!-- Exposure -->
+                            <div>
+                                <label
+                                    class="block text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-1">
+                                    <i class="ph ph-sun text-sm text-slate-400"></i> Exposition
+                                </label>
+                                <select name="exposure"
+                                    class="w-full px-2 py-1.5 rounded-lg border-slate-200 bg-white text-xs focus:border-brand-500 transition-colors">
+                                    <option value="">Toutes</option>
+                                    <option value="Ensoleillé" {% if request.query_params.get('exposure')=='Ensoleillé'
+                                        %}selected{% endif %}>Ensoleillé</option>
+                                    <option value="Ombragé" {% if request.query_params.get('exposure')=='Ombragé'
+                                        %}selected{% endif %}>Ombragé</option>
+                                    <option value="Mixte" {% if request.query_params.get('exposure')=='Mixte'
+                                        %}selected{% endif %}>Mixte</option>
+                                </select>
+                            </div>
+
+                            <!-- Technicity (Min) -->
+                            <div class="space-y-1">
+                                <label
+                                    class="block text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                                    <i class="ph-fill ph-warning-circle text-sm text-slate-400"></i> Technicité (Min)
+                                </label>
+                                <div class="flex items-center gap-2">
+                                    <input type="range" name="min_technicity" min="1" max="5" step="1"
+                                        value="{{ request.query_params.get('min_technicity', '1') }}"
+                                        oninput="document.getElementById('tech-val').textContent = this.value + '/5'"
+                                        class="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                                    <span id="tech-val" class="text-xs font-bold text-slate-600 w-8 text-right">{{
+                                        request.query_params.get('min_technicity', '1') }}/5</span>
+                                </div>
+                            </div>
+
+                            <!-- Surface: Trail % -->
+                            <div class="space-y-1">
+                                <label
+                                    class="block text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                                    <i class="ph-fill ph-path text-sm text-slate-400"></i> % Trail Min
+                                </label>
+                                <div class="flex items-center gap-2">
+                                    <input type="range" name="min_trail_percent" min="0" max="100" step="10"
+                                        value="{{ request.query_params.get('min_trail_percent', '0') }}"
+                                        oninput="document.getElementById('trail-val').textContent = this.value + '%'"
+                                        class="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                                    <span id="trail-val" class="text-xs font-bold text-slate-600 w-8 text-right">{{
+                                        request.query_params.get('min_trail_percent', '0') }}%</span>
+                                </div>
+                            </div>
+
+                            <!-- Path Type: Single % -->
+                            <div class="space-y-1">
+                                <label
+                                    class="block text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                                    <i class="ph-fill ph-sneaker-move text-sm text-slate-400"></i> Single Track Min
+                                </label>
+                                <div class="flex items-center gap-2">
+                                    <input type="range" name="min_single_track_percent" min="0" max="100" step="10"
+                                        value="{{ request.query_params.get('min_single_track_percent', '0') }}"
+                                        oninput="document.getElementById('single-val').textContent = this.value + '%'"
+                                        class="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                                    <span id="single-val" class="text-xs font-bold text-slate-600 w-8 text-right">{{
+                                        request.query_params.get('min_single_track_percent', '0') }}%</span>
+                                </div>
+                            </div>
+
                             <!-- Official Race -->
                             <div class="flex items-end pb-1">
                                 <label
@@ -571,7 +637,7 @@
     // Auto-open advanced filters
     document.addEventListener("DOMContentLoaded", function () {
         const urlParams = new URLSearchParams(window.location.search);
-        const advancedKeys = ['activity_type', 'ratio_category', 'is_official', 'scenery_min', 'tag', 'author'];
+        const advancedKeys = ['activity_type', 'ratio_category', 'is_official', 'scenery_min', 'tag', 'author', 'min_technicity', 'exposure', 'min_trail_percent', 'min_single_track_percent'];
         const hasAdvanced = advancedKeys.some(key => urlParams.has(key) && urlParams.get(key) !== '');
         if (hasAdvanced) {
             toggleAdvancedFilters();

@@ -228,19 +228,30 @@
                             </div>
                         </div>
 
-                        <!-- Water Points Stepper -->
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-4">Points d'Eau</label>
-                            <div class="flex items-center w-full max-w-[200px]">
-                                <button type="button" onclick="adjustWater(-1)"
-                                    class="w-12 h-12 rounded-l-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xl border-r border-slate-200 transition-colors">-</button>
-                                <input type="number" name="water_points_count" id="water-input"
-                                    value="{{ track.water_points_count }}" min="0"
-                                    class="w-full h-12 text-center border-0 bg-slate-50 font-bold text-lg text-slate-700 focus:ring-0"
-                                    readonly>
-                                <button type="button" onclick="adjustWater(1)"
-                                    class="w-12 h-12 rounded-r-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xl border-l border-slate-200 transition-colors">+</button>
+                        <!-- Points of Interest & Ravitos -->
+                        <div class="md:col-span-2 mt-4">
+                            <label class="block text-sm font-medium text-slate-700 mb-4">Points d'Intérêt &
+                                Ravitaillements</label>
+
+                            <!-- Logic: Hidden Input to store JSON -->
+                            <input type="hidden" name="ravitos" id="ravitos-json">
+                            <!-- Helper for water count (optional if we calculate it from JSON backend side, but good for UI sync) -->
+                            <input type="hidden" name="water_points_count" id="water-points-count-input"
+                                value="{{ track.water_points_count }}">
+
+                            <div id="ravitos-container" class="space-y-3 mb-4">
+                                <!-- Dynamic Rows will go here -->
+                                <!-- Initial State Empty Message -->
+                                <div id="no-ravitos-msg"
+                                    class="text-sm text-slate-400 italic text-center py-4 border border-dashed border-slate-200 rounded-lg">
+                                    Aucun point d'intérêt ajouté.
+                                </div>
                             </div>
+
+                            <button type="button" onclick="addRavitoRow()"
+                                class="w-full py-2 border-2 border-dashed border-slate-200 rounded-lg text-slate-500 font-bold hover:border-brand-500 hover:text-brand-600 transition-colors flex items-center justify-center gap-2">
+                                <i class="ph-bold ph-plus"></i> Ajouter un point
+                            </button>
                         </div>
                     </div>
 
@@ -480,12 +491,111 @@
     }
 
     // --- Existing Utilities ---
-    function adjustWater(amount) {
-        const input = document.getElementById('water-input');
-        let val = parseInt(input.value) || 0;
-        val += amount;
-        if (val < 0) val = 0;
-        input.value = val;
+    // Ravitos Management
+    const ravitosContainer = document.getElementById('ravitos-container');
+    const ravitosJsonInput = document.getElementById('ravitos-json');
+    const waterPointsCountInput = document.getElementById('water-points-count-input'); // Optional
+    const noRavitosMsg = document.getElementById('no-ravitos-msg');
+
+    // Parse existing POIs from Template
+    const existingPois = {{ track.points_of_interest | tojson | safe }} || [];
+
+    // Initialize
+    if (existingPois && existingPois.length > 0) {
+        if (noRavitosMsg) noRavitosMsg.classList.add('hidden');
+        existingPois.forEach(poi => addRavitoRow(poi));
+        updateRavitosJson();
+    }
+
+    function addRavitoRow(data = null) {
+        if (noRavitosMsg) noRavitosMsg.classList.add('hidden');
+
+        const rowId = 'ravito-' + Date.now() + Math.random().toString(36).substr(2, 5);;
+        const div = document.createElement('div');
+        div.className = "flex items-center gap-2 animate-fade-in-up md:flex-row flex-col bg-slate-50 p-2 rounded-lg border border-slate-200";
+        div.id = rowId;
+
+        const nameVal = data ? data.name : "";
+        const kmVal = data ? data.km : "";
+        const typeVal = data ? data.type : "water"; // default
+
+        div.innerHTML = `
+        <div class="flex-grow w-full md:w-auto">
+            <input type="text" placeholder="Nom (ex: Refuge A)" value="${nameVal}" 
+                class="w-full rounded-md border-slate-200 text-sm focus:border-brand-500 focus:ring-brand-500 ravito-name" 
+                oninput="updateRavitosJson()">
+        </div>
+        <div class="w-full md:w-24">
+            <div class="relative">
+                <input type="number" placeholder="KM" step="0.1" value="${kmVal}" 
+                    class="w-full rounded-md border-slate-200 text-sm focus:border-brand-500 focus:ring-brand-500 ravito-km pl-8" 
+                    oninput="updateRavitosJson()">
+                    <span class="absolute left-2 top-2 text-slate-400 text-xs font-bold">KM</span>
+            </div>
+        </div>
+        <div class="w-full md:w-32">
+            <select class="w-full rounded-md border-slate-200 text-sm focus:border-brand-500 focus:ring-brand-500 ravito-type" onchange="updateRavitosJson()">
+                <option value="water" ${typeVal === 'water' ? 'selected' : ''}>💧 Eau</option>
+                <option value="food" ${typeVal === 'food' ? 'selected' : ''}>🍎 Ravitaillement</option>
+                <option value="base_life" ${typeVal === 'base_life' ? 'selected' : ''}>⛺ Base Vie</option>
+                <option value="checkpoint" ${typeVal === 'checkpoint' ? 'selected' : ''}>🚩 Point de passage</option>
+                <option value="summit" ${typeVal === 'summit' ? 'selected' : ''}>🏔️ Sommet</option>
+            </select>
+        </div>
+        <button type="button" onclick="removeRavitoRow('${rowId}')" class="text-red-400 hover:text-red-600 p-2">
+            <i class="ph-bold ph-trash"></i>
+        </button>
+    `;
+
+        ravitosContainer.appendChild(div);
+        updateRavitosJson();
+    }
+
+    function removeRavitoRow(id) {
+        const row = document.getElementById(id);
+        if (row) {
+            row.remove();
+            updateRavitosJson();
+
+            // Check if empty
+            const rows = ravitosContainer.querySelectorAll('div[id^="ravito-"]');
+            if (rows.length === 0) {
+                if (noRavitosMsg) noRavitosMsg.classList.remove('hidden');
+            }
+        }
+    }
+
+    function updateRavitosJson() {
+        const rows = ravitosContainer.querySelectorAll('div[id^="ravito-"]');
+        const data = [];
+        let waterCount = 0;
+
+        rows.forEach(row => {
+            const name = row.querySelector('.ravito-name').value;
+            const km = row.querySelector('.ravito-km').value;
+            const type = row.querySelector('.ravito-type').value;
+
+            // Only add if name or km is present
+            if (name || km) {
+                data.push({
+                    name: name,
+                    km: km,
+                    type: type
+                });
+
+                if (type === 'water' || type === 'food' || type === 'base_life') {
+                    waterCount++;
+                }
+            }
+        });
+
+        // Sort by KM
+        data.sort((a, b) => parseFloat(a.km || 0) - parseFloat(b.km || 0));
+
+        ravitosJsonInput.value = JSON.stringify(data);
+        if (waterPointsCountInput) {
+            waterPointsCountInput.value = waterCount;
+        }
     }
 
     function adjustTech(amount) {
