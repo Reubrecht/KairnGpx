@@ -2618,6 +2618,38 @@
         }, 2000);
     }
 
+    // --- TAB SWITCHER LOGIC ---
+    function switchTab(tabId) {
+        // Hide all contents
+        ['details', 'community', 'roadbook'].forEach(id => {
+            document.getElementById('content-' + id).classList.add('hidden');
+            document.getElementById('content-' + id).classList.remove('block');
+        });
+
+        // Show selected content
+        document.getElementById('content-' + tabId).classList.remove('hidden');
+        document.getElementById('content-' + tabId).classList.add('block');
+
+        // Update Buttons
+        const buttons = {
+            'details': document.getElementById('tab-details'),
+            'community': document.getElementById('tab-community'),
+            'roadbook': document.getElementById('tab-roadbook')
+        };
+
+        for (const [key, btn] of Object.entries(buttons)) {
+            if (key === tabId) {
+                // Active Style
+                btn.classList.add('border-brand-500', 'text-brand-600');
+                btn.classList.remove('border-transparent', 'text-slate-500', 'hover:text-slate-700', 'hover:border-slate-300');
+            } else {
+                // Inactive Style
+                btn.classList.remove('border-brand-500', 'text-brand-600');
+                btn.classList.add('border-transparent', 'text-slate-500', 'hover:text-slate-700', 'hover:border-slate-300');
+            }
+        }
+    }
+
     function toggleFeaturesModal() {
         const modal = document.getElementById('features-modal');
         if (modal.classList.contains('hidden')) {
