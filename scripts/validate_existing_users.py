@@ -55,6 +55,9 @@ def validate_all_emails():
 
     db = SessionLocal()
     try:
+        total_users = db.query(User).count()
+        print(f"Total users in database: {total_users}")
+
         users = db.query(User).filter(User.is_email_verified == False).all()
         count = len(users)
         

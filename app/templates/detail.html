@@ -989,7 +989,7 @@
     // --- ROADBOOK LOGIC ---
     let waypoints = [];
     const TRACK_ID = {{ track.id }};
-    const TRACK_TOTAL_KM = {{ track.distance_km }};
+    const TRACK_TOTAL_KM = {{ track.distance_km | tojson }} || 0;
     const PRELOADED_POIS = {{ track.points_of_interest | tojson | safe }} || [];
 
     function initRoadbook() {
@@ -1082,7 +1082,7 @@
         if (optKm === undefined) {
             const kmInput = document.getElementById('new-wp-km');
             const nameInput = document.getElementById('new-wp-name');
-            km = parseFloat(kmInput.value);
+            km = parseFloat(kmInput.value.replace(',', '.')); // Fix comma input
             name = nameInput.value || `Point ${km}km`;
 
             // Clear inputs
@@ -1094,9 +1094,14 @@
             name = optName || `Point ${km.toFixed(1)}km`;
         }
 
-        if (isNaN(km) || km < 0 || km > TRACK_TOTAL_KM) {
-            alert("Kilométrage invalide (Max: " + TRACK_TOTAL_KM.toFixed(1) + "km)");
+        if (isNaN(km) || km < 0) {
+            alert("Kilométrage invalide");
             return;
+        }
+
+        if (TRACK_TOTAL_KM > 0 && km > TRACK_TOTAL_KM) {
+            console.warn("Point > Total KM but allowing it.");
+            // Optional: alert("Warning: Point au-delà de la fin de la trace");
         }
 
         const wp = { km: km, name: name, type: type };
@@ -1477,14 +1482,21 @@
     }
 
     function saveWaypointFromModal() {
-        const km = parseFloat(document.getElementById('wp-modal-km').value);
+        // Fix comma input
+        const kmRaw = document.getElementById('wp-modal-km').value.replace(',', '.');
+        const km = parseFloat(kmRaw);
         const name = document.getElementById('wp-modal-name').value;
         const type = 'ravito'; // Default for now
 
-        if (isNaN(km) || km < 0 || km > TRACK_TOTAL_KM) {
+        if (isNaN(km) || km < 0) {
             alert("Kilométrage invalide");
             return;
         }
+
+        if (TRACK_TOTAL_KM > 0 && km > TRACK_TOTAL_KM) {
+            console.warn("Point > Total KM but allowing it.");
+        }
+
         if (!name) {
             alert("Nom requis");
             return;
