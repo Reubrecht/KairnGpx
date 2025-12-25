@@ -15,20 +15,43 @@ async def club_dashboard(request: Request, db: Session = Depends(get_db)):
     if not user:
         return RedirectResponse(url="/login?next=/club")
     
-    # If user has no club, specific view or redirect?
-    # Let's show a "Join/Create Club" view within the same template or a specific state
-    if not user.club_affiliation:
+    # --- MIGRATION LOGIC (On the fly) ---
+    # If user has club_affiliation string BUT no club_id, try to migrate them
+    if user.club_affiliation and not user.club_id:
+        existing_club = db.query(models.Club).filter(models.Club.name == user.club_affiliation).first()
+        if existing_club:
+            user.club_id = existing_club.id
+            db.commit()
+        else:
+            # Create it
+            new_club = models.Club(
+                name=user.club_affiliation, 
+                owner_id=user.id, # First user becomes owner
+                description="Club créé automatiquement."
+            )
+            db.add(new_club)
+            db.commit()
+            db.refresh(new_club)
+            user.club_id = new_club.id
+            db.commit()
+
+    # If still no club
+    if not user.club_id:
         return templates.TemplateResponse("club.html", {
             "request": request, 
             "user": user,
             "has_club": False
         })
         
-    # User has a club
-    club_name = user.club_affiliation
-    
-    # Get Members
-    members = db.query(models.User).filter(models.User.club_affiliation == club_name).all()
+    # User has a club (via ID)
+    club = db.query(models.Club).filter(models.Club.id == user.club_id).first()
+    if not club:
+        # Fallback if DB inconsistencies
+        user.club_id = None
+        db.commit()
+        return RedirectResponse(url="/club")
+
+    members = db.query(models.User).filter(models.User.club_id == club.id).all()
     
     # --- FILTERS ---
     period = request.query_params.get("period", "month") # week, month, year, all
@@ -46,9 +69,6 @@ async def club_dashboard(request: Request, db: Session = Depends(get_db)):
     # else "all" -> None
     
     # --- AGGREGATION ---
-    # We want a list of members with their aggregated stats for the period
-    # Query StravaActivity
-    
     leaderboard = []
     
     for member in members:
@@ -91,22 +111,26 @@ async def club_dashboard(request: Request, db: Session = Depends(get_db)):
     for i, entry in enumerate(leaderboard):
         entry["rank"] = i + 1
     
-    # Club Totals (Sum of topstats or all? Let's sum all members in period)
+    # Club Totals
     total_km = sum(e["dist_km"] for e in leaderboard)
     total_elev = sum(e["elev_m"] for e in leaderboard)
+
+    # Check privileges
+    is_owner = (user.id == club.owner_id)
 
     return templates.TemplateResponse("club.html", {
         "request": request,
         "user": user,
+        "club": club,
         "has_club": True,
-        "club_name": club_name,
         "members": members,
         "member_count": len(members),
         "leaderboard": leaderboard,
         "current_period": period,
         "current_metric": metric,
         "total_km": total_km,
-        "total_elev": total_elev
+        "total_elev": total_elev,
+        "is_owner": is_owner
     })
 
 @router.post("/join")
@@ -118,10 +142,28 @@ async def join_club(
     user = await get_current_user(request, db)
     
     if not club_name or len(club_name.strip()) < 3:
-        # Error handling via query param for simplicity in this stack
         return RedirectResponse(url="/club?error=Nom du club invalide", status_code=status.HTTP_303_SEE_OTHER)
         
-    user.club_affiliation = club_name.strip()
+    club_name_clean = club_name.strip()
+    
+    # Check if club exists
+    club = db.query(models.Club).filter(models.Club.name == club_name_clean).first()
+    
+    if not club:
+        # Create new club using new model
+        club = models.Club(
+            name=club_name_clean,
+            owner_id=user.id,
+            description=f"Club créé par {user.username}"
+        )
+        db.add(club)
+        db.commit()
+        db.refresh(club)
+    
+    # Join club
+    user.club_id = club.id
+    # Deprecated field sync for safety
+    user.club_affiliation = club.name 
     db.commit()
     
     return RedirectResponse(url="/club", status_code=status.HTTP_303_SEE_OTHER)
@@ -129,6 +171,93 @@ async def join_club(
 @router.post("/leave")
 async def leave_club(request: Request, db: Session = Depends(get_db)):
     user = await get_current_user(request, db)
+    user.club_id = None
     user.club_affiliation = None
     db.commit()
     return RedirectResponse(url="/club", status_code=status.HTTP_303_SEE_OTHER)
+
+# --- ADMIN ENDPOINTS ---
+
+@router.get("/admin", response_class=HTMLResponse)
+async def club_admin_page(request: Request, db: Session = Depends(get_db)):
+    user = await get_current_user(request, db)
+    
+    if not user.club_id:
+        return RedirectResponse(url="/club")
+        
+    club = db.query(models.Club).filter(models.Club.id == user.club_id).first()
+    
+    # Security check
+    if club.owner_id != user.id:
+        # Not authorized
+        return RedirectResponse(url="/club")
+        
+    members = db.query(models.User).filter(models.User.club_id == club.id).all()
+
+    return templates.TemplateResponse("club_admin.html", {
+        "request": request,
+        "user": user,
+        "club": club,
+        "members": members
+    })
+
+@router.post("/admin/update")
+async def update_club_details(
+    request: Request,
+    description: str = Form(None),
+    website_url: str = Form(None),
+    instagram_url: str = Form(None),
+    strava_club_url: str = Form(None),
+    profile_picture: str = Form(None),
+    cover_picture: str = Form(None),
+    db: Session = Depends(get_db)
+):
+    user = await get_current_user(request, db)
+    if not user.club_id:
+        return RedirectResponse(url="/club")
+        
+    club = db.query(models.Club).filter(models.Club.id == user.club_id).first()
+    
+    if club.owner_id != user.id:
+        return RedirectResponse(url="/club")
+        
+    # Update fields
+    if description is not None: club.description = description
+    if website_url is not None: club.website_url = website_url
+    if instagram_url is not None: club.instagram_url = instagram_url
+    if strava_club_url is not None: club.strava_club_url = strava_club_url
+    if profile_picture is not None: club.profile_picture = profile_picture
+    if cover_picture is not None: club.cover_picture = cover_picture
+    
+    db.commit()
+    
+    return RedirectResponse(url="/club/admin", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/admin/kick")
+async def kick_member(
+    request: Request,
+    user_id: int = Form(...),
+    db: Session = Depends(get_db)
+):
+    current_user = await get_current_user(request, db)
+    if not current_user.club_id:
+        return RedirectResponse(url="/club")
+        
+    club = db.query(models.Club).filter(models.Club.id == current_user.club_id).first()
+    
+    if club.owner_id != current_user.id:
+        return RedirectResponse(url="/club")
+        
+    # Prevent self-kick
+    if user_id == current_user.id:
+        return RedirectResponse(url="/club/admin?error=Impossible de s'exclure soi-même")
+        
+    member_to_kick = db.query(models.User).filter(models.User.id == user_id, models.User.club_id == club.id).first()
+    
+    if member_to_kick:
+        member_to_kick.club_id = None
+        member_to_kick.club_affiliation = None
+        db.commit()
+        
+    return RedirectResponse(url="/club/admin", status_code=status.HTTP_303_SEE_OTHER)

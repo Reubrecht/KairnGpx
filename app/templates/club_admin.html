@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block head %}
+<title>Administration Club - {{ club.name }}</title>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 pb-20">
+
+    <!-- Header -->
+    <div class="bg-white border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 py-8">
+            <div class="flex items-center gap-4 mb-4">
+                <a href="/club" class="text-slate-400 hover:text-slate-900 transition-colors">
+                    <i class="ph-bold ph-arrow-left text-xl"></i>
+                </a>
+                <h1 class="text-2xl font-bold text-slate-900">Administration du Club</h1>
+            </div>
+            <div class="flex items-center gap-4">
+                {% if club.profile_picture %}
+                <img src="{{ club.profile_picture }}" class="w-16 h-16 rounded-xl object-cover border border-slate-100">
+                {% else %}
+                <div
+                    class="w-16 h-16 rounded-xl bg-brand-100 text-brand-600 flex items-center justify-center font-bold text-2xl">
+                    {{ club.name[:1].upper() }}
+                </div>
+                {% endif %}
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">{{ club.name }}</h2>
+                    <p class="text-slate-500 text-sm">{{ members|length }} Membres</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <!-- Left Column: Settings -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                <h3 class="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+                    <i class="ph-duotone ph-pencil-simple"></i>
+                    Modifier les informations
+                </h3>
+
+                <form action="/club/admin/update" method="POST" class="space-y-6">
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Description</label>
+                        <textarea name="description" rows="4"
+                            class="w-full rounded-xl border-slate-200 focus:border-brand-500 focus:ring-brand-500 text-slate-900"
+                            placeholder="Décrivez votre club en quelques mots...">{{ club.description or '' }}</textarea>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Photo de Profil
+                                (URL)</label>
+                            <input type="text" name="profile_picture" value="{{ club.profile_picture or '' }}"
+                                class="w-full rounded-xl border-slate-200 focus:border-brand-500 focus:ring-brand-500 text-slate-900"
+                                placeholder="https://...">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Image de Couverture
+                                (URL)</label>
+                            <input type="text" name="cover_picture" value="{{ club.cover_picture or '' }}"
+                                class="w-full rounded-xl border-slate-200 focus:border-brand-500 focus:ring-brand-500 text-slate-900"
+                                placeholder="https://...">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-2">
+                                <i class="ph-bold ph-globe"></i> Site Web
+                            </label>
+                            <input type="text" name="website_url" value="{{ club.website_url or '' }}"
+                                class="w-full rounded-xl border-slate-200 focus:border-brand-500 focus:ring-brand-500 text-slate-900">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-2">
+                                <i class="ph-bold ph-instagram-logo"></i> Instagram
+                            </label>
+                            <input type="text" name="instagram_url" value="{{ club.instagram_url or '' }}"
+                                class="w-full rounded-xl border-slate-200 focus:border-brand-500 focus:ring-brand-500 text-slate-900">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-2">
+                                <img src="/static/img/strava_logo.svg" class="h-3 inline align-baseline opacity-50">
+                                Strava
+                            </label>
+                            <input type="text" name="strava_club_url" value="{{ club.strava_club_url or '' }}"
+                                class="w-full rounded-xl border-slate-200 focus:border-brand-500 focus:ring-brand-500 text-slate-900">
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-50 flex justify-end">
+                        <button type="submit"
+                            class="bg-brand-600 text-white font-bold py-2.5 px-6 rounded-xl hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/20">
+                            Enregistrer les modifications
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Right Column: Members -->
+        <div class="space-y-6">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                <h3 class="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+                    <i class="ph-duotone ph-users"></i>
+                    Gestion des Membres
+                </h3>
+
+                <div class="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                    {% for member in members %}
+                    <div
+                        class="flex items-center justify-between group p-2 hover:bg-slate-50 rounded-lg transition-colors">
+                        <div class="flex items-center gap-3">
+                            {% if member.profile_picture %}
+                            <img src="{{ member.profile_picture }}"
+                                class="w-10 h-10 rounded-full object-cover border border-slate-100">
+                            {% else %}
+                            <div
+                                class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-sm">
+                                {{ member.username[:1].upper() }}
+                            </div>
+                            {% endif %}
+                            <div>
+                                <p class="text-sm font-bold text-slate-900">{{ member.full_name or member.username }}
+                                </p>
+                                <p class="text-xs text-slate-400">{{ member.location or 'N/A' }}</p>
+                            </div>
+                        </div>
+
+                        {% if member.id != user.id %}
+                        <form action="/club/admin/kick" method="POST"
+                            onsubmit="return confirm('Voulez-vous vraiment exclure ce membre ?');">
+                            <input type="hidden" name="user_id" value="{{ member.id }}">
+                            <button type="submit"
+                                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-slate-300 hover:text-red-500 transition-colors"
+                                title="Exclure">
+                                <i class="ph-bold ph-trash"></i>
+                            </button>
+                        </form>
+                        {% else %}
+                        <span
+                            class="text-[10px] font-bold bg-brand-100 text-brand-700 px-2 py-1 rounded-full">ADMIN</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

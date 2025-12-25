@@ -15,3 +15,7 @@ async def landing_page(request: Request, db: Session = Depends(get_db)):
     # Check Beta Cookie
     has_beta = request.cookies.get("beta_access_v2") == "granted"
     return templates.TemplateResponse("landing.html", {"request": request, "user": user, "has_beta": has_beta})
+
+@router.get("/privacy-policy", response_class=HTMLResponse)
+async def privacy_policy(request: Request):
+    return templates.TemplateResponse("privacy_policy.html", {"request": request})

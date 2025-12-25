@@ -86,6 +86,32 @@ class RequestStatus(str, enum.Enum):
 
 # --- Models ---
 
+class Club(Base):
+    __tablename__ = "clubs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True)
+    description = Column(Text, nullable=True)
+    
+    # Visuals
+    profile_picture = Column(String, nullable=True) # URL or path
+    cover_picture = Column(String, nullable=True) # URL or path
+    
+    # Socials
+    website_url = Column(String, nullable=True)
+    instagram_url = Column(String, nullable=True)
+    strava_club_url = Column(String, nullable=True)
+    
+    # Moderation
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=True) # Creator/Moderator
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    owner = relationship("User", foreign_keys=[owner_id], backref="owned_clubs")
+    members = relationship("User", foreign_keys="[User.club_id]", back_populates="club")
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -145,7 +171,9 @@ class User(Base):
     weight_history = Column(JSON, nullable=True) # Timeline of weight
 
     # Community & Professional
-    club_affiliation = Column(String, nullable=True) # "Team Hoka", etc.
+    club_affiliation = Column(String, nullable=True) # DEPRECATED: Kept for migration, data should move to club_id
+    club_id = Column(Integer, ForeignKey("clubs.id"), nullable=True)
+    
     is_certified_guide = Column(Boolean, default=False)
 
     # Performance
@@ -162,6 +190,8 @@ class User(Base):
     event_requests = relationship("EventRequest", back_populates="user")
     reviews = relationship("TrackReview", back_populates="user")
     executions = relationship("TrackExecution", back_populates="user")
+    
+    club = relationship("Club", foreign_keys=[club_id], back_populates="members")
 
 
 class OAuthConnection(Base):
@@ -189,16 +219,7 @@ class Track(Base):
     title = Column(String, index=True)
     description = Column(Text, nullable=True) # Markdown
     
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True) # NOTE: using ID FK, logic might use username still? needs check
-    # Legacy user_id was String(username). Fixing to Integer FK would require migration logic.
-    # App usage check: User.username is used as ID? 
-    # Current models.py had `user_id = Column(Integer, ForeignKey("users.id"))` BUT app code used username.
-    # Let's keep `user_id` as String to match simplified app logic OR fix app.
-    # Checking previous models.py: `user_id = Column(Integer, ForeignKey("users.id"), nullable=True)`
-    # Checking upload logic: `new_track.user_id = current_user.username` -> Mismatch in python, but SQLAlchemy might coerce if User.id is int?
-    # NO, previous models said `user_id = Column(Integer...`. 
-    # Let's stick to strict schema: User.id is Int. Track.user_id is Int.
-    # We will need to fix the router to save User.id instead of username if it was saving username.
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     
     user_obj = relationship("User", back_populates="tracks")
     
@@ -244,9 +265,9 @@ class Track(Base):
     route_type = Column(Enum(RouteType), default=RouteType.LOOP)
     
     # Spatial Data (PostGIS)
-    start_lat = Column(Float) # Request to keep/preserve legacy or sync? Keeping for simple queries/compat
+    start_lat = Column(Float)
     start_lon = Column(Float)
-    start_geom = Column(Geometry('POINT', srid=4326), nullable=True) # NEW
+    start_geom = Column(Geometry('POINT', srid=4326), nullable=True)
     
     end_lat = Column(Float, nullable=True)
     end_lon = Column(Float, nullable=True)
@@ -298,9 +319,12 @@ class Media(Base):
     event_id = Column(Integer, ForeignKey("race_events.id"), nullable=True)
 
     user = relationship("User", back_populates="media_items")
-    track = relationship("Track", back_populates="media_items")
+    track = relationship("Track", back_populates="media_items") # Fixed: back_populates matches Track.media_items
     event = relationship("RaceEvent", back_populates="media_items")
 
+    # Fix Track relationship name in Media was 'track' back_populates 'media_items' (Matches Track.media_items)
+    # Re-checking Track model: media_items = relationship("Media", back_populates="track")
+    # Correct.
 
 class TrackRequest(Base):
     """User request for a specific official track"""
@@ -493,5 +517,3 @@ class StravaActivity(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", backref="strava_activities")
-
-
