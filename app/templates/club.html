@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block head %}
+<title>Mon Club - My Kairn</title>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 pb-20">
+
+    <!-- Hero Section -->
+    <div class="relative bg-slate-900 h-48 md:h-64 overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-r from-brand-900 to-slate-900 opacity-90"></div>
+        <div class="absolute inset-0 bg-[url('/static/img/pattern_topo.svg')] opacity-10"></div>
+
+        <div class="relative max-w-7xl mx-auto px-4 h-full flex flex-col justify-center">
+            {% if has_club %}
+            <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight mb-2 uppercase">{{ club_name }}</h1>
+            <p class="text-brand-200 font-medium flex items-center gap-2">
+                <i class="ph-bold ph-users"></i> {{ member_count }} Membres
+            </p>
+            {% else %}
+            <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight mb-2">REJOINDRE UN CLUB</h1>
+            <p class="text-slate-300">Connectez-vous avec votre communauté locale.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 -mt-10 relative z-10">
+
+        {% if not has_club %}
+        <!-- Join State -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 max-w-2xl mx-auto text-center">
+            <div
+                class="w-20 h-20 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="ph-duotone ph-users-three text-4xl"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-900 mb-4">Vous n'avez pas encore de club</h2>
+            <p class="text-slate-500 mb-8 max-w-md mx-auto">Rejoignez un club existant ou créez le vôtre en entrant
+                simplement son nom. Vous pourrez voir les activités de vos amis et cumuler des kilomètres ensemble.</p>
+
+            <form action="/club/join" method="POST" class="max-w-sm mx-auto">
+                <div class="relative mb-4">
+                    <input type="text" name="club_name" placeholder="Nom du Club (ex: Trail Annecy)" required
+                        class="w-full pl-4 pr-12 py-3 rounded-xl border-slate-200 focus:border-brand-500 focus:ring-brand-500 text-slate-900 font-bold">
+                    <button type="submit"
+                        class="absolute right-2 top-2 bottom-2 bg-brand-600 text-white rounded-lg px-4 font-bold hover:bg-brand-700 transition-colors">
+                        Rejoindre
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        {% else %}
+        <!-- Dashboard State -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            <!-- Left Column: Stats & Actions -->
+            <div class="space-y-6">
+
+                <!-- Stats Card -->
+                <div class="bg-white rounded-2xl shadow-sm p-6 border border-slate-100">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Statistiques du Club</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="p-4 bg-slate-50 rounded-xl">
+                            <p class="text-2xl font-black text-slate-900">{{ "%.0f"|format(total_km) }}</p>
+                            <p class="text-xs font-bold text-slate-500 uppercase">Kilomètres</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-xl" title="Dénivelé Positif">
+                            <p class="text-2xl font-black text-slate-900">{{ "%.0f"|format(total_elev) }}m</p>
+                            <p class="text-xs font-bold text-slate-500 uppercase">D+ Cumulé</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions Card -->
+                <div class="bg-white rounded-2xl shadow-sm p-6 border border-slate-100">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Actions</h3>
+
+                    <a href="/auth/strava/login?next=/club"
+                        class="block w-full text-center py-3 px-4 bg-[#FC4C02] text-white font-bold rounded-xl hover:bg-[#E34402] transition-colors mb-3 flex items-center justify-center gap-2">
+                        <img src="/static/img/strava_logo.svg" class="h-5 brightness-0 invert" alt="Strava">
+                        Importer activité
+                    </a>
+
+                    <a href="/upload"
+                        class="block w-full text-center py-3 px-4 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors mb-6">
+                        <i class="ph-bold ph-upload-simple"></i> Import GPX Manuel
+                    </a>
+
+                    <form action="/club/leave" method="POST" onsubmit="return confirm('Quitter le club ?');">
+                        <button type="submit"
+                            class="w-full text-center text-xs text-red-400 hover:text-red-600 font-bold uppercase transition-colors">
+                            Quitter le club
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Members List -->
+                <div class="bg-white rounded-2xl shadow-sm p-6 border border-slate-100">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Membres ({{ member_count
+                        }})</h3>
+                    <div class="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                        {% for member in members %}
+                        <a href="/user/{{ member.username }}"
+                            class="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg transition-colors group">
+                            {% if member.profile_picture %}
+                            <img src="{{ member.profile_picture }}"
+                                class="w-10 h-10 rounded-full object-cover border border-slate-100">
+                            {% else %}
+                            <div
+                                class="w-10 h-10 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-bold text-sm">
+                                {{ member.username[:1].upper() }}
+                            </div>
+                            {% endif %}
+                            <div class="flex-1 min-w-0">
+                                <p
+                                    class="text-sm font-bold text-slate-900 truncate group-hover:text-brand-600 transition-colors">
+                                    {{ member.full_name or member.username }}</p>
+                                <p class="text-xs text-slate-400 truncate">{{ member.location or 'Localisation inconnue'
+                                    }}</p>
+                            </div>
+                            {% if member.id == user.id %}
+                            <span
+                                class="bg-brand-100 text-brand-700 text-[10px] font-bold px-2 py-0.5 rounded-full">VOUS</span>
+                            {% endif %}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Column: Activity Feed -->
+            <div class="lg:col-span-2 space-y-6">
+                <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <i class="ph-bold ph-activity text-brand-600"></i>
+                    Activité Récente
+                </h3>
+
+                {% if recent_tracks %}
+                <div class="space-y-4">
+                    {% for track in recent_tracks %}
+                    <!-- reusing a simplified track card style -->
+                    <div
+                        class="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-slate-100 overflow-hidden group">
+                        <div class="p-6">
+                            <div class="flex items-start justify-between">
+                                <div class="flex items-center gap-3 mb-4">
+                                    <a href="/user/{{ track.user_obj.username }}" class="relative">
+                                        {% if track.user_obj.profile_picture %}
+                                        <img src="{{ track.user_obj.profile_picture }}"
+                                            class="w-10 h-10 rounded-full object-cover">
+                                        {% else %}
+                                        <div
+                                            class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500">
+                                            {{ track.user_obj.username[:1].upper() }}
+                                        </div>
+                                        {% endif %}
+                                    </a>
+                                    <div>
+                                        <p class="text-sm font-bold text-slate-900">
+                                            <a href="/user/{{ track.user_obj.username }}" class="hover:underline">{{
+                                                track.user_obj.full_name or track.user_obj.username }}</a>
+                                        </p>
+                                        <p class="text-xs text-slate-400">{{ track.created_at.strftime('%d %b %Y') }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="flex gap-2">
+                                    {% if track.activity_type %}
+                                    <span class="px-2 py-1 rounded-lg bg-slate-50 text-slate-600 text-xs font-bold">{{
+                                        track.activity_type.value }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <a href="/track/{{ track.id }}" class="block group-hover:text-brand-600 transition-colors">
+                                <h4 class="text-xl font-black text-slate-900 mb-2 truncate">{{ track.title }}</h4>
+                            </a>
+
+                            <div class="grid grid-cols-3 gap-4 py-4 border-t border-slate-50 mt-2">
+                                <div>
+                                    <p class="text-xs text-slate-400 font-bold uppercase">Distance</p>
+                                    <p class="text-lg font-black text-slate-700">{{ track.distance_km }}<span
+                                            class="text-sm text-slate-400 font-medium">km</span></p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-slate-400 font-bold uppercase">Dénivelé</p>
+                                    <p class="text-lg font-black text-slate-700">{{ track.elevation_gain }}<span
+                                            class="text-sm text-slate-400 font-medium">m+</span></p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-slate-400 font-bold uppercase">Temps</p>
+                                    <!-- Placeholder for time if available, simplified -->
+                                    <p class="text-lg font-black text-slate-700">--:--</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-12 bg-white rounded-2xl border-2 border-dashed border-slate-200">
+                    <div
+                        class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-50 text-slate-300 mb-4">
+                        <i class="ph-bold ph-person-simple-run text-3xl"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900">Aucune activité récente</h3>
+                    <p class="text-slate-500 max-w-sm mx-auto mt-2">Les membres du club n'ont pas encore partagé
+                        d'activités. Soyez le premier !</p>
+                </div>
+                {% endif %}
+            </div>
+
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

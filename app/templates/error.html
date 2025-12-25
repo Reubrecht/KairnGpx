@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block head %}
+<title>Erreur {{ status_code }} - My Kairn</title>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-[80vh] flex flex-col items-center justify-center p-4">
+    <div class="max-w-md w-full text-center">
+        <!-- Error Illustration/Icon -->
+        <div class="mb-8 relative">
+            <div class="absolute inset-0 bg-brand-100 rounded-full opacity-20 blur-2xl scale-150"></div>
+            <div
+                class="relative w-32 h-32 mx-auto bg-white rounded-full shadow-lg flex items-center justify-center text-6xl text-brand-600 ring-4 ring-slate-50">
+                {% if status_code == 404 %}
+                <i class="ph-bold ph-path"></i>
+                {% elif status_code == 401 or status_code == 403 %}
+                <i class="ph-bold ph-lock-key"></i>
+                {% elif status_code == 500 %}
+                <i class="ph-bold ph-warning-octagon"></i>
+                {% else %}
+                <i class="ph-bold ph-warning-circle"></i>
+                {% endif %}
+            </div>
+
+            <div
+                class="absolute -bottom-2 right-10 bg-slate-900 text-white text-xs font-black px-2 py-1 rounded-md transform rotate-6 border-2 border-white">
+                {{ status_code }}
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <h1 class="text-3xl md:text-4xl font-black text-slate-900 mb-4 tracking-tight">
+            {% if status_code == 404 %}
+            Page introuvable
+            {% elif status_code == 401 %}
+            Non authentifié
+            {% elif status_code == 400 %}
+            Mauvaise requête
+            {% elif status_code == 500 %}
+            Erreur Interne
+            {% else %}
+            Oups !
+            {% endif %}
+        </h1>
+
+        <p class="text-lg text-slate-500 mb-8 font-medium">
+            {% if status_code == 404 %}
+            Désolé, nous ne trouvons pas le chemin que vous cherchez. Il a peut-être été déplacé ou supprimé.
+            {% elif status_code == 401 %}
+            Vous devez être connecté pour accéder à cette page.
+            {% elif status_code == 500 %}
+            Désolé, quelque chose s'est mal passé de notre côté. Nos sherpas sont sur le coup.
+            {% else %}
+            {{ detail or "Une erreur inattendue s'est produite." }}
+            {% endif %}
+        </p>
+
+        <!-- Actions -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <button onclick="history.back()"
+                class="px-6 py-3 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors flex items-center justify-center gap-2">
+                <i class="ph-bold ph-arrow-left"></i> Retour
+            </button>
+
+            {% if status_code == 401 %}
+            <a href="/login"
+                class="px-6 py-3 rounded-xl bg-brand-600 text-white font-bold hover:bg-brand-700 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-brand-600/20">
+                <i class="ph-bold ph-sign-in"></i> Se connecter
+            </a>
+            {% else %}
+            <a href="/"
+                class="px-6 py-3 rounded-xl bg-brand-600 text-white font-bold hover:bg-brand-700 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-brand-600/20">
+                <i class="ph-bold ph-house"></i> Accueil
+            </a>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+{% endblock %}

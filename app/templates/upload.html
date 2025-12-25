@@ -92,7 +92,8 @@
                                 if (suuntoContainerElem) suuntoContainerElem.classList.add('hidden');
 
                                 const titleInputElem = document.getElementById('title-input');
-                                if (titleInputElem) titleInputElem.value = {{ staged_file.name | tojson }};
+                                if (titleInputElem) titleInputElem.value = {{ staged_file.name | tojson }
+                            };
 
                             const descInputElem = document.getElementById('desc-input');
                             const descText = {{ staged_file.description | default ('') | tojson }};
@@ -605,6 +606,17 @@
             loadingOverlay.classList.add('flex');
         }
     });
+
+    // PWA File Handling (Native Open)
+    if ('launchQueue' in window) {
+        window.launchQueue.setConsumer(async (launchParams) => {
+            if (launchParams.files && launchParams.files.length > 0) {
+                const fileHandle = launchParams.files[0];
+                const file = await fileHandle.getFile();
+                handleFile(file); // Reuse existing handleFile logic
+            }
+        });
+    }
 
     // Drag & Drop Visuals
     dropZone.addEventListener('dragover', (e) => {

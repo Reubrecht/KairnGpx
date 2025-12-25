@@ -9,6 +9,7 @@
     <link rel="icon" href="{{ url_for('static', path='/img/favicon.ico') }}" sizes="any">
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', path='/img/favicon.svg') }}">
     <link rel="alternate icon" type="image/png" href="{{ url_for('static', path='/img/favicon.png') }}">
+    <link rel="manifest" href="{{ url_for('static', path='/manifest.json') }}">
     <!-- Tailwind CSS (Dev Mode) -->
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <script>
@@ -117,6 +118,9 @@
                             title="Paramètres">
                             <i class="ph-bold ph-gear text-2xl"></i>
                         </a>
+                        <a href="/club" class="text-slate-400 hover:text-slate-600 transition-colors" title="Mon Club">
+                            <i class="ph-bold ph-users-three text-2xl"></i>
+                        </a>
                         {% else %}
                         {% block header_auth_buttons %}
                         <a href="/login"
@@ -215,6 +219,17 @@
                     .catch(() => { });
             }
         });
+
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/sw.js').then(registration => {
+                    console.log('SW registered: ', registration);
+                }).catch(registrationError => {
+                    console.log('SW registration failed: ', registrationError);
+                });
+            });
+        }
     </script>
     {% block scripts %}{% endblock %}
 </body>
