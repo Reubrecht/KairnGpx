@@ -45,7 +45,7 @@ def upgrade() -> None:
     op.create_foreign_key(None, 'users', 'clubs', ['club_id'], ['id'])
     
     
-    op.add_column('tracks', sa.Column('thumbnail_url', sa.String(), nullable=True))
+    # op.add_column('tracks', sa.Column('thumbnail_url', sa.String(), nullable=True))
     # ### end Alembic commands ###
 
 
