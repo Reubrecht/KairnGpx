@@ -908,6 +908,7 @@ async def suunto_upload_track(
     tags: str = Form(None), 
     water_points_count: int = Form(0),
     scenery_rating: int = Form(None),
+    ravitos: Optional[str] = Form(None),
     is_official_bot: bool = Form(False),
     linked_race_route_id: Optional[int] = Form(None),
     race_name: Optional[str] = Form(None),
@@ -922,7 +923,7 @@ async def suunto_upload_track(
     return await upload_track(
         request=request, title=title, description=description, environment=environment,
         visibility=visibility, activity_type=activity_type, tags=tags,
-        water_points_count=water_points_count, scenery_rating=scenery_rating,
+        water_points_count=water_points_count, scenery_rating=scenery_rating, ravitos=ravitos,
         is_official_bot=is_official_bot, linked_race_route_id=linked_race_route_id,
         race_name=race_name, race_year=race_year, race_route_name=race_route_name,
         file=file, temp_file_id=temp_file_id, db=db, current_user=current_user
