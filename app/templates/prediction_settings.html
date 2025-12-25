@@ -149,12 +149,12 @@
                                         x-show="ex.dist > 80"></i>
                                 </div>
 
-                                <!-- MAIN PREDICTION -->
+                                <!-- MAIN PREDICTION (CENTER - FASTEST) -->
                                 <div class="text-center py-2">
                                     <div class="text-4xl md:text-5xl font-black font-mono tracking-tighter text-white mb-1"
-                                        x-text="predict(ex, 1.0)"></div>
+                                        x-text="predict(ex, config.push_multiplier)"></div>
                                     <div class="text-[10px] uppercase font-bold text-brand-500 tracking-widest">Temps
-                                        Estimé</div>
+                                        Performance</div>
                                 </div>
 
                                 <!-- SUB METRICS -->
@@ -165,9 +165,8 @@
                                         <div class="text-[9px] uppercase font-bold text-slate-600">Endurance</div>
                                     </div>
                                     <div class="text-center">
-                                        <div class="text-lg font-mono text-slate-400"
-                                            x-text="predict(ex, config.push_multiplier)"></div>
-                                        <div class="text-[9px] uppercase font-bold text-slate-600">Tempo</div>
+                                        <div class="text-lg font-mono text-white" x-text="predict(ex, 1.0)"></div>
+                                        <div class="text-[9px] uppercase font-bold text-slate-400">Intermédiaire</div>
                                     </div>
                                 </div>
 
@@ -232,6 +231,8 @@
                                     <input type="number" step="0.001" name="base_speed_slope"
                                         x-model="config.base_speed_slope"
                                         class="w-full rounded-xl border-slate-200 bg-slate-50 focus:border-indigo-500 focus:bg-white transition-colors font-bold text-slate-700">
+                                    <p class="text-[10px] text-slate-400 mt-1">Sensibilité de la vitesse à votre index
+                                        de forme.</p>
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Intercept
@@ -239,6 +240,8 @@
                                     <input type="number" step="0.1" name="base_speed_intercept"
                                         x-model="config.base_speed_intercept"
                                         class="w-full rounded-xl border-slate-200 bg-slate-50 focus:border-indigo-500 focus:bg-white transition-colors font-bold text-slate-700">
+                                    <p class="text-[10px] text-slate-400 mt-1">Ajuste la vitesse de base globale (km/h
+                                        sur plat).</p>
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Vitesse Min
@@ -246,6 +249,8 @@
                                     <input type="number" step="0.1" name="min_speed_kmeh"
                                         x-model="config.min_speed_kmeh"
                                         class="w-full rounded-xl border-slate-200 bg-slate-50 focus:border-indigo-500 focus:bg-white transition-colors font-bold text-slate-700">
+                                    <p class="text-[10px] text-slate-400 mt-1">Plancher de vitesse absolu (sections très
+                                        raides/lentes).</p>
                                 </div>
                             </div>
                         </div>
@@ -269,6 +274,8 @@
                                         (km-effort)</label>
                                     <input type="number" name="decay_start_km" x-model="config.decay_start_km"
                                         class="w-full rounded-xl border-slate-200 bg-slate-50 focus:border-rose-500 focus:bg-white transition-colors font-bold text-slate-700">
+                                    <p class="text-[10px] text-slate-400 mt-1">Distance avant activation de la
+                                        dégradation.</p>
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
@@ -277,6 +284,7 @@
                                         <input type="number" step="0.01" name="decay_max_total"
                                             x-model="config.decay_max_total"
                                             class="w-full rounded-xl border-slate-200 bg-slate-50 focus:border-rose-500 focus:bg-white transition-colors font-bold text-slate-700">
+                                        <p class="text-[10px] text-slate-400 mt-1">Max % perte (0.4 = -40%).</p>
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Taux /
@@ -284,6 +292,7 @@
                                         <input type="number" step="0.001" name="decay_rate_per_step"
                                             x-model="config.decay_rate_per_step"
                                             class="w-full rounded-xl border-slate-200 bg-slate-50 focus:border-rose-500 focus:bg-white transition-colors font-bold text-slate-700">
+                                        <p class="text-[10px] text-slate-400 mt-1">Vitesse de dégradation.</p>
                                     </div>
                                 </div>
                                 <div>
@@ -292,6 +301,8 @@
                                     <input type="number" step="0.01" name="endurance_multiplier"
                                         x-model="config.endurance_multiplier"
                                         class="w-full rounded-xl border-slate-200 bg-slate-50 focus:border-rose-500 focus:bg-white transition-colors font-bold text-slate-700">
+                                    <p class="text-[10px] text-slate-400 mt-1">Facteur pour allure économique (ex:
+                                        0.85).</p>
                                 </div>
                             </div>
                         </div>
