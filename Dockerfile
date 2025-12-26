@@ -33,4 +33,9 @@ USER kairnuser
 EXPOSE 8000
 
 # Command to run the application
+# Make entrypoint executable
+RUN chmod +x /app/scripts/entrypoint.prod.sh
+
+# Command to run the application
+ENTRYPOINT ["/app/scripts/entrypoint.prod.sh"]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]

@@ -13,7 +13,7 @@ services:
       - ./migrations:/app/migrations
     environment:
       # Change connection string to use PostgreSQL
-      - DATABASE_URL=postgresql://kairn:kairn_password@db/kairn
+      - DATABASE_URL=${DATABASE_URL}
       - INVITATION_CODE=${INVITATION_CODE}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - STRAVA_CLIENT_ID=${STRAVA_CLIENT_ID}

@@ -6,12 +6,12 @@ import os
 # Ensure the data directory exists (still needed for uploads even with postgres)
 os.makedirs("app/data", exist_ok=True)
 
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./app/data/kairn.db")
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not SQLALCHEMY_DATABASE_URL:
+    raise ValueError("DATABASE_URL environment variable is not set")
 
 connect_args = {}
-# Only use check_same_thread for SQLite
-if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
-    connect_args = {"check_same_thread": False}
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, 

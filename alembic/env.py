@@ -29,7 +29,9 @@ target_metadata = Base.metadata
 
 # Override sqlalchemy.url with environment variable
 # ensuring valid sqlite url for local dev if not set
-db_url = os.getenv("DATABASE_URL", "sqlite:///app/data/kairn.db")
+db_url = os.getenv("DATABASE_URL")
+if not db_url:
+    raise ValueError("DATABASE_URL environment variable is not set")
 config.set_main_option("sqlalchemy.url", db_url)
 
 
