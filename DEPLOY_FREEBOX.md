@@ -30,6 +30,7 @@ Remplissez les variables :
 INVITATION_CODE=votre_code_beta
 GEMINI_API_KEY=votre_cle_gemini
 TUNNEL_TOKEN=votre_token_cloudflare
+DATABASE_URL=postgresql://kairn:kairn_password@db/kairn
 ```
 
 ### 3. Créer les dossiers de données
